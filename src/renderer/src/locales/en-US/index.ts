@@ -103,6 +103,43 @@ export default {
     directMode: 'Direct mode'
   },
 
+  connections: {
+    active: 'Active',
+    closed: 'Closed',
+    pause: 'Pause',
+    resume: 'Resume',
+    uploadSpeed: 'Up Speed',
+    downloadSpeed: 'Down Speed',
+    uploadAmount: 'Upload',
+    downloadAmount: 'Download',
+    detail: {
+      title: 'Connection Details',
+      status: 'Status',
+      establishTime: 'Establish Time',
+      rule: 'Rule',
+      proxyChain: 'Proxy Chain',
+      connectionType: 'Connection Type',
+      host: 'Host',
+      sniffHost: 'Sniff Host',
+      processName: 'Process Name',
+      processPath: 'Process Path',
+      sourceIP: 'Source IP',
+      sourcePort: 'Source Port',
+      destinationIP: 'Destination IP',
+      destinationPort: 'Destination Port',
+      inboundIP: 'Inbound IP',
+      inboundPort: 'Inbound Port',
+      inboundName: 'Inbound Name',
+      inboundUser: 'Inbound User',
+      dscp: 'DSCP',
+      remoteDestination: 'Remote Destination',
+      dnsMode: 'DNS Mode'
+    },
+    table: {
+      noData: 'No data'
+    }
+  },
+
   pages: {
     settings: {
       title: 'Application Settings',
@@ -140,7 +177,10 @@ export default {
       uploadSpeed: 'Upload Speed',
       downloadSpeed: 'Download Speed',
       time: 'Time',
-      processName: 'Process Name'
+      processName: 'Process Name',
+      switchToTable: 'Switch to table view',
+      switchToList: 'Switch to list view',
+      tableColumns: 'Columns'
     },
     logs: {
       title: 'Real-time Logs',

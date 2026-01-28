@@ -101,6 +101,43 @@ export default {
     directMode: 'Прямой режим'
   },
 
+  connections: {
+    active: 'Активно',
+    closed: 'Закрыто',
+    pause: 'Пауза',
+    resume: 'Продолжить',
+    uploadSpeed: 'Скорость загрузки',
+    downloadSpeed: 'Скорость скачивания',
+    uploadAmount: 'Загружено',
+    downloadAmount: 'Скачано',
+    detail: {
+      title: 'Детали подключения',
+      status: 'Статус',
+      establishTime: 'Время установления',
+      rule: 'Правило',
+      proxyChain: 'Цепочка прокси',
+      connectionType: 'Тип подключения',
+      host: 'Хост',
+      sniffHost: 'Определённый хост',
+      processName: 'Имя процесса',
+      processPath: 'Путь процесса',
+      sourceIP: 'IP источника',
+      sourcePort: 'Порт источника',
+      destinationIP: 'IP назначения',
+      destinationPort: 'Порт назначения',
+      inboundIP: 'Входящий IP',
+      inboundPort: 'Входящий порт',
+      inboundName: 'Имя входящего',
+      inboundUser: 'Пользователь входящего',
+      dscp: 'DSCP',
+      remoteDestination: 'Удалённое назначение',
+      dnsMode: 'Режим DNS'
+    },
+    table: {
+      noData: 'Нет данных'
+    }
+  },
+
   pages: {
     settings: {
       title: 'Настройки приложения',
@@ -139,6 +176,10 @@ export default {
       downloadSpeed: 'Скорость скачивания',
       time: 'Время',
       processName: 'Имя процесса'
+      processName: 'Имя процесса',
+      switchToTable: 'Переключить на табличный вид',
+      switchToList: 'Переключить на список',
+      tableColumns: 'Колонки'
     },
     logs: {
       title: 'Логи в реальном времени',

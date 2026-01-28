@@ -1,9 +1,10 @@
 import BasePage from '@renderer/components/base/base-page'
 import { mihomoCloseAllConnections, mihomoCloseConnection } from '@renderer/utils/ipc'
 import React, { Key, useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Badge, Button, Divider, Input, Select, SelectItem, Tab, Tabs } from '@heroui/react'
+import { Badge, Button, Divider, Input, Select, SelectItem, Tab, Tabs, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from '@heroui/react'
 import { calcTraffic } from '@renderer/utils/calc'
 import ConnectionItem from '@renderer/components/connections/connection-item'
+import ConnectionTable from '@renderer/components/connections/connection-table'
 import { Virtuoso } from 'react-virtuoso'
 import dayjs from 'dayjs'
 import ConnectionDetailModal from '@renderer/components/connections/connection-detail-modal'
@@ -13,6 +14,8 @@ import { useAppConfig } from '@renderer/hooks/use-app-config'
 import { includesIgnoreCase } from '@renderer/utils/includes'
 import { getIconDataURL, getAppName } from '@renderer/utils/ipc'
 import { HiSortAscending, HiSortDescending } from 'react-icons/hi'
+import { MdViewList, MdTableChart } from 'react-icons/md'
+import { HiOutlineAdjustmentsHorizontal } from 'react-icons/hi2'
 import { cropAndPadTransparent } from '@renderer/utils/image'
 import { platform } from '@renderer/utils/init'
 import { useControledMihomoConfig } from '@renderer/hooks/use-controled-mihomo-config'
@@ -31,6 +34,24 @@ const Connections: React.FC = () => {
   const {
     connectionDirection = 'asc',
     connectionOrderBy = 'time',
+    connectionViewMode = 'list',
+    connectionTableColumns = [
+      'status',
+      'establishTime',
+      'type',
+      'host',
+      'process',
+      'rule',
+      'proxyChain',
+      'remoteDestination',
+      'uploadSpeed',
+      'downloadSpeed',
+      'upload',
+      'download'
+    ],
+    connectionTableColumnWidths,
+    connectionTableSortColumn,
+    connectionTableSortDirection,
     displayIcon = true,
     displayAppName = true
   } = appConfig || {}
@@ -50,6 +71,8 @@ const Connections: React.FC = () => {
   const [tab, setTab] = useState('active')
   const [isPaused, setIsPaused] = useState(false)
   const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set())
+  const [viewMode, setViewMode] = useState<'list' | 'table'>(connectionViewMode)
+  const [visibleColumns, setVisibleColumns] = useState<Set<string>>(new Set(connectionTableColumns))
 
   const iconRequestQueue = useRef(new Set<string>())
   const processingIcons = useRef(new Set<string>())
@@ -227,6 +250,23 @@ const Connections: React.FC = () => {
   const togglePause = useCallback(() => {
     setIsPaused((prev) => !prev)
   }, [])
+
+  const handleColumnWidthChange = useCallback(
+    async (widths: Record<string, number>) => {
+      await patchAppConfig({ connectionTableColumnWidths: widths })
+    },
+    [patchAppConfig]
+  )
+
+  const handleSortChange = useCallback(
+    async (column: string | null, direction: 'asc' | 'desc') => {
+      await patchAppConfig({
+        connectionTableSortColumn: column || undefined,
+        connectionTableSortDirection: direction
+      })
+    },
+    [patchAppConfig]
+  )
 
   const processAppNameQueue = useCallback(async () => {
     if (processingAppNames.current.size >= 3 || appNameRequestQueue.current.size === 0) return
@@ -468,6 +508,28 @@ const Connections: React.FC = () => {
             </div>
             <Button
               className="app-nodrag ml-1"
+              title={
+                viewMode === 'list'
+                  ? t('pages.connections.switchToTable')
+                  : t('pages.connections.switchToList')
+              }
+              isIconOnly
+              size="sm"
+              variant="light"
+              onPress={async () => {
+                const newMode = viewMode === 'list' ? 'table' : 'list'
+                setViewMode(newMode)
+                await patchAppConfig({ connectionViewMode: newMode })
+              }}
+            >
+              {viewMode === 'list' ? (
+                <MdTableChart className="text-lg" />
+              ) : (
+                <MdViewList className="text-lg" />
+              )}
+            </Button>
+            <Button
+              className="app-nodrag ml-1"
               title={isPaused ? t('connections.resume') : t('connections.pause')}
               isIconOnly
               size="sm"
@@ -580,33 +642,99 @@ const Connections: React.FC = () => {
             onValueChange={setFilter}
           />
 
-          <Select
-            classNames={{ trigger: 'data-[hover=true]:bg-default-200' }}
-            size="sm"
-            className="w-[180px] min-w-[120px]"
-            selectedKeys={new Set([connectionOrderBy])}
-            disallowEmptySelection={true}
-            onSelectionChange={handleOrderByChange}
-          >
-            <SelectItem key="upload">{t('pages.connections.uploadAmount')}</SelectItem>
-            <SelectItem key="download">{t('pages.connections.downloadAmount')}</SelectItem>
-            <SelectItem key="uploadSpeed">{t('pages.connections.uploadSpeed')}</SelectItem>
-            <SelectItem key="downloadSpeed">{t('pages.connections.downloadSpeed')}</SelectItem>
-            <SelectItem key="time">{t('pages.connections.time')}</SelectItem>
-            <SelectItem key="process">{t('pages.connections.processName')}</SelectItem>
-          </Select>
-          <Button size="sm" isIconOnly className="bg-content2" onPress={handleDirectionToggle}>
-            {connectionDirection === 'asc' ? (
-              <HiSortAscending className="text-lg" />
-            ) : (
-              <HiSortDescending className="text-lg" />
-            )}
-          </Button>
+          {viewMode === 'table' && (
+            <Dropdown>
+              <DropdownTrigger>
+                <Button
+                  size="sm"
+                  variant="flat"
+                  startContent={<HiOutlineAdjustmentsHorizontal className="text-2xl" />}
+                >
+                  {t('pages.connections.tableColumns')}
+                </Button>
+              </DropdownTrigger>
+              <DropdownMenu
+                aria-label="Column visibility"
+                closeOnSelect={false}
+                selectionMode="multiple"
+                selectedKeys={visibleColumns}
+                onSelectionChange={async (keys) => {
+                  const newColumns = Array.from(keys) as string[]
+                  setVisibleColumns(new Set(newColumns))
+                  await patchAppConfig({ connectionTableColumns: newColumns })
+                }}
+              >
+                <DropdownItem key="status">{t('connections.detail.status')}</DropdownItem>
+                <DropdownItem key="establishTime">{t('connections.detail.establishTime')}</DropdownItem>
+                <DropdownItem key="type">{t('connections.detail.connectionType')}</DropdownItem>
+                <DropdownItem key="host">{t('connections.detail.host')}</DropdownItem>
+                <DropdownItem key="sniffHost">{t('connections.detail.sniffHost')}</DropdownItem>
+                <DropdownItem key="process">{t('connections.detail.processName')}</DropdownItem>
+                <DropdownItem key="processPath">{t('connections.detail.processPath')}</DropdownItem>
+                <DropdownItem key="rule">{t('connections.detail.rule')}</DropdownItem>
+                <DropdownItem key="proxyChain">{t('connections.detail.proxyChain')}</DropdownItem>
+                <DropdownItem key="sourceIP">{t('connections.detail.sourceIP')}</DropdownItem>
+                <DropdownItem key="sourcePort">{t('connections.detail.sourcePort')}</DropdownItem>
+                <DropdownItem key="destinationPort">{t('connections.detail.destinationPort')}</DropdownItem>
+                <DropdownItem key="inboundIP">{t('connections.detail.inboundIP')}</DropdownItem>
+                <DropdownItem key="inboundPort">{t('connections.detail.inboundPort')}</DropdownItem>
+                <DropdownItem key="uploadSpeed">{t('pages.connections.uploadSpeed')}</DropdownItem>
+                <DropdownItem key="downloadSpeed">{t('pages.connections.downloadSpeed')}</DropdownItem>
+                <DropdownItem key="upload">{t('pages.connections.uploadAmount')}</DropdownItem>
+                <DropdownItem key="download">{t('pages.connections.downloadAmount')}</DropdownItem>
+                <DropdownItem key="dscp">{t('connections.detail.dscp')}</DropdownItem>
+                <DropdownItem key="remoteDestination">{t('connections.detail.remoteDestination')}</DropdownItem>
+                <DropdownItem key="dnsMode">{t('connections.detail.dnsMode')}</DropdownItem>
+              </DropdownMenu>
+            </Dropdown>
+          )}
+
+          {viewMode === 'list' && (
+            <>
+              <Select
+                classNames={{ trigger: 'data-[hover=true]:bg-default-200' }}
+                size="sm"
+                className="w-[180px] min-w-[120px]"
+                selectedKeys={new Set([connectionOrderBy])}
+                disallowEmptySelection={true}
+                onSelectionChange={handleOrderByChange}
+              >
+                <SelectItem key="upload">{t('pages.connections.uploadAmount')}</SelectItem>
+                <SelectItem key="download">{t('pages.connections.downloadAmount')}</SelectItem>
+                <SelectItem key="uploadSpeed">{t('pages.connections.uploadSpeed')}</SelectItem>
+                <SelectItem key="downloadSpeed">{t('pages.connections.downloadSpeed')}</SelectItem>
+                <SelectItem key="time">{t('pages.connections.time')}</SelectItem>
+                <SelectItem key="process">{t('pages.connections.processName')}</SelectItem>
+              </Select>
+              <Button size="sm" isIconOnly className="bg-content2" onPress={handleDirectionToggle}>
+                {connectionDirection === 'asc' ? (
+                  <HiSortAscending className="text-lg" />
+                ) : (
+                  <HiSortDescending className="text-lg" />
+                )}
+              </Button>
+            </>
+          )}
         </div>
         <Divider />
       </div>
       <div className="h-[calc(100vh-100px)] mt-px">
-        <Virtuoso data={filteredConnections} itemContent={renderConnectionItem} />
+        {viewMode === 'list' ? (
+          <Virtuoso data={filteredConnections} itemContent={renderConnectionItem} />
+        ) : (
+          <ConnectionTable
+            connections={filteredConnections}
+            setSelected={setSelected}
+            setIsDetailModalOpen={setIsDetailModalOpen}
+            close={closeConnection}
+            visibleColumns={visibleColumns}
+            initialColumnWidths={connectionTableColumnWidths}
+            initialSortColumn={connectionTableSortColumn}
+            initialSortDirection={connectionTableSortDirection}
+            onColumnWidthChange={handleColumnWidthChange}
+            onSortChange={handleSortChange}
+          />
+        )}
       </div>
     </BasePage>
   )

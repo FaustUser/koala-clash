@@ -145,6 +145,43 @@ export default {
     directMode: '直连模式'
   },
 
+  connections: {
+    active: '活动中',
+    closed: '已关闭',
+    pause: '暂停',
+    resume: '恢复',
+    uploadSpeed: '上传速度',
+    downloadSpeed: '下载速度',
+    uploadAmount: '上传量',
+    downloadAmount: '下载量',
+    detail: {
+      title: '连接详情',
+      status: '状态',
+      establishTime: '连接建立时间',
+      rule: '规则',
+      proxyChain: '代理链',
+      connectionType: '连接类型',
+      host: '主机',
+      sniffHost: '嗅探主机',
+      processName: '进程名',
+      processPath: '进程路径',
+      sourceIP: '来源 IP',
+      sourcePort: '来源端口',
+      destinationIP: '目标 IP',
+      destinationPort: '目标端口',
+      inboundIP: '入站 IP',
+      inboundPort: '入站端口',
+      inboundName: '入站名称',
+      inboundUser: '入站用户',
+      dscp: 'DSCP',
+      remoteDestination: '远程目标',
+      dnsMode: 'DNS 模式'
+    },
+    table: {
+      noData: '无数据'
+    }
+  },
+
   pages: {
     settings: {
       title: '应用设置',
@@ -182,7 +219,10 @@ export default {
       uploadSpeed: '上传速度',
       downloadSpeed: '下载速度',
       time: '时间',
-      processName: '进程名称'
+      processName: '进程名称',
+      switchToTable: '切换到表格视图',
+      switchToList: '切换到列表视图',
+      tableColumns: '列'
     },
     logs: {
       title: '实时日志',
