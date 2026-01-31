@@ -1,8 +1,9 @@
 import { servicePath } from '../utils/dirs'
 import { execWithElevation } from '../utils/elevation'
+import { t } from '../utils/i18n'
 import { KeyManager } from './key'
 import { initServiceAPI, getServiceAxios, ping, test } from './api'
-import { getAppConfig, patchAppConfig } from '../config/app'
+import { getAppConfig, patchAppConfig } from '../config'
 import { execFile } from 'child_process'
 import { promisify } from 'util'
 
@@ -40,7 +41,7 @@ export async function initKeyManager(): Promise<KeyManager> {
 
 export function getKeyManager(): KeyManager {
   if (!keyManager) {
-    throw new Error('密钥管理器未初始化，请先调用 initKeyManager')
+    throw new Error(t('error.keyManagerNotInitializedHint'))
   }
   return keyManager
 }
@@ -50,7 +51,7 @@ export function getPublicKey(): string {
 }
 
 class UserCancelledError extends Error {
-  constructor(message = '用户取消操作') {
+  constructor(message = t('error.userCancelled')) {
     super(message)
     this.name = 'UserCancelledError'
   }
@@ -62,7 +63,7 @@ function isUserCancelledError(error: unknown): boolean {
   }
   const errorMsg = error instanceof Error ? error.message : String(error)
   return (
-    errorMsg.includes('用户已取消') ||
+    errorMsg.includes(t('error.userCancelledCheck')) ||
     errorMsg.includes('User canceled') ||
     errorMsg.includes('(-128)') ||
     errorMsg.includes('user cancelled') ||
@@ -102,7 +103,7 @@ export async function initService(): Promise<void> {
     if (isUserCancelledError(error)) {
       throw new UserCancelledError()
     }
-    throw new Error(`服务初始化失败：${error instanceof Error ? error.message : String(error)}`)
+    throw new Error(`${t('error.serviceInitFailed')}：${error instanceof Error ? error.message : String(error)}`)
   }
 
   await new Promise((resolve) => setTimeout(resolve, 500))
@@ -117,7 +118,7 @@ export async function installService(): Promise<void> {
     if (isUserCancelledError(error)) {
       throw new UserCancelledError()
     }
-    throw new Error(`服务安装失败：${error instanceof Error ? error.message : String(error)}`)
+    throw new Error(`${t('error.serviceInstallFailed')}：${error instanceof Error ? error.message : String(error)}`)
   }
 }
 
@@ -130,7 +131,7 @@ export async function uninstallService(): Promise<void> {
     if (isUserCancelledError(error)) {
       throw new UserCancelledError()
     }
-    throw new Error(`服务卸载失败：${error instanceof Error ? error.message : String(error)}`)
+    throw new Error(`${t('error.serviceUninstallFailed')}：${error instanceof Error ? error.message : String(error)}`)
   }
 }
 
@@ -143,7 +144,7 @@ export async function startService(): Promise<void> {
     if (isUserCancelledError(error)) {
       throw new UserCancelledError()
     }
-    throw new Error(`服务启动失败：${error instanceof Error ? error.message : String(error)}`)
+    throw new Error(`${t('error.serviceStartFailed')}：${error instanceof Error ? error.message : String(error)}`)
   }
 }
 
@@ -156,7 +157,7 @@ export async function stopService(): Promise<void> {
     if (isUserCancelledError(error)) {
       throw new UserCancelledError()
     }
-    throw new Error(`服务停止失败：${error instanceof Error ? error.message : String(error)}`)
+    throw new Error(`${t('error.serviceStopFailed')}：${error instanceof Error ? error.message : String(error)}`)
   }
 }
 
@@ -169,7 +170,7 @@ export async function restartService(): Promise<void> {
     if (isUserCancelledError(error)) {
       throw new UserCancelledError()
     }
-    throw new Error(`服务重启失败：${error instanceof Error ? error.message : String(error)}`)
+    throw new Error(`${t('error.serviceRestartFailed')}：${error instanceof Error ? error.message : String(error)}`)
   }
 }
 
@@ -207,10 +208,8 @@ export async function serviceStatus(): Promise<
 export async function testServiceConnection(): Promise<boolean> {
   try {
     const out = await test()
-    if (out && typeof out === 'object' && 'status' in out && out.status === 'error') {
-      return false
-    }
-    return true
+    return !(out && typeof out === 'object' && 'status' in out && out.status === 'error');
+
   } catch {
     return false
   }

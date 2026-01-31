@@ -3,6 +3,7 @@ import { mainWindow } from '..'
 import { getAppConfig } from '../config'
 import { quitWithoutCore } from '../core/manager'
 import { dataDir, logDir, mihomoCoreDir, mihomoWorkDir } from '../utils/dirs'
+import { t } from '../utils/i18n'
 
 export async function createApplicationMenu(): Promise<void> {
   if (process.platform !== 'darwin') {
@@ -17,34 +18,34 @@ export async function createApplicationMenu(): Promise<void> {
       label: app.getName(),
       submenu: [
         {
-          label: '关于 ' + app.getName(),
+          label: t('menu.about') + ' ' + app.getName(),
           role: 'about'
         },
         { type: 'separator' },
         {
-          label: '隐藏' + app.getName(),
+          label: t('menu.hide') + app.getName(),
           accelerator: 'Command+H',
           role: 'hide'
         },
         {
-          label: '隐藏其他',
+          label: t('menu.hideOthers'),
           accelerator: 'Command+Alt+H',
           role: 'hideOthers'
         },
         {
-          label: '显示全部',
+          label: t('menu.showAll'),
           role: 'unhide'
         },
         { type: 'separator' },
         {
-          label: '保留内核退出',
+          label: t('menu.quitKeepCore'),
           accelerator: quitWithoutCoreShortcut,
           click: () => {
             quitWithoutCore()
           }
         },
         {
-          label: '重启应用',
+          label: t('menu.restartApp'),
           accelerator: restartAppShortcut,
           click: () => {
             app.relaunch()
@@ -52,7 +53,7 @@ export async function createApplicationMenu(): Promise<void> {
           }
         },
         {
-          label: '退出应用',
+          label: t('menu.quitApp'),
           accelerator: 'Command+Q',
           click: () => {
             app.quit()
@@ -61,73 +62,73 @@ export async function createApplicationMenu(): Promise<void> {
       ]
     },
     {
-      label: '编辑',
+      label: t('menu.edit'),
       submenu: [
         {
-          label: '撤销',
+          label: t('menu.undo'),
           accelerator: 'CmdOrCtrl+Z',
           role: 'undo'
         },
         {
-          label: '重做',
+          label: t('menu.redo'),
           accelerator: 'Shift+CmdOrCtrl+Z',
           role: 'redo'
         },
         { type: 'separator' },
         {
-          label: '剪切',
+          label: t('menu.cut'),
           accelerator: 'CmdOrCtrl+X',
           role: 'cut'
         },
         {
-          label: '复制',
+          label: t('menu.copy'),
           accelerator: 'CmdOrCtrl+C',
           role: 'copy'
         },
         {
-          label: '粘贴',
+          label: t('menu.paste'),
           accelerator: 'CmdOrCtrl+V',
           role: 'paste'
         },
         {
-          label: '删除',
+          label: t('menu.delete'),
           accelerator: 'CmdOrCtrl+Backspace',
           role: 'delete'
         },
         {
-          label: '全选',
+          label: t('menu.selectAll'),
           accelerator: 'CmdOrCtrl+A',
           role: 'selectAll'
         }
       ]
     },
     {
-      label: '工具',
+      label: t('menu.tools'),
       submenu: [
         {
-          label: '打开目录',
+          label: t('menu.openDirectory'),
           submenu: [
             {
-              label: '应用目录',
+              label: t('menu.appDirectory'),
               click: () => shell.openPath(dataDir())
             },
             {
-              label: '工作目录',
+              label: t('menu.workDirectory'),
               click: () => shell.openPath(mihomoWorkDir())
             },
             {
-              label: '内核目录',
+              label: t('menu.coreDirectory'),
               click: () => shell.openPath(mihomoCoreDir())
             },
             {
-              label: '日志目录',
+              label: t('menu.logDirectory'),
               click: () => shell.openPath(logDir())
             }
           ]
         },
         { type: 'separator' },
         {
-          label: '重新加载',
+          label: t('menu.reload'),
           accelerator: 'CmdOrCtrl+R',
           click: () => {
             if (mainWindow) {
@@ -136,7 +137,7 @@ export async function createApplicationMenu(): Promise<void> {
           }
         },
         {
-          label: '开发者工具',
+          label: t('menu.devTools'),
           click: () => {
             if (mainWindow) {
               mainWindow.webContents.toggleDevTools()
@@ -146,50 +147,50 @@ export async function createApplicationMenu(): Promise<void> {
       ]
     },
     {
-      label: '窗口',
+      label: t('menu.window'),
       submenu: [
         {
-          label: '最小化',
+          label: t('menu.minimize'),
           accelerator: 'CmdOrCtrl+M',
           role: 'minimize'
         },
         {
-          label: '关闭',
+          label: t('menu.close'),
           accelerator: 'CmdOrCtrl+W',
           role: 'close'
         },
         { type: 'separator' },
         {
-          label: '前置所有窗口',
+          label: t('menu.bringAllToFront'),
           role: 'front'
         }
       ]
     },
     {
-      label: '帮助',
+      label: t('menu.help'),
       submenu: [
         {
-          label: '了解更多',
+          label: t('menu.learnMore'),
           click: () => {
             shell.openExternal('https://github.com/xishang0128/sparkle')
           }
         },
         {
-          label: '报告问题',
+          label: t('menu.reportIssue'),
           click: () => {
             shell.openExternal('https://github.com/xishang0128/sparkle/issues')
           }
         },
         { type: 'separator' },
         {
-          label: '关于',
+          label: t('menu.about'),
           click: () => {
             dialog.showMessageBox(mainWindow!, {
               type: 'info',
-              title: '关于 Sparkle',
+              title: t('menu.aboutApp'),
               message: 'Sparkle',
-              detail: `版本：${app.getVersion()}\n一个基于 Electron 的代理工具`,
-              buttons: ['确定']
+              detail: `${t('menu.version')}：${app.getVersion()}\n${t('menu.electronProxyTool')}`,
+              buttons: [t('menu.ok')]
             })
           }
         }

@@ -6,6 +6,11 @@ type Translations = {
 
 type LocaleTranslations = {
   tray: Translations
+  menu: Translations
+  notification: Translations
+  dialog: Translations
+  error: Translations
+  ui: Translations
 }
 
 const zhCN: LocaleTranslations = {
@@ -38,6 +43,112 @@ const zhCN: LocaleTranslations = {
     retest: '重新测试',
     controllerListenError: '控制器监听错误',
     tunStartFailed: '虚拟网卡启动失败，前往内核设置页尝试手动授予内核权限'
+  },
+  menu: {
+    about: '关于',
+    aboutApp: '关于 Sparkle',
+    hide: '隐藏',
+    hideOthers: '隐藏其他',
+    showAll: '显示全部',
+    quitKeepCore: '保留内核退出',
+    restartApp: '重启应用',
+    quitApp: '退出应用',
+    edit: '编辑',
+    undo: '撤销',
+    redo: '重做',
+    cut: '剪切',
+    copy: '复制',
+    paste: '粘贴',
+    delete: '删除',
+    selectAll: '全选',
+    tools: '工具',
+    openDirectory: '打开目录',
+    appDirectory: '应用目录',
+    workDirectory: '工作目录',
+    coreDirectory: '内核目录',
+    logDirectory: '日志目录',
+    reload: '重新加载',
+    devTools: '开发者工具',
+    window: '窗口',
+    minimize: '最小化',
+    close: '关闭',
+    bringAllToFront: '前置所有窗口',
+    help: '帮助',
+    learnMore: '了解更多',
+    reportIssue: '报告问题',
+    version: '版本',
+    electronProxyTool: '一个基于 Electron 的代理工具',
+    ok: '确定'
+  },
+  notification: {
+    sysProxyEnabled: '系统代理已开启',
+    sysProxyDisabled: '系统代理已关闭',
+    tunEnabled: '虚拟网卡已开启',
+    tunDisabled: '虚拟网卡已关闭',
+    switchedToRuleMode: '已切换至规则模式',
+    switchedToGlobalMode: '已切换至全局模式',
+    switchedToDirectMode: '已切换至直连模式',
+    profileImportSuccess: '订阅导入成功',
+    overrideImportSuccess: '覆写导入成功'
+  },
+  dialog: {
+    firstRunAdmin: '首次启动请以管理员权限运行',
+    appInitFailed: '应用初始化失败',
+    coreStartError: '内核启动出错',
+    profileImportFailed: '订阅导入失败',
+    overrideImportFailed: '覆写导入失败',
+    selectSubscriptionFile: '选择订阅文件'
+  },
+  error: {
+    missingUrlParam: '缺少参数 url',
+    keyCannotBeEmpty: '密钥不能为空',
+    publicKeyNotInitialized: '公钥未初始化',
+    privateKeyNotInitialized: '私钥未初始化',
+    serviceApiNotInitialized: '服务 API 未初始化',
+    keyManagerNotInitialized: '密钥管理器未初始化',
+    keyManagerNotInitializedHint: '密钥管理器未初始化，请先调用 initKeyManager',
+    userCancelled: '用户取消操作',
+    userCancelledCheck: '用户已取消',
+    serviceInitFailed: '服务初始化失败',
+    serviceInstallFailed: '服务安装失败',
+    serviceUninstallFailed: '服务卸载失败',
+    serviceStartFailed: '服务启动失败',
+    serviceStopFailed: '服务停止失败',
+    serviceRestartFailed: '服务重启失败',
+    serviceMayNotInstalled: '服务可能未安装',
+    certFingerprintMismatch: '证书指纹不匹配',
+    proxyConnectionFailed: '代理连接失败，状态码',
+    networkResetOrTimeout: '网络连接被重置或超时',
+    serverCertExpired: '服务器证书已过期',
+    unableToVerifyCert: '无法验证服务器证书',
+    certVerificationFailed: '证书验证失败',
+    requestFailed: '请求失败',
+    subscriptionFormatError: '订阅格式错误，无法解析为有效的配置文件',
+    invalidEncryptionFormat: '无效的加密格式',
+    systemCorePathInvalid: '系统内核路径无效或不存在',
+    systemCorePathNotSet: '系统内核路径未设置',
+    corePathError: '内核路径错误',
+    windowsElevationFailed: 'Windows 提权执行失败',
+    linuxElevationFailed: 'Linux 提权执行失败',
+    macosElevationFailed: 'macOS 提权执行失败',
+    autoUpdateNotSupported: '不支持自动更新，请手动下载更新',
+    sha256NotFound: '无法从 GitHub Release 中找到对应的 SHA-256 信息',
+    sha256VerificationFailed: 'SHA-256 校验失败',
+    localHash: '本地哈希',
+    expectedHash: '与预期',
+    mismatch: '不符',
+    downloadCancelled: '下载已取消',
+    downloadFailed: '下载失败',
+    userCancelledDownload: '用户取消下载',
+    scriptReturnMustBeObject: '脚本返回值必须是对象',
+    subStoreDownloadFailed: '下载 Sub-Store 文件失败'
+  },
+  ui: {
+    defaultTheme: '默认',
+    blankSubscription: '空白订阅',
+    scriptStarted: '开始执行脚本',
+    scriptSuccess: '脚本执行成功',
+    scriptFailed: '脚本执行失败'
   }
 }
 
@@ -72,6 +183,112 @@ const enUS: LocaleTranslations = {
     controllerListenError: 'Controller listen error',
     tunStartFailed:
       'Virtual network interface startup failed, go to core settings to try to manually grant core permissions'
+  },
+  menu: {
+    about: 'About',
+    aboutApp: 'About Sparkle',
+    hide: 'Hide',
+    hideOthers: 'Hide Others',
+    showAll: 'Show All',
+    quitKeepCore: 'Quit Keep Core',
+    restartApp: 'Restart App',
+    quitApp: 'Quit App',
+    edit: 'Edit',
+    undo: 'Undo',
+    redo: 'Redo',
+    cut: 'Cut',
+    copy: 'Copy',
+    paste: 'Paste',
+    delete: 'Delete',
+    selectAll: 'Select All',
+    tools: 'Tools',
+    openDirectory: 'Open Directory',
+    appDirectory: 'App Directory',
+    workDirectory: 'Work Directory',
+    coreDirectory: 'Core Directory',
+    logDirectory: 'Log Directory',
+    reload: 'Reload',
+    devTools: 'Developer Tools',
+    window: 'Window',
+    minimize: 'Minimize',
+    close: 'Close',
+    bringAllToFront: 'Bring All to Front',
+    help: 'Help',
+    learnMore: 'Learn More',
+    reportIssue: 'Report Issue',
+    version: 'Version',
+    electronProxyTool: 'An Electron-based proxy tool',
+    ok: 'OK'
+  },
+  notification: {
+    sysProxyEnabled: 'System Proxy Enabled',
+    sysProxyDisabled: 'System Proxy Disabled',
+    tunEnabled: 'Virtual Network Interface Enabled',
+    tunDisabled: 'Virtual Network Interface Disabled',
+    switchedToRuleMode: 'Switched to Rule Mode',
+    switchedToGlobalMode: 'Switched to Global Mode',
+    switchedToDirectMode: 'Switched to Direct Mode',
+    profileImportSuccess: 'Profile imported successfully',
+    overrideImportSuccess: 'Override imported successfully'
+  },
+  dialog: {
+    firstRunAdmin: 'Please run as administrator for the first time',
+    appInitFailed: 'Application initialization failed',
+    coreStartError: 'Core startup error',
+    profileImportFailed: 'Profile import failed',
+    overrideImportFailed: 'Override import failed',
+    selectSubscriptionFile: 'Select subscription file'
+  },
+  error: {
+    missingUrlParam: 'Missing parameter: url',
+    keyCannotBeEmpty: 'Key cannot be empty',
+    publicKeyNotInitialized: 'Public key not initialized',
+    privateKeyNotInitialized: 'Private key not initialized',
+    serviceApiNotInitialized: 'Service API not initialized',
+    keyManagerNotInitialized: 'Key manager not initialized',
+    keyManagerNotInitializedHint: 'Key manager not initialized, please call initKeyManager first',
+    userCancelled: 'User cancelled operation',
+    userCancelledCheck: 'User cancelled',
+    serviceInitFailed: 'Service initialization failed',
+    serviceInstallFailed: 'Service installation failed',
+    serviceUninstallFailed: 'Service uninstallation failed',
+    serviceStartFailed: 'Service start failed',
+    serviceStopFailed: 'Service stop failed',
+    serviceRestartFailed: 'Service restart failed',
+    serviceMayNotInstalled: 'Service may not be installed',
+    certFingerprintMismatch: 'Certificate fingerprint mismatch',
+    proxyConnectionFailed: 'Proxy connection failed, status code',
+    networkResetOrTimeout: 'Network connection reset or timed out',
+    serverCertExpired: 'Server certificate has expired',
+    unableToVerifyCert: 'Unable to verify server certificate',
+    certVerificationFailed: 'Certificate verification failed',
+    requestFailed: 'Request failed',
+    subscriptionFormatError: 'Subscription format error, unable to parse as valid configuration',
+    invalidEncryptionFormat: 'Invalid encryption format',
+    systemCorePathInvalid: 'System core path is invalid or does not exist',
+    systemCorePathNotSet: 'System core path not configured',
+    corePathError: 'Core path error',
+    windowsElevationFailed: 'Windows elevation failed',
+    linuxElevationFailed: 'Linux elevation failed',
+    macosElevationFailed: 'macOS elevation failed',
+    autoUpdateNotSupported: 'Auto-update not supported, please download the update manually',
+    sha256NotFound: 'Cannot find SHA-256 information for the file in GitHub Release',
+    sha256VerificationFailed: 'SHA-256 verification failed',
+    localHash: 'local hash',
+    expectedHash: 'expected',
+    mismatch: 'mismatch',
+    downloadCancelled: 'Download cancelled',
+    downloadFailed: 'Download failed',
+    userCancelledDownload: 'User cancelled download',
+    scriptReturnMustBeObject: 'Script return value must be an object',
+    subStoreDownloadFailed: 'Failed to download Sub-Store files'
+  },
+  ui: {
+    defaultTheme: 'Default',
+    blankSubscription: 'Blank subscription',
+    scriptStarted: 'Starting script execution',
+    scriptSuccess: 'Script executed successfully',
+    scriptFailed: 'Script execution failed'
   }
 }
 
@@ -106,6 +323,115 @@ const ruRU: LocaleTranslations = {
     controllerListenError: 'Ошибка прослушивания контроллера',
     tunStartFailed:
       'Виртуальный сетевой интерфейс не запустился, перейдите в настройки ядра и попробуйте вручную предоставить права'
+  },
+  menu: {
+    about: 'О программе',
+    aboutApp: 'О Sparkle',
+    hide: 'Скрыть',
+    hideOthers: 'Скрыть остальные',
+    showAll: 'Показать все',
+    quitKeepCore: 'Выйти, сохранив ядро',
+    restartApp: 'Перезапустить приложение',
+    quitApp: 'Выйти из приложения',
+    edit: 'Редактирование',
+    undo: 'Отменить',
+    redo: 'Повторить',
+    cut: 'Вырезать',
+    copy: 'Копировать',
+    paste: 'Вставить',
+    delete: 'Удалить',
+    selectAll: 'Выбрать все',
+    tools: 'Инструменты',
+    openDirectory: 'Открыть директорию',
+    appDirectory: 'Директория приложения',
+    workDirectory: 'Рабочая директория',
+    coreDirectory: 'Директория ядра',
+    logDirectory: 'Директория логов',
+    reload: 'Перезагрузить',
+    devTools: 'Инструменты разработчика',
+    window: 'Окно',
+    minimize: 'Свернуть',
+    close: 'Закрыть',
+    bringAllToFront: 'Переместить все на передний план',
+    help: 'Помощь',
+    learnMore: 'Узнать больше',
+    reportIssue: 'Сообщить о проблеме',
+    version: 'Версия',
+    electronProxyTool: 'Прокси-инструмент на базе Electron',
+    ok: 'ОК'
+  },
+  notification: {
+    sysProxyEnabled: 'Системный прокси включён',
+    sysProxyDisabled: 'Системный прокси отключён',
+    tunEnabled: 'Виртуальный сетевой интерфейс включён',
+    tunDisabled: 'Виртуальный сетевой интерфейс отключён',
+    switchedToRuleMode: 'Переключено на режим правил',
+    switchedToGlobalMode: 'Переключено на глобальный режим',
+    switchedToDirectMode: 'Переключено на прямой режим',
+    profileImportSuccess: 'Подписка успешно импортирована',
+    overrideImportSuccess: 'Переопределение успешно импортировано'
+  },
+  dialog: {
+    firstRunAdmin: 'Первый запуск — запустите от имени администратора',
+    appInitFailed: 'Ошибка инициализации приложения',
+    coreStartError: 'Ошибка запуска ядра',
+    profileImportFailed: 'Ошибка импорта подписки',
+    overrideImportFailed: 'Ошибка импорта переопределения',
+    selectSubscriptionFile: 'Выберите файл подписки'
+  },
+  error: {
+    missingUrlParam: 'Отсутствует параметр url',
+    keyCannotBeEmpty: 'Ключ не может быть пустым',
+    publicKeyNotInitialized: 'Открытый ключ не инициализирован',
+    privateKeyNotInitialized: 'Закрытый ключ не инициализирован',
+    serviceApiNotInitialized: 'API сервиса не инициализирован',
+    keyManagerNotInitialized: 'Менеджер ключей не инициализирован',
+    keyManagerNotInitializedHint:
+      'Менеджер ключей не инициализирован, сначала вызовите initKeyManager',
+    userCancelled: 'Операция отменена пользователем',
+    userCancelledCheck: 'Отменено пользователем',
+    serviceInitFailed: 'Ошибка инициализации сервиса',
+    serviceInstallFailed: 'Ошибка установки сервиса',
+    serviceUninstallFailed: 'Ошибка удаления сервиса',
+    serviceStartFailed: 'Ошибка запуска сервиса',
+    serviceStopFailed: 'Ошибка остановки сервиса',
+    serviceRestartFailed: 'Ошибка перезапуска сервиса',
+    serviceMayNotInstalled: 'Сервис, возможно, не установлен',
+    certFingerprintMismatch: 'Несоответствие отпечатка сертификата',
+    proxyConnectionFailed: 'Ошибка подключения через прокси, код состояния',
+    networkResetOrTimeout: 'Сетевое соединение сброшено или превышено время ожидания',
+    serverCertExpired: 'Сертификат сервера истёк',
+    unableToVerifyCert: 'Невозможно проверить сертификат сервера',
+    certVerificationFailed: 'Ошибка проверки сертификата',
+    requestFailed: 'Ошибка запроса',
+    subscriptionFormatError:
+      'Ошибка формата подписки, невозможно разобрать как допустимый конфигурационный файл',
+    invalidEncryptionFormat: 'Недопустимый формат шифрования',
+    systemCorePathInvalid: 'Путь к системному ядру недействителен или не существует',
+    systemCorePathNotSet: 'Путь к системному ядру не задан',
+    corePathError: 'Ошибка пути к ядру',
+    windowsElevationFailed: 'Ошибка повышения привилегий Windows',
+    linuxElevationFailed: 'Ошибка повышения привилегий Linux',
+    macosElevationFailed: 'Ошибка повышения привилегий macOS',
+    autoUpdateNotSupported:
+      'Автоматическое обновление не поддерживается, загрузите обновление вручную',
+    sha256NotFound: 'Не удалось найти информацию SHA-256 для файла в GitHub Release',
+    sha256VerificationFailed: 'Ошибка проверки SHA-256',
+    localHash: 'локальный хеш',
+    expectedHash: 'ожидаемый',
+    mismatch: 'не совпадает',
+    downloadCancelled: 'Загрузка отменена',
+    downloadFailed: 'Ошибка загрузки',
+    userCancelledDownload: 'Пользователь отменил загрузку',
+    scriptReturnMustBeObject: 'Возвращаемое значение скрипта должно быть объектом',
+    subStoreDownloadFailed: 'Не удалось загрузить файлы Sub-Store'
+  },
+  ui: {
+    defaultTheme: 'По умолчанию',
+    blankSubscription: 'Пустая подписка',
+    scriptStarted: 'Начало выполнения скрипта',
+    scriptSuccess: 'Скрипт выполнен успешно',
+    scriptFailed: 'Ошибка выполнения скрипта'
   }
 }
 
@@ -130,15 +456,16 @@ export function getLanguage(): string {
 export function t(key: string): string {
   const [namespace, translationKey] = key.split('.')
   const locale = locales[currentLanguage] || locales['zh-CN']
+  const ns = namespace as keyof LocaleTranslations
 
-  if (namespace === 'tray' && locale.tray[translationKey]) {
-    return locale.tray[translationKey]
+  if (locale[ns] && locale[ns][translationKey]) {
+    return locale[ns][translationKey]
   }
 
-  // Fallback to Chinese if translation not found
+  // Fallback to English if translation not found
   const fallback = locales['en-US']
-  if (namespace === 'tray' && fallback.tray[translationKey]) {
-    return fallback.tray[translationKey]
+  if (fallback[ns] && fallback[ns][translationKey]) {
+    return fallback[ns][translationKey]
   }
 
   return key

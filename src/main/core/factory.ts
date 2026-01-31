@@ -21,6 +21,7 @@ import { deepMerge } from '../utils/merge'
 import vm from 'vm'
 import { existsSync, writeFileSync } from 'fs'
 import path from 'path'
+import { t } from '../utils/i18n'
 
 let runtimeConfigStr: string,
   rawProfileStr: string,
@@ -163,7 +164,7 @@ async function cleanProfile(
 }
 
 function cleanBooleanConfigs(profile: MihomoConfig): void {
-  if (profile.ipv6 !== false) {
+  if (profile.ipv6) {
     delete (profile as Partial<MihomoConfig>).ipv6
   }
 
@@ -230,7 +231,7 @@ function cleanStringConfigs(profile: MihomoConfig): void {
 function configureLanSettings(profile: MihomoConfig): void {
   const partialProfile = profile as Partial<MihomoConfig>
 
-  if (profile['allow-lan'] === false) {
+  if (!profile['allow-lan']) {
     delete partialProfile['lan-allowed-ips']
     delete partialProfile['lan-disallowed-ips']
     return
@@ -434,7 +435,7 @@ async function runOverrideScript(
       Buffer
     }
     vm.createContext(ctx)
-    log('info', '开始执行脚本', 'w')
+    log('info', t('ui.scriptStarted'), 'w')
     vm.runInContext(script, ctx)
     const promise = vm.runInContext(
       `(async () => {
@@ -446,12 +447,12 @@ async function runOverrideScript(
     )
     const newProfile = await promise
     if (typeof newProfile !== 'object') {
-      throw new Error('脚本返回值必须是对象')
+      throw new Error(t('error.scriptReturnMustBeObject'))
     }
-    log('info', '脚本执行成功')
+    log('info', t('ui.scriptSuccess'))
     return newProfile
   } catch (e) {
-    log('exception', `脚本执行失败：${e}`)
+    log('exception', `${t('ui.scriptFailed')}：${e}`)
     return profile
   }
 }

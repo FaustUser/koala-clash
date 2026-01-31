@@ -11,6 +11,7 @@ import { promisify } from 'util'
 import { createHash } from 'crypto'
 import { setNotQuitDialog, mainWindow } from '..'
 import { disableSysProxy } from '../sys/sysproxy'
+import { t } from '../utils/i18n'
 
 let downloadCancelToken: CancelTokenSource | null = null
 
@@ -59,7 +60,7 @@ export async function downloadAndInstallUpdate(version: string): Promise<void> {
     file = file.replace('-setup.exe', '-portable.7z')
   }
   if (!file) {
-    throw new Error('不支持自动更新，请手动下载更新')
+    throw new Error(t('error.autoUpdateNotSupported'))
   }
   downloadCancelToken = axios.CancelToken.source()
 
@@ -86,7 +87,7 @@ export async function downloadAndInstallUpdate(version: string): Promise<void> {
     const assets: Array<{ name: string; digest?: string }> = releaseRes.data.assets || []
     const matchedAsset = assets.find((a) => a.name === file)
     if (!matchedAsset || !matchedAsset.digest) {
-      throw new Error(`无法从 GitHub Release 中找到 "${file}" 对应的 SHA-256 信息`)
+      throw new Error(`${t('error.sha256NotFound')}: "${file}"`)
     }
     const expectedHash = matchedAsset.digest.split(':')[1].toLowerCase()
 
@@ -123,7 +124,7 @@ export async function downloadAndInstallUpdate(version: string): Promise<void> {
     const localHash = hashSum.digest('hex').toLowerCase()
     if (localHash !== expectedHash) {
       await rm(path.join(dataDir(), file), { force: true })
-      throw new Error(`SHA-256 校验失败：本地哈希 ${localHash} 与预期 ${expectedHash} 不符`)
+      throw new Error(`${t('error.sha256VerificationFailed')}：${t('error.localHash')} ${localHash} ${t('error.expectedHash')} ${expectedHash} ${t('error.mismatch')}`)
     }
 
     mainWindow?.webContents.send('update-status', {
@@ -173,14 +174,14 @@ export async function downloadAndInstallUpdate(version: string): Promise<void> {
       mainWindow?.webContents.send('update-status', {
         downloading: false,
         progress: 0,
-        error: '下载已取消'
+        error: t('error.downloadCancelled')
       })
       return
     } else {
       mainWindow?.webContents.send('update-status', {
         downloading: false,
         progress: 0,
-        error: e instanceof Error ? e.message : '下载失败'
+        error: e instanceof Error ? e.message : t('error.downloadFailed')
       })
     }
     throw e
@@ -191,7 +192,7 @@ export async function downloadAndInstallUpdate(version: string): Promise<void> {
 
 export async function cancelUpdate(): Promise<void> {
   if (downloadCancelToken) {
-    downloadCancelToken.cancel('用户取消下载')
+    downloadCancelToken.cancel(t('error.userCancelledDownload'))
     downloadCancelToken = null
   }
 }

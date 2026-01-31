@@ -1,4 +1,5 @@
 import { safeStorage } from 'electron'
+import { t } from './i18n'
 
 const ENCRYPTED_PREFIX = 'enc:'
 
@@ -25,7 +26,7 @@ export function decryptString(encryptedText: string): string {
   if (!encryptedText) return ''
 
   if (!encryptedText.startsWith(ENCRYPTED_PREFIX)) {
-    throw new Error('无效的加密格式')
+    throw new Error(t('error.invalidEncryptionFormat'))
   }
 
   if (!safeStorage.isEncryptionAvailable()) {

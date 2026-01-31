@@ -58,7 +58,7 @@ function isUserCancelledError(error: unknown): boolean {
   }
   const errorMsg = error instanceof Error ? error.message : String(error)
   return (
-    errorMsg.includes(t('tray.userCancelledCheck')) || errorMsg.includes('用户已取消') ||
+    errorMsg.includes(t('tray.userCancelledCheck')) ||
     errorMsg.includes('User canceled') ||
     errorMsg.includes('(-128)') ||
     errorMsg.includes('user cancelled') ||

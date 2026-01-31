@@ -1,4 +1,5 @@
 import crypto from 'crypto'
+import { t } from '../utils/i18n'
 
 export interface KeyPair {
   publicKey: string
@@ -38,7 +39,7 @@ export class KeyManager {
 
   setKeyPair(publicKey: string, privateKey: string): void {
     if (!publicKey || !privateKey || publicKey.trim() === '' || privateKey.trim() === '') {
-      throw new Error('密钥不能为空')
+      throw new Error(t('error.keyCannotBeEmpty'))
     }
     this.publicKey = publicKey
     this.privateKey = privateKey
@@ -46,21 +47,21 @@ export class KeyManager {
 
   getPublicKey(): string {
     if (!this.publicKey) {
-      throw new Error('公钥未初始化')
+      throw new Error(t('error.publicKeyNotInitialized'))
     }
     return this.publicKey
   }
 
   getPrivateKey(): string {
     if (!this.privateKey) {
-      throw new Error('私钥未初始化')
+      throw new Error(t('error.privateKeyNotInitialized'))
     }
     return this.privateKey
   }
 
   signData(data: string): string {
     if (!this.privateKey) {
-      throw new Error('私钥未初始化')
+      throw new Error(t('error.privateKeyNotInitialized'))
     }
 
     const keyObject = crypto.createPrivateKey({

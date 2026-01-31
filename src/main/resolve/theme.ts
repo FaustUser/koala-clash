@@ -1,5 +1,6 @@
 import { copyFile, readdir, readFile, writeFile } from 'fs/promises'
 import { themesDir } from '../utils/dirs'
+import { t } from '../utils/i18n'
 import path from 'path'
 import axios from 'axios'
 import AdmZip from 'adm-zip'
@@ -28,7 +29,7 @@ export async function resolveThemes(): Promise<{ key: string; label: string }[]>
   if (themes.find((theme) => theme.key === 'default.css')) {
     return themes
   } else {
-    return [{ key: 'default.css', label: '默认' }, ...themes]
+    return [{ key: 'default.css', label: t('ui.defaultTheme') }, ...themes]
   }
 }
 

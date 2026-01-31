@@ -11,6 +11,7 @@ import { nativeImage } from 'electron'
 import express from 'express'
 import axios from 'axios'
 import AdmZip from 'adm-zip'
+import { t } from '../utils/i18n'
 
 export let pacPort: number
 export let subStorePort: number
@@ -205,7 +206,7 @@ export async function downloadSubStore(): Promise<void> {
     // 清理临时目录
     await rm(tempDir, { recursive: true })
   } catch (error) {
-    console.error('下载 Sub-Store 文件失败：', error)
+    console.error(t('error.subStoreDownloadFailed'), error)
     throw error
   }
 }

@@ -1,16 +1,7 @@
-import { electronApp, optimizer, is } from '@electron-toolkit/utils'
+import { electronApp, is, optimizer } from '@electron-toolkit/utils'
 import { registerIpcMainHandlers } from './utils/ipc'
 import windowStateKeeper from 'electron-window-state'
-import {
-  app,
-  shell,
-  BrowserWindow,
-  Menu,
-  dialog,
-  Notification,
-  powerMonitor,
-  ipcMain
-} from 'electron'
+import { app, BrowserWindow, dialog, ipcMain, Menu, Notification, powerMonitor, shell } from 'electron'
 import { addOverrideItem, addProfileItem, getAppConfig, patchControledMihomoConfig } from './config'
 import { quitWithoutCore, startCore, stopCore } from './core/manager'
 import { triggerSysProxy } from './sys/sysproxy'
@@ -18,19 +9,19 @@ import icon from '../../resources/icon.png?asset'
 import { createTray } from './resolve/tray'
 import { createApplicationMenu } from './resolve/menu'
 import { init } from './utils/init'
-import { join } from 'path'
+import path, { join } from 'path'
 import { initShortcut } from './resolve/shortcut'
 import { execSync, spawn } from 'child_process'
 import { createElevateTaskSync } from './sys/misc'
 import { initProfileUpdater } from './core/profileUpdater'
 import { existsSync, writeFileSync } from 'fs'
 import { exePath, taskDir } from './utils/dirs'
-import path from 'path'
 import { startMonitor } from './resolve/trafficMonitor'
 import { showFloatingWindow } from './resolve/floatingWindow'
 import iconv from 'iconv-lite'
 import { getAppConfigSync } from './config/app'
 import { getUserAgent } from './utils/userAgent'
+import { t } from './utils/i18n'
 
 let quitTimeout: NodeJS.Timeout | null = null
 export let mainWindow: BrowserWindow | null = null
@@ -100,8 +91,8 @@ if (
         // ignore
       }
       dialog.showErrorBox(
-        '首次启动请以管理员权限运行',
-        `首次启动请以管理员权限运行\n${createErrorStr}\n${eStr}`
+        t('dialog.firstRunAdmin'),
+        `${t('dialog.firstRunAdmin')}\n${createErrorStr}\n${eStr}`
       )
     } finally {
       app.exit()
@@ -274,7 +265,7 @@ app.whenReady().then(async () => {
   try {
     await initPromise
   } catch (e) {
-    dialog.showErrorBox('应用初始化失败', `${e}`)
+    dialog.showErrorBox(t('dialog.appInitFailed'), `${e}`)
     app.quit()
   }
 
@@ -300,7 +291,7 @@ app.whenReady().then(async () => {
       })
       coreStarted = true
     } catch (e) {
-      dialog.showErrorBox('内核启动出错', `${e}`)
+      dialog.showErrorBox(t('dialog.coreStartError'), `${e}`)
     }
   })()
 
@@ -349,7 +340,7 @@ async function handleDeepLink(url: string): Promise<void> {
         const profileUrl = urlObj.searchParams.get('url')
         const profileName = urlObj.searchParams.get('name')
         if (!profileUrl) {
-          throw new Error('缺少参数 url')
+          throw new Error(t('error.missingUrlParam'))
         }
 
         const confirmed = await showProfileInstallConfirm(profileUrl, profileName)
@@ -361,10 +352,10 @@ async function handleDeepLink(url: string): Promise<void> {
             url: profileUrl
           })
           mainWindow?.webContents.send('profileConfigUpdated')
-          new Notification({ title: '订阅导入成功' }).show()
+          new Notification({ title: t('notification.profileImportSuccess') }).show()
         }
       } catch (e) {
-        dialog.showErrorBox('订阅导入失败', `${url}\n${e}`)
+        dialog.showErrorBox(t('dialog.profileImportFailed'), `${url}\n${e}`)
       }
       break
     }
@@ -373,7 +364,7 @@ async function handleDeepLink(url: string): Promise<void> {
         const urlParam = urlObj.searchParams.get('url')
         const profileName = urlObj.searchParams.get('name')
         if (!urlParam) {
-          throw new Error('缺少参数 url')
+          throw new Error(t('error.missingUrlParam'))
         }
 
         const confirmed = await showOverrideInstallConfirm(urlParam, profileName)
@@ -388,10 +379,10 @@ async function handleDeepLink(url: string): Promise<void> {
             ext: url.pathname.endsWith('.js') ? 'js' : 'yaml'
           })
           mainWindow?.webContents.send('overrideConfigUpdated')
-          new Notification({ title: '覆写导入成功' }).show()
+          new Notification({ title: t('notification.overrideImportSuccess') }).show()
         }
       } catch (e) {
-        dialog.showErrorBox('覆写导入失败', `${url}\n${e}`)
+        dialog.showErrorBox(t('dialog.overrideImportFailed'), `${url}\n${e}`)
       }
       break
     }
@@ -440,8 +431,7 @@ async function showProfileInstallConfirm(url: string, name?: string | null): Pro
 
 function parseFilename(str: string): string {
   if (str.match(/filename\*=.*''/)) {
-    const filename = decodeURIComponent(str.split(/filename\*=.*''/)[1])
-    return filename
+    return decodeURIComponent(str.split(/filename\*=.*''/)[1])
   } else {
     const filename = str.split('filename=')[1]
     return filename?.replace(/"/g, '') || ''

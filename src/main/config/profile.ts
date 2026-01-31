@@ -1,13 +1,7 @@
 import { getControledMihomoConfig } from './controledMihomo'
-import {
-  mihomoProfileWorkDir,
-  mihomoWorkDir,
-  profileConfigPath,
-  profilePath,
-  rulePath
-} from '../utils/dirs'
+import { mihomoProfileWorkDir, mihomoWorkDir, profileConfigPath, profilePath, rulePath } from '../utils/dirs'
 import { addProfileUpdater, delProfileUpdater } from '../core/profileUpdater'
-import { readFile, writeFile, rm, mkdir } from 'fs/promises'
+import { mkdir, readFile, rm, writeFile } from 'fs/promises'
 import { restartCore } from '../core/manager'
 import { getAppConfig } from './app'
 import { existsSync } from 'fs'
@@ -23,6 +17,7 @@ import { subStorePort } from '../resolve/server'
 import { dirname, join } from 'path'
 import { deepMerge } from '../utils/merge'
 import { getUserAgent } from '../utils/userAgent'
+import { t } from '../utils/i18n'
 
 let profileConfig: ProfileConfig // profile.yaml
 
@@ -46,7 +41,7 @@ export async function setProfileConfig(config: ProfileConfig): Promise<void> {
 
 export async function getProfileItem(id: string | undefined): Promise<ProfileItem | undefined> {
   const { items } = await getProfileConfig()
-  if (!id || id === 'default') return { id: 'default', type: 'local', name: '空白订阅' }
+  if (!id || id === 'default') return { id: 'default', type: 'local', name: t('ui.blankSubscription') }
   return items.find((item) => item.id === id)
 }
 
@@ -119,7 +114,7 @@ export async function removeProfileItem(id: string): Promise<void> {
 
 export async function getCurrentProfileItem(): Promise<ProfileItem> {
   const { current } = await getProfileConfig()
-  return (await getProfileItem(current)) || { id: 'default', type: 'local', name: '空白订阅' }
+  return (await getProfileItem(current)) || { id: 'default', type: 'local', name: t('ui.blankSubscription') }
 }
 
 export async function createProfile(item: Partial<ProfileItem>): Promise<ProfileItem> {
@@ -167,7 +162,7 @@ export async function createProfile(item: Partial<ProfileItem>): Promise<Profile
             const expected = item.fingerprint.replace(/:/g, '').toUpperCase()
             const verify = (s: tls.TLSSocket) => {
               if (getCertFingerprint(s.getPeerCertificate()) !== expected)
-                s.destroy(new Error('证书指纹不匹配'))
+                s.destroy(new Error(t('error.certFingerprintMismatch')))
             }
 
             if (newItem.useProxy && mixedPort != 0) {
@@ -184,7 +179,7 @@ export async function createProfile(item: Partial<ProfileItem>): Promise<Profile
 
                 req.on('connect', (res, sock, head) => {
                   if (res.statusCode !== 200) {
-                    cb?.(new Error(`代理连接失败，状态码：${res.statusCode}`), null!)
+                    cb?.(new Error(`${t('error.proxyConnectionFailed')}：${res.statusCode}`), null!)
                     return
                   }
                   if (head.length > 0) sock.unshift(head)
@@ -224,15 +219,15 @@ export async function createProfile(item: Partial<ProfileItem>): Promise<Profile
         } catch (error) {
           if (axios.isAxiosError(error)) {
             if (error.code === 'ECONNRESET' || error.code === 'ECONNABORTED') {
-              throw new Error(`网络连接被重置或超时：${item.url}`)
+              throw new Error(`${t('error.networkResetOrTimeout')}：${item.url}`)
             } else if (error.code === 'CERT_HAS_EXPIRED') {
-              throw new Error(`服务器证书已过期：${item.url}`)
+              throw new Error(`${t('error.serverCertExpired')}：${item.url}`)
             } else if (error.code === 'UNABLE_TO_VERIFY_LEAF_SIGNATURE') {
-              throw new Error(`无法验证服务器证书：${item.url}`)
+              throw new Error(`${t('error.unableToVerifyCert')}：${item.url}`)
             } else if (error.message.includes('Certificate verification failed')) {
-              throw new Error(`证书验证失败：${item.url}`)
+              throw new Error(`${t('error.certVerificationFailed')}：${item.url}`)
             } else {
-              throw new Error(`请求失败：${error.message}`)
+              throw new Error(`${t('error.requestFailed')}：${error.message}`)
             }
           }
           throw error
@@ -272,7 +267,7 @@ export async function createProfile(item: Partial<ProfileItem>): Promise<Profile
         try {
           parseYaml<MihomoConfig>(data)
         } catch (error) {
-          throw new Error('订阅格式错误，无法解析为有效的配置文件\n' + (error as Error).message)
+          throw new Error(t('error.subscriptionFormatError') + '\n' + (error as Error).message)
         }
       }
       await setProfileStr(id, data)
@@ -324,11 +319,9 @@ export async function getProfile(id: string | undefined): Promise<MihomoConfig> 
 // attachment;filename=xxx.yaml; filename*=UTF-8''%xx%xx%xx
 function parseFilename(str: string): string {
   if (str.match(/filename\*=.*''/)) {
-    const filename = decodeURIComponent(str.split(/filename\*=.*''/)[1])
-    return filename
+    return decodeURIComponent(str.split(/filename\*=.*''/)[1])
   } else {
-    const filename = str.split('filename=')[1]
-    return filename
+    return str.split('filename=')[1]
   }
 }
 

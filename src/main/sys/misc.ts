@@ -14,10 +14,11 @@ import {
   taskDir
 } from '../utils/dirs'
 import { copyFileSync, writeFileSync } from 'fs'
+import { t } from '../utils/i18n'
 
 export function getFilePath(ext: string[]): string[] | undefined {
   return dialog.showOpenDialogSync({
-    title: '选择订阅文件',
+    title: t('dialog.selectSubscriptionFile'),
     filters: [{ name: `${ext} file`, extensions: ext }],
     properties: ['openFile']
   })

@@ -1,6 +1,7 @@
 import axios, { AxiosInstance } from 'axios'
 import { KeyManager } from './key'
 import { serviceIpcPath } from '../utils/dirs'
+import { t } from '../utils/i18n'
 
 let serviceAxios: AxiosInstance | null = null
 let keyManager: KeyManager | null = null
@@ -42,14 +43,14 @@ export const initServiceAPI = (km: KeyManager): void => {
 
 export const getServiceAxios = (): AxiosInstance => {
   if (!serviceAxios) {
-    throw new Error('服务 API 未初始化')
+    throw new Error(t('error.serviceApiNotInitialized'))
   }
   return serviceAxios
 }
 
 export const getKeyManager = (): KeyManager => {
   if (!keyManager) {
-    throw new Error('密钥管理器未初始化')
+    throw new Error(t('error.keyManagerNotInitialized'))
   }
   return keyManager
 }

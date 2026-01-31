@@ -1,5 +1,6 @@
 import { execFile } from 'child_process'
 import { promisify } from 'util'
+import { t } from './i18n'
 
 const execFilePromise = promisify(execFile)
 
@@ -46,7 +47,7 @@ export async function execWithElevation(command: string, args: string[]): Promis
       }
     } catch (error) {
       throw new Error(
-        `Windows 提权执行失败：${error instanceof Error ? error.message : String(error)}`
+        `${t('error.windowsElevationFailed')}：${error instanceof Error ? error.message : String(error)}`
       )
     }
   } else if (process.platform === 'linux') {
@@ -54,7 +55,7 @@ export async function execWithElevation(command: string, args: string[]): Promis
       await execFilePromise('pkexec', [command, ...args])
     } catch (error) {
       throw new Error(
-        `Linux 提权执行失败：${error instanceof Error ? error.message : String(error)}`
+        `${t('error.linuxElevationFailed')}：${error instanceof Error ? error.message : String(error)}`
       )
     }
   } else if (process.platform === 'darwin') {
@@ -66,7 +67,7 @@ export async function execWithElevation(command: string, args: string[]): Promis
       ])
     } catch (error) {
       throw new Error(
-        `macOS 提权执行失败：${error instanceof Error ? error.message : String(error)}`
+        `${t('error.macosElevationFailed')}：${error instanceof Error ? error.message : String(error)}`
       )
     }
   }
