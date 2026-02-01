@@ -703,6 +703,29 @@ export default {
   profile: {
     editInfo: 'Edit Info',
     editFile: 'Edit File',
+    editRule: 'Edit Rules',
+    editRules: {
+      title: 'Edit Rules',
+      ruleType: 'Rule Type',
+      payload: 'Rule Payload',
+      payloadPlaceholder: 'Enter payload',
+      proxy: 'Proxy',
+      proxyPlaceholder: 'Select or enter proxy',
+      addRule: 'Add Rule',
+      addRulePrepend: 'Add Rule to Beginning',
+      addRuleAppend: 'Add Rule to End',
+      instructions: 'Instructions',
+      instructions1: '1. Select a rule type from the dropdown',
+      instructions2: '2. Enter the payload',
+      instructions3: '3. Select a proxy and click Add Rule',
+      currentRules: 'Current Rules',
+      searchPlaceholder: 'Search rules...',
+      noRules: 'No rules',
+      noMatchingRules: 'No matching rules',
+      saveError: 'Error saving rules',
+      noResolve: 'Skip DNS resolution (no-resolve)',
+      src: 'Match source IP (src)',
+    },
     openFile: 'Open File',
     delete: 'Delete',
     confirmDeleteProfile: 'Confirm Delete Profile?',
@@ -785,11 +808,6 @@ export default {
     refreshIntervalUnit: 'ms'
   },
 
-  editor: {
-    insertAtStart: '"+" at the beginning means inserting content before the original array',
-    appendAtEnd: '"+" at the end means appending content after the original array',
-    forceOverride: '"!" at the end means forcing override of the item without recursive merge'
-  },
 
   validate: {
     shouldIncludePort: 'Should include port number',
@@ -885,7 +903,7 @@ export default {
     done: 'Done',
     welcome: 'Welcome to Sparkle',
     welcomeDesc:
-      'This is an interactive tutorial to help you quickly get familiar with this app. Click \"Next\" to continue.',
+      'This is an interactive tutorial to help you quickly get familiar with this app. Click "Next" to continue.',
     navbar: 'Navigation Bar',
     navbarDesc:
       'The navigation bar on the left contains all the features of this app. The top part shows quick toggle switches, and the bottom part shows detailed settings for each feature.',
@@ -913,7 +931,7 @@ export default {
       'Virtual network interface (TUN mode) can handle all network traffic including UDP. Click the card to enter settings.',
     tunSettings: 'Virtual Network Interface Settings',
     tunSettingsDesc:
-      'Virtual network interface mode requires authorization. If you haven\'t set up authorization yet, please set it up first in \"Core Settings\".',
+      'Virtual network interface mode requires authorization. If you haven\'t set up authorization yet, please set it up first in "Core Settings".',
     override: 'Overrides',
     overrideDesc:
       'Overrides allow you to modify the runtime configuration without changing the original subscription content.',

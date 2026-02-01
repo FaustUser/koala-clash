@@ -121,6 +121,7 @@ export default {
   },
 
   sider: {
+    home: '首页',
     proxyGroup: '代理组',
     profileManagement: '订阅管理',
     rules: '规则',
@@ -727,6 +728,29 @@ export default {
   profile: {
     editInfo: '编辑信息',
     editFile: '编辑文件',
+    editRule: '编辑规则',
+    editRules: {
+      title: '编辑规则',
+      ruleType: '规则类型',
+      payload: '规则内容',
+      payloadPlaceholder: '输入载荷',
+      proxy: '代理',
+      proxyPlaceholder: '选择或输入代理',
+      addRule: '添加规则',
+      addRulePrepend: '添加规则到开头',
+      addRuleAppend: '添加规则到末尾',
+      instructions: '说明',
+      instructions1: '1. 从下拉菜单中选择规则类型',
+      instructions2: '2. 输入载荷',
+      instructions3: '3. 选择代理并点击添加规则',
+      currentRules: '当前规则',
+      searchPlaceholder: '搜索规则...',
+      noRules: '没有规则',
+      noMatchingRules: '没有匹配的规则',
+      saveError: '保存规则失败',
+      noResolve: '跳过 DNS 解析 (no-resolve)',
+      src: '匹配来源 IP (src)',
+    },
     openFile: '打开文件',
     delete: '删除',
     confirmDeleteProfile: '确认删除配置？',
@@ -807,11 +831,6 @@ export default {
     refreshIntervalUnit: 'ms'
   },
 
-  editor: {
-    insertAtStart: '"+"开头表示将内容插入到原数组前面',
-    appendAtEnd: '"+"结尾表示将内容追加到原数组后面',
-    forceOverride: '"!"结尾表示强制覆盖该项而不进行递归合并'
-  },
 
   validate: {
     shouldIncludePort: '应包含端口号',

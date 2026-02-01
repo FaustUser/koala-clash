@@ -175,7 +175,6 @@ export default {
       uploadSpeed: 'Скорость загрузки',
       downloadSpeed: 'Скорость скачивания',
       time: 'Время',
-      processName: 'Имя процесса'
       processName: 'Имя процесса',
       switchToTable: 'Переключить на табличный вид',
       switchToList: 'Переключить на список',
@@ -688,6 +687,29 @@ export default {
   profile: {
     editInfo: 'Редактировать информацию',
     editFile: 'Редактировать файл',
+    editRule: 'Редактировать правила',
+    editRules: {
+      title: 'Редактирование правил',
+      ruleType: 'Тип правила',
+      payload: 'Содержимое правила',
+      payloadPlaceholder: "Введите полезную нагрузку",
+      proxy: "Прокси",
+      proxyPlaceholder: "Выберите или введите прокси",
+      addRule: "Добавить правило",
+      addRulePrepend: "Добавить правило в начало",
+      addRuleAppend: "Добавить правило в конец",
+      instructions: "Инструкции",
+      instructions1: "1. Выберите тип правила из выпадающего меню",
+      instructions2: "2. Введите полезную нагрузку",
+      instructions3: "3. Выберите прокси и нажмите Добавить правило",
+      currentRules: "Текущие правила",
+      searchPlaceholder: "Поиск правил...",
+      noRules: "Нет правил",
+      noMatchingRules: "Нет совпадающих правил",
+      saveError: "Ошибка сохранения правил",
+      noResolve: "Пропустить DNS-резолвинг (no-resolve)",
+      src: "Сопоставить исходный IP (src)",
+    },
     openFile: 'Открыть файл',
     delete: 'Удалить',
     confirmDeleteProfile: 'Удалить профиль?',
@@ -770,11 +792,6 @@ export default {
     refreshIntervalUnit: 'мс'
   },
 
-  editor: {
-    insertAtStart: '"+" в начале означает вставку содержимого перед исходным массивом',
-    appendAtEnd: '"+" в конце означает добавление содержимого после исходного массива',
-    forceOverride: '"!" в конце означает принудительное переопределение элемента без рекурсивного слияния'
-  },
 
   validate: {
     shouldIncludePort: 'Должен включать номер порта',
