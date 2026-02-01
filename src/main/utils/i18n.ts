@@ -141,7 +141,6 @@ const zhCN: LocaleTranslations = {
     downloadFailed: '下载失败',
     userCancelledDownload: '用户取消下载',
     scriptReturnMustBeObject: '脚本返回值必须是对象',
-    subStoreDownloadFailed: '下载 Sub-Store 文件失败'
   },
   ui: {
     defaultTheme: '默认',
@@ -281,7 +280,6 @@ const enUS: LocaleTranslations = {
     downloadFailed: 'Download failed',
     userCancelledDownload: 'User cancelled download',
     scriptReturnMustBeObject: 'Script return value must be an object',
-    subStoreDownloadFailed: 'Failed to download Sub-Store files'
   },
   ui: {
     defaultTheme: 'Default',
@@ -424,7 +422,6 @@ const ruRU: LocaleTranslations = {
     downloadFailed: 'Ошибка загрузки',
     userCancelledDownload: 'Пользователь отменил загрузку',
     scriptReturnMustBeObject: 'Возвращаемое значение скрипта должно быть объектом',
-    subStoreDownloadFailed: 'Не удалось загрузить файлы Sub-Store'
   },
   ui: {
     defaultTheme: 'По умолчанию',
@@ -447,10 +444,6 @@ export function setLanguage(lang: string): void {
   if (locales[lang]) {
     currentLanguage = lang
   }
-}
-
-export function getLanguage(): string {
-  return currentLanguage
 }
 
 export function t(key: string): string {

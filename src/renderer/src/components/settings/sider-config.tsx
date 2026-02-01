@@ -22,7 +22,6 @@ const SiderConfig: React.FC = () => {
     dnsCardStatus: t('settings.sider.dnsCardStatus'),
     sniffCardStatus: t('settings.sider.sniffCardStatus'),
     logCardStatus: t('settings.sider.logCardStatus'),
-    substoreCardStatus: t('settings.sider.substoreCardStatus')
   }
   const {
     sysproxyCardStatus = 'col-span-1',
@@ -36,8 +35,7 @@ const SiderConfig: React.FC = () => {
     mihomoCoreCardStatus = 'col-span-2',
     dnsCardStatus = 'col-span-1',
     sniffCardStatus = 'col-span-1',
-    logCardStatus = 'col-span-1',
-    substoreCardStatus = 'col-span-1'
+    logCardStatus = 'col-span-1'
   } = appConfig || {}
 
   const cardStatus = {
@@ -52,8 +50,7 @@ const SiderConfig: React.FC = () => {
     mihomoCoreCardStatus,
     dnsCardStatus,
     sniffCardStatus,
-    logCardStatus,
-    substoreCardStatus
+    logCardStatus
   }
 
   return (

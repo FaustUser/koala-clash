@@ -12,7 +12,6 @@ import Tun from '@renderer/pages/tun'
 import Resources from '@renderer/pages/resources'
 import DNS from '@renderer/pages/dns'
 import Sniffer from '@renderer/pages/sniffer'
-import SubStore from '@renderer/pages/substore'
 import Home from '@renderer/pages/home'
 const routes = [
   {
@@ -66,10 +65,6 @@ const routes = [
   {
     path: '/settings',
     element: <Settings />
-  },
-  {
-    path: '/substore',
-    element: <SubStore />
   },
   {
     path: '/',

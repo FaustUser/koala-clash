@@ -12,7 +12,6 @@ import {
   profilesDir,
   resourcesFilesDir,
   rulesDir,
-  subStoreDir,
   themesDir
 } from './dirs'
 import {
@@ -27,9 +26,7 @@ import { mkdir, writeFile, cp, rm, readdir } from 'fs/promises'
 import { existsSync } from 'fs'
 import path from 'path'
 import {
-  startPacServer,
-  startSubStoreBackendServer,
-  startSubStoreFrontendServer
+  startPacServer
 } from '../resolve/server'
 import { triggerSysProxy } from '../sys/sysproxy'
 import {
@@ -55,7 +52,6 @@ async function initDirs(): Promise<void> {
     mihomoWorkDir(),
     logDir(),
     mihomoTestDir(),
-    subStoreDir()
   ]
   await Promise.all(
     dirs.map(async (dir) => {
@@ -218,8 +214,6 @@ export async function init(): Promise<void> {
   const { sysProxy, onlyActiveDevice = false, networkDetection = false } = appConfig
 
   const initTasks: Promise<void>[] = [
-    startSubStoreFrontendServer(),
-    startSubStoreBackendServer(),
     startSSIDCheck()
   ]
 

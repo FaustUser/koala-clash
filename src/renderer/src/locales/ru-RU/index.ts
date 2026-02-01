@@ -149,7 +149,6 @@ export default {
       title: 'Управление профилями',
       updateAll: 'Обновить все профили',
       profileSettings: 'Настройки профиля',
-      visitSubStore: 'Посетить Sub-Store',
       openLocalConfig: 'Открыть локальный конфиг',
       newLocalConfig: 'Новый локальный конфиг',
       importRemoteConfig: 'Импорт удаленного конфига',
@@ -324,14 +323,6 @@ export default {
       serviceStartSuccess: 'Запуск службы успешен',
       serviceRestartSuccess: 'Перезапуск службы успешен',
       serviceStopSuccess: 'Остановка службы успешна'
-    },
-    substore: {
-      title: 'Sub-Store',
-      checkUpdate: 'Проверить обновления',
-      openInBrowser: 'Открыть в браузере',
-      updating: 'Sub-Store обновляется...',
-      updateComplete: 'Обновление Sub-Store завершено',
-      updateFailed: 'Ошибка обновления Sub-Store: '
     }
   },
 
@@ -518,26 +509,9 @@ export default {
       dnsCardStatus: 'DNS',
       sniffCardStatus: 'Сниффинг доменов',
       logCardStatus: 'Логи',
-      substoreCardStatus: 'Sub-Store',
       large: 'Большой',
       small: 'Малый',
       hidden: 'Скрыто'
-    },
-    substore: {
-      title: 'Настройка Sub-Store',
-      settingsTitle: 'Настройки Sub-Store',
-      enableSubStore: 'Включить Sub-Store',
-      allowLanConnection: 'Разрешить подключение из локальной сети',
-      useCustomBackend: 'Использовать собственный бэкенд Sub-Store',
-      customBackendAddress: 'Адрес собственного бэкенда Sub-Store',
-      backendAddressPlaceholder: 'Должен содержать протокол',
-      enableProxyForRequests: 'Включить прокси для всех запросов Sub-Store',
-      scheduledSync: 'Запланированная синхронизация подписок/файлов',
-      cronExpressionPlaceholder: 'Cron-выражение',
-      scheduledRestore: 'Запланированное восстановление конфигурации',
-      scheduledBackup: 'Запланированное резервное копирование конфигурации',
-      restartToApply: 'Перезапустите приложение для применения',
-      invalidCronExpression: 'Недействительное Cron-выражение'
     }
   },
 
@@ -896,7 +870,6 @@ export default {
     profileManagementDesc: 'Карточка управления профилями отображает информацию о текущей подписке. Нажмите для входа на страницу управления профилями. Щелчок правой кнопкой по карточке позволяет быстро переключать профили.',
     profileImport: 'Импорт подписки',
     profileImportDesc: 'Вставьте сюда ссылку на подписку и нажмите «Импорт».',
-    subStoreDesc: 'Sub-Store — мощный инструмент управления подписками, который поможет вам лучше управлять и редактировать подписки.',
     localProfile: 'Создать локальный профиль',
     localProfileDesc: 'Создайте локальный профиль, импортировав локальный файл конфигурации.',
     sysProxy: 'Системный прокси',

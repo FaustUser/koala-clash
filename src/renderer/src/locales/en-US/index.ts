@@ -151,7 +151,6 @@ export default {
       title: 'Profile Management',
       updateAll: 'Update all profiles',
       profileSettings: 'Profile settings',
-      visitSubStore: 'Visit Sub-Store',
       openLocalConfig: 'Open local config',
       newLocalConfig: 'New local config',
       importRemoteConfig: 'Import remote config',
@@ -331,14 +330,6 @@ export default {
       serviceStartSuccess: 'Service start successful',
       serviceRestartSuccess: 'Service restart successful',
       serviceStopSuccess: 'Service stop successful'
-    },
-    substore: {
-      title: 'Sub-Store',
-      checkUpdate: 'Check for updates',
-      openInBrowser: 'Open in browser',
-      updating: 'Sub-Store updating...',
-      updateComplete: 'Sub-Store update completed',
-      updateFailed: 'Sub-Store update failed: '
     }
   },
 
@@ -533,26 +524,9 @@ export default {
       dnsCardStatus: 'DNS',
       sniffCardStatus: 'Domain Sniffing',
       logCardStatus: 'Logs',
-      substoreCardStatus: 'Sub-Store',
       large: 'Large',
       small: 'Small',
       hidden: 'Hidden'
-    },
-    substore: {
-      title: 'Sub-Store Configuration',
-      settingsTitle: 'Sub-Store Settings',
-      enableSubStore: 'Enable Sub-Store',
-      allowLanConnection: 'Allow LAN Connection',
-      useCustomBackend: 'Use Custom Sub-Store Backend',
-      customBackendAddress: 'Custom Sub-Store Backend Address',
-      backendAddressPlaceholder: 'Must include protocol prefix',
-      enableProxyForRequests: 'Enable Proxy for All Sub-Store Requests',
-      scheduledSync: 'Scheduled Subscription/File Sync',
-      cronExpressionPlaceholder: 'Cron Expression',
-      scheduledRestore: 'Scheduled Configuration Restore',
-      scheduledBackup: 'Scheduled Configuration Backup',
-      restartToApply: 'Restart to Apply',
-      invalidCronExpression: 'Invalid Cron Expression'
     }
   },
 
@@ -917,8 +891,6 @@ export default {
       'The profile management card displays the current subscription information. Click to enter the profile management page. Right-click the card to quickly switch profiles.',
     profileImport: 'Import Subscription',
     profileImportDesc: 'Paste your subscription link here and click import.',
-    subStoreDesc:
-      'Sub-Store is a powerful subscription management tool that can help you better manage and edit subscriptions.',
     localProfile: 'Create Local Profile',
     localProfileDesc: 'Create a local profile by importing a local configuration file.',
     sysProxy: 'System Proxy',

@@ -95,8 +95,6 @@ export default {
     profileImport: '订阅导入',
     profileImportDesc:
       'Sparkle 支持多种订阅导入方式，在此输入订阅链接，点击导入即可导入您的订阅配置，如果您的订阅需要代理才能更新，请勾选"代理"再点击导入，当然这需要已经有一个可以正常使用的订阅才可以',
-    subStoreDesc:
-      'Sparkle 深度集成了 Sub-Store，您可以点击该按钮进入 Sub-Store 或直接导入您通过 Sub-Store 管理的订阅，Sparkle 默认使用内置的 Sub-Store 后端，如果您有自建的 Sub-Store 后端，可以在设置页面中配置，如果您不使用 Sub-Store 也可以在设置页面中关闭',
     localProfile: '本地订阅',
     localProfileDesc: '点击"+"可以选择本地文件进行导入或者直接新建空白配置进行编辑',
     sysProxy: '系统代理',
@@ -194,7 +192,6 @@ export default {
       title: '订阅管理',
       updateAll: '更新全部订阅',
       profileSettings: '订阅设置',
-      visitSubStore: '访问 Sub-Store',
       openLocalConfig: '打开本地配置',
       newLocalConfig: '新建本地配置',
       importRemoteConfig: '导入远程配置',
@@ -355,7 +352,8 @@ export default {
       confirmUseTaskSchedule: '确认使用任务计划？',
       confirmUseTaskScheduleDesc: '确认后将退出应用，请手动使用管理员运行一次程序',
       confirmCancelTaskSchedule: '确认取消任务计划？',
-      confirmCancelTaskScheduleDesc: '取消任务计划后，虚拟网卡等功能可能无法正常工作。确定要继续吗？',
+      confirmCancelTaskScheduleDesc:
+        '取消任务计划后，虚拟网卡等功能可能无法正常工作。确定要继续吗？',
       noRestartCancel: '不重启取消',
       confirmRevoke: '确认撤销',
       cancelAndRestart: '取消并重启',
@@ -368,14 +366,6 @@ export default {
       serviceStartSuccess: '服务启动成功',
       serviceRestartSuccess: '服务重启成功',
       serviceStopSuccess: '服务停止成功'
-    },
-    substore: {
-      title: 'Sub-Store',
-      checkUpdate: '检查更新',
-      openInBrowser: '在浏览器中打开',
-      updating: 'Sub-Store 更新中...',
-      updateComplete: 'Sub-Store 更新完成',
-      updateFailed: 'Sub-Store 更新失败：'
     }
   },
 
@@ -504,7 +494,8 @@ export default {
       takeOverDNS: '接管 DNS 设置',
       takeOverSniffer: '接管域名嗅探设置',
       stopCoreOnDisconnect: '断网时停止内核',
-      stopCoreOnDisconnectHelp: '开启后，应用会在检测到网络断开时自动停止内核，并在网络恢复后自动重启内核',
+      stopCoreOnDisconnectHelp:
+        '开启后，应用会在检测到网络断开时自动停止内核，并在网络恢复后自动重启内核',
       disconnectDetectInterval: '断网检测间隔',
       bypassDetectInterfaces: '绕过检测的接口',
       directOnSpecificWifi: '在特定的 WiFi SSID 下直连'
@@ -562,26 +553,9 @@ export default {
       dnsCardStatus: 'DNS',
       sniffCardStatus: '域名嗅探',
       logCardStatus: '日志',
-      substoreCardStatus: 'Sub-Store',
       large: '大',
       small: '小',
       hidden: '隐藏'
-    },
-    substore: {
-      title: 'Sub-Store 配置',
-      settingsTitle: 'Sub-Store 设置',
-      enableSubStore: '启用 Sub-Store',
-      allowLanConnection: '允许局域网连接',
-      useCustomBackend: '使用自建 Sub-Store 后端',
-      customBackendAddress: '自建 Sub-Store 后端地址',
-      backendAddressPlaceholder: '必须包含协议头',
-      enableProxyForRequests: '为 Sub-Store 内所有请求启用代理',
-      scheduledSync: '定时同步订阅/文件',
-      cronExpressionPlaceholder: 'Cron 表达式',
-      scheduledRestore: '定时恢复配置',
-      scheduledBackup: '定时备份配置',
-      restartToApply: '重启应用生效',
-      invalidCronExpression: 'Cron 表达式无效'
     }
   },
 
@@ -749,7 +723,7 @@ export default {
       noMatchingRules: '没有匹配的规则',
       saveError: '保存规则失败',
       noResolve: '跳过 DNS 解析 (no-resolve)',
-      src: '匹配来源 IP (src)',
+      src: '匹配来源 IP (src)'
     },
     openFile: '打开文件',
     delete: '删除',
@@ -830,7 +804,6 @@ export default {
     refreshIntervalPlaceholder: '默认 500',
     refreshIntervalUnit: 'ms'
   },
-
 
   validate: {
     shouldIncludePort: '应包含端口号',

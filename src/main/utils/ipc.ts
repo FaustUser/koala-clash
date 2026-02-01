@@ -52,15 +52,6 @@ import {
   convertMrsRuleset
 } from '../config'
 import {
-  startSubStoreFrontendServer,
-  startSubStoreBackendServer,
-  stopSubStoreFrontendServer,
-  stopSubStoreBackendServer,
-  downloadSubStore,
-  subStoreFrontendPort,
-  subStorePort
-} from '../resolve/server'
-import {
   manualGrantCorePermition,
   quitWithoutCore,
   restartCore,
@@ -119,7 +110,6 @@ import {
   resolveThemes,
   writeTheme
 } from '../resolve/theme'
-import { subStoreCollections, subStoreSubs } from '../core/subStoreApi'
 import { logDir } from './dirs'
 import path from 'path'
 import v8 from 'v8'
@@ -270,18 +260,6 @@ export function registerIpcMainHandlers(): void {
   ipcMain.handle('registerShortcut', (_e, oldShortcut, newShortcut, action) =>
     ipcErrorWrapper(registerShortcut)(oldShortcut, newShortcut, action)
   )
-  ipcMain.handle('startSubStoreFrontendServer', () =>
-    ipcErrorWrapper(startSubStoreFrontendServer)()
-  )
-  ipcMain.handle('stopSubStoreFrontendServer', () => ipcErrorWrapper(stopSubStoreFrontendServer)())
-  ipcMain.handle('startSubStoreBackendServer', () => ipcErrorWrapper(startSubStoreBackendServer)())
-  ipcMain.handle('stopSubStoreBackendServer', () => ipcErrorWrapper(stopSubStoreBackendServer)())
-  ipcMain.handle('downloadSubStore', () => ipcErrorWrapper(downloadSubStore)())
-
-  ipcMain.handle('subStorePort', () => subStorePort)
-  ipcMain.handle('subStoreFrontendPort', () => subStoreFrontendPort)
-  ipcMain.handle('subStoreSubs', () => ipcErrorWrapper(subStoreSubs)())
-  ipcMain.handle('subStoreCollections', () => ipcErrorWrapper(subStoreCollections)())
   ipcMain.handle('getGistUrl', ipcErrorWrapper(getGistUrl))
   ipcMain.handle('setNativeTheme', (_e, theme) => {
     setNativeTheme(theme)

@@ -13,7 +13,6 @@ export const defaultConfig: AppConfig = {
   connectionDirection: 'asc',
   connectionOrderBy: 'time',
   connectionInterval: 500,
-  useSubStore: false,
   proxyDisplayOrder: 'default',
   autoCheckUpdate: false,
   autoCloseConnection: true,

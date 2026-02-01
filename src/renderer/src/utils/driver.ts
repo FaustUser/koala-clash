@@ -92,15 +92,6 @@ export async function createDriver(navigate: NavigateFunction): Promise<Driver> 
         }
       },
       {
-        element: '.substore-import',
-        popover: {
-          title: 'Sub-Store',
-          description: t('guide.subStoreDesc'),
-          side: 'bottom',
-          align: 'start'
-        }
-      },
-      {
         element: '.new-profile',
         popover: {
           title: t('guide.localProfile'),
@@ -205,8 +196,4 @@ export async function createDriver(navigate: NavigateFunction): Promise<Driver> 
 export async function startTour(navigate: NavigateFunction): Promise<void> {
   const d = await createDriver(navigate)
   d.drive()
-}
-
-export function getDriver(): Driver | null {
-  return driverInstance
 }
