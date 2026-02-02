@@ -108,6 +108,7 @@ interface AppConfig {
   displayAppName?: boolean
   disableGPU: boolean
   disableAnimation?: boolean
+  mainSwitchMode?: 'tun' | 'sysproxy'
 }
 
 interface ProfileConfig {
