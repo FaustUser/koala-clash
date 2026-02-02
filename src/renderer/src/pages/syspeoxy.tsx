@@ -11,7 +11,6 @@ import React, { Key, useEffect, useState } from 'react'
 import ByPassEditorModal from '@renderer/components/sysproxy/bypass-editor-modal'
 import { IoIosHelpCircle } from 'react-icons/io'
 import { useTranslation } from 'react-i18next'
-import { useControledMihomoConfig } from '@renderer/hooks/use-controled-mihomo-config'
 
 const defaultPacScript = `
 function FindProxyForURL(url, host) {
@@ -70,10 +69,6 @@ const Sysproxy: React.FC = () => {
   const { appConfig, patchAppConfig } = useAppConfig()
   const { sysProxy, onlyActiveDevice = false } =
     appConfig || ({ sysProxy: { enable: false } } as AppConfig)
-  const { mode } = sysProxy || {}
-  const { controledMihomoConfig } = useControledMihomoConfig()
-  const { 'mixed-port': mixedPort } = controledMihomoConfig || {}
-  const disabled = mixedPort == 0
   const [changed, setChanged] = useState(false)
   const [values, originSetValues] = useState({
     enable: sysProxy.enable,
@@ -144,25 +139,6 @@ const Sysproxy: React.FC = () => {
           }}
         />
       )}
-      <SettingCard>
-        <SettingItem title={t('sider.systemProxy')}>
-          <Switch
-            size="sm"
-            isDisabled={mode == 'manual' && disabled}
-            onValueChange={async (enable: boolean): Promise<void> => {
-              if (mode == 'manual' && disabled) return
-              try {
-                await triggerSysProxy(enable, onlyActiveDevice)
-                await patchAppConfig({ sysProxy: { enable } })
-                window.electron.ipcRenderer.send('updateFloatingWindow')
-                window.electron.ipcRenderer.send('updateTrayMenu')
-              } catch (e) {
-                alert(e)
-              }
-            }}
-          />
-        </SettingItem>
-      </SettingCard>
       <SettingCard className="sysproxy-settings">
         <SettingItem title={t('pages.sysproxy.proxyHost')} divider>
           <Input

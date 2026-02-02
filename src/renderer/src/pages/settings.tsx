@@ -8,6 +8,7 @@ import Actions from '@renderer/components/settings/actions'
 import ShortcutConfig from '@renderer/components/settings/shortcut-config'
 import AppearanceConfig from '@renderer/components/settings/appearance-confis'
 import LanguageConfig from '@renderer/components/settings/language-config'
+import ProxySwitches from '@renderer/components/settings/proxy-switches'
 import { useTranslation } from 'react-i18next'
 
 const Settings: React.FC = () => {
@@ -33,6 +34,7 @@ const Settings: React.FC = () => {
         </>
       }
     >
+      <ProxySwitches />
       <GeneralConfig />
       <LanguageConfig />
       <AppearanceConfig />

@@ -85,23 +85,6 @@ const Tun: React.FC = () => {
           )
         }
       >
-        <SettingCard>
-          <SettingItem title={t('sider.virtualInterface')}>
-            <Switch
-              size="sm"
-              onValueChange={async (enable: boolean): Promise<void> => {
-                if (enable) {
-                  await patchControledMihomoConfig({ tun: { enable }, dns: { enable: true } })
-                } else {
-                  await patchControledMihomoConfig({ tun: { enable } })
-                }
-                await restartCore()
-                window.electron.ipcRenderer.send('updateFloatingWindow')
-                window.electron.ipcRenderer.send('updateTrayMenu')
-              }}
-            />
-          </SettingItem>
-        </SettingCard>
         <SettingCard className="tun-settings">
           {platform === 'win32' && (
             <SettingItem title={t('pages.tun.resetFirewall')} divider>
