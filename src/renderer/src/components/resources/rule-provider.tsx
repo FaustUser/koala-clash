@@ -32,7 +32,7 @@ const RuleProvider: React.FC = () => {
       const fetchProviderPath = async (name: string): Promise<void> => {
         try {
           const providers = await getRuntimeConfig()
-          const provider = providers['rule-providers'][name]
+          const provider = providers['rule-providers']?.[name]
           if (provider) {
             setShowDetails((prev) => ({
               ...prev,
