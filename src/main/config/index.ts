@@ -20,14 +20,3 @@ export {
   updateProfileItem,
   convertMrsRuleset
 } from './profile'
-export {
-  getOverrideConfig,
-  setOverrideConfig,
-  getOverrideItem,
-  addOverrideItem,
-  removeOverrideItem,
-  createOverride,
-  getOverride,
-  setOverride,
-  updateOverrideItem
-} from './override'

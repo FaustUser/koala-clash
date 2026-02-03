@@ -12,7 +12,6 @@ import {
 } from '@heroui/react'
 import React, { useState } from 'react'
 import SettingItem from '../base/base-setting-item'
-import { useOverrideConfig } from '@renderer/hooks/use-override-config'
 import { restartCore } from '@renderer/utils/ipc'
 import { useAppConfig } from '@renderer/hooks/use-app-config'
 import { IoIosHelpCircle } from 'react-icons/io'
@@ -29,20 +28,12 @@ const EditInfoModal: React.FC<Props> = (props) => {
   const { t } = useTranslation()
   const { item, isCurrent, updateProfileItem, onClose } = props
   const { appConfig: { disableAnimation = false } = {} } = useAppConfig()
-  const { overrideConfig } = useOverrideConfig()
-  const { items: overrideItems = [] } = overrideConfig || {}
   const [values, setValues] = useState({ ...item, autoUpdate: item.autoUpdate ?? true })
   const inputWidth = 'w-[400px] md:w-[400px] lg:w-[600px] xl:w-[800px]'
 
   const onSave = async (): Promise<void> => {
     try {
-      const itemToSave = {
-        ...values,
-        override: values.override?.filter(
-          (i) =>
-            overrideItems.find((t) => t.id === i) && !overrideItems.find((t) => t.id === i)?.global
-        )
-      }
+      const itemToSave = { ...values }
 
       await updateProfileItem(itemToSave)
       if (item.id && isCurrent) {
@@ -108,7 +99,7 @@ const EditInfoModal: React.FC<Props> = (props) => {
               <SettingItem title={t('profile.verifyFormat')}>
                 <Switch
                   size="sm"
-                  isSelected={values.verify ?? false}
+                  isSelected={values.verify ?? true}
                   onValueChange={(v) => {
                     setValues({ ...values, verify: v })
                   }}

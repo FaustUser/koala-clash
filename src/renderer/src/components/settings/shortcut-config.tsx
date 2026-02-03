@@ -1,4 +1,5 @@
-import { Button, Input } from '@heroui/react'
+import { Button } from '@renderer/components/ui/button'
+import { Input } from '@renderer/components/ui/input'
 import { useTranslation } from 'react-i18next'
 import SettingCard from '../base/base-setting-card'
 import SettingItem from '../base/base-setting-item'
@@ -208,10 +209,9 @@ const ShortcutInput: React.FC<{
     <>
       {inputValue !== value && (
         <Button
-          color="primary"
           className="mr-2"
           size="sm"
-          onPress={async () => {
+          onClick={async () => {
             try {
               if (await registerShortcut(value, inputValue, action)) {
                 await patchAppConfig({ [action]: inputValue })
@@ -229,13 +229,12 @@ const ShortcutInput: React.FC<{
       )}
       <Input
         placeholder={t('settings.shortcuts.clickToInput')}
-        onKeyDown={(e: KeyboardEvent): void => {
-          parseShortcut(e, setInputValue)
+        onKeyDown={(e: KeyboardEvent<HTMLInputElement>): void => {
+          parseShortcut(e as unknown as KeyboardEvent, setInputValue)
         }}
-        size="sm"
-        onClear={() => setInputValue('')}
         value={inputValue}
-        className="w-[calc(100%-72px)] pr-0"
+        readOnly
+        className="w-[calc(100%-72px)] h-8 text-sm pr-0"
       />
     </>
   )

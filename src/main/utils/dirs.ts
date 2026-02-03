@@ -128,18 +128,6 @@ export function profilePath(id: string): string {
   return path.join(profilesDir(), `${id}.yaml`)
 }
 
-export function overrideDir(): string {
-  return path.join(dataDir(), 'override')
-}
-
-export function overrideConfigPath(): string {
-  return path.join(dataDir(), 'override.yaml')
-}
-
-export function overridePath(id: string, ext: 'js' | 'yaml' | 'log'): string {
-  return path.join(overrideDir(), `${id}.${ext}`)
-}
-
 export function mihomoWorkDir(): string {
   return path.join(dataDir(), 'work')
 }

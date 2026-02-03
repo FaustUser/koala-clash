@@ -1,10 +1,9 @@
 import { useTheme } from 'next-themes'
-import { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { NavigateFunction, useLocation, useNavigate, useRoutes } from 'react-router-dom'
 import './i18n'
 import { useTranslation } from 'react-i18next'
 import OutboundModeSwitcher from '@renderer/components/sider/outbound-mode-switcher'
-import { Button, Divider } from '@heroui/react'
 import { IoSettings } from 'react-icons/io5'
 import routes from '@renderer/routes'
 import ProfileCard from '@renderer/components/sider/profile-card'
@@ -21,6 +20,8 @@ import MihomoIcon from './components/base/mihomo-icon'
 import useSWR from 'swr'
 import ConfirmModal from '@renderer/components/base/base-confirm'
 import MainCard from '@renderer/components/sider/main-card'
+import { Separator } from '@renderer/components/ui/separator'
+import { Button } from '@renderer/components/ui/button'
 
 let navigate: NavigateFunction
 
@@ -101,13 +102,8 @@ const App: React.FC = () => {
 
   const [showQuitConfirm, setShowQuitConfirm] = useState(false)
   const [showProfileInstallConfirm, setShowProfileInstallConfirm] = useState(false)
-  const [showOverrideInstallConfirm, setShowOverrideInstallConfirm] = useState(false)
   const [showAdminRequired, setShowAdminRequired] = useState(false)
   const [profileInstallData, setProfileInstallData] = useState<{
-    url: string
-    name?: string | null
-  }>()
-  const [overrideInstallData, setOverrideInstallData] = useState<{
     url: string
     name?: string | null
   }>()
@@ -123,20 +119,9 @@ const App: React.FC = () => {
       setProfileInstallData(data)
       setShowProfileInstallConfirm(true)
     }
-    const handleShowOverrideInstallConfirm = (
-      _event: unknown,
-      data: { url: string; name?: string | null }
-    ): void => {
-      setOverrideInstallData(data)
-      setShowOverrideInstallConfirm(true)
-    }
 
     window.electron.ipcRenderer.on('show-quit-confirm', handleShowQuitConfirm)
     window.electron.ipcRenderer.on('show-profile-install-confirm', handleShowProfileInstallConfirm)
-    window.electron.ipcRenderer.on(
-      'show-override-install-confirm',
-      handleShowOverrideInstallConfirm
-    )
 
     const handleNeedsAdminSetup = (): void => {
       setShowAdminRequired(true)
@@ -152,7 +137,6 @@ const App: React.FC = () => {
     return (): void => {
       window.electron.ipcRenderer.removeAllListeners('show-quit-confirm')
       window.electron.ipcRenderer.removeAllListeners('show-profile-install-confirm')
-      window.electron.ipcRenderer.removeAllListeners('show-override-install-confirm')
       window.electron.ipcRenderer.removeAllListeners('needs-admin-setup')
     }
   }, [])
@@ -167,11 +151,6 @@ const App: React.FC = () => {
     window.electron.ipcRenderer.send('profile-install-confirm-result', confirmed)
   }
 
-  const handleOverrideInstallConfirm = (confirmed: boolean): void => {
-    setShowOverrideInstallConfirm(false)
-    window.electron.ipcRenderer.send('override-install-confirm-result', confirmed)
-  }
-
   return (
     <div className={`w-full h-screen flex`}>
       {showQuitConfirm && (
@@ -182,7 +161,8 @@ const App: React.FC = () => {
               <p></p>
               <p className="text-sm text-gray-500 mt-2">{t('modal.quitWarning')}</p>
               <p className="text-sm text-gray-400 mt-1">
-                {t('modal.quickQuitHint')} {platform === 'darwin' ? '⌘Q' : 'Ctrl+Q'} {t('modal.canQuitDirectly')}
+                {t('modal.quickQuitHint')} {platform === 'darwin' ? '⌘Q' : 'Ctrl+Q'}{' '}
+                {t('modal.canQuitDirectly')}
               </p>
             </div>
           }
@@ -202,12 +182,14 @@ const App: React.FC = () => {
           description={
             <div>
               <p className="text-sm text-gray-600 mb-2">
-                {t('modal.nameLabel')}{profileInstallData.name || t('common.unnamed')}
+                {t('modal.nameLabel')}
+                {profileInstallData.name || t('common.unnamed')}
               </p>
-              <p className="text-sm text-gray-600 mb-2">{t('modal.linkLabel')}{profileInstallData.url}</p>
-              <p className="text-sm text-orange-500 mt-2">
-                {t('modal.ensureTrustedSource')}
+              <p className="text-sm text-gray-600 mb-2">
+                {t('modal.linkLabel')}
+                {profileInstallData.url}
               </p>
+              <p className="text-sm text-orange-500 mt-2">{t('modal.ensureTrustedSource')}</p>
             </div>
           }
           confirmText={t('common.import')}
@@ -219,30 +201,6 @@ const App: React.FC = () => {
           }}
           onConfirm={() => handleProfileInstallConfirm(true)}
           className="w-[500px]"
-        />
-      )}
-      {showOverrideInstallConfirm && overrideInstallData && (
-        <ConfirmModal
-          title={t('modal.confirmImportOverride')}
-          description={
-            <div>
-              <p className="text-sm text-gray-600 mb-2">
-                {t('modal.nameLabel')}{overrideInstallData.name || t('common.unnamed')}
-              </p>
-              <p className="text-sm text-gray-600 mb-2">{t('modal.linkLabel')}{overrideInstallData.url}</p>
-              <p className="text-sm text-orange-500 mt-2">
-                {t('modal.ensureTrustedOverride')}
-              </p>
-            </div>
-          }
-          confirmText={t('common.import')}
-          cancelText={t('common.cancel')}
-          onChange={(open) => {
-            if (!open) {
-              handleOverrideInstallConfirm(false)
-            }
-          }}
-          onConfirm={() => handleOverrideInstallConfirm(true)}
         />
       )}
       {showAdminRequired && (
@@ -266,9 +224,7 @@ const App: React.FC = () => {
       )}
       <div style={{ width: `${narrowWidth}px` }} className="side h-full">
         <div className="app-drag flex justify-center items-center z-40 bg-transparent h-[45px]">
-          {platform !== 'darwin' && (
-            <MihomoIcon className="h-8 leading-8 text-lg mx-px" />
-          )}
+          {platform !== 'darwin' && <MihomoIcon className="h-8 leading-8 text-lg mx-px" />}
         </div>
         <div
           className={`${latest ? 'h-[calc(100%-275px)]' : 'h-[calc(100%-185px)]'} overflow-y-auto no-scrollbar`}
@@ -285,18 +241,17 @@ const App: React.FC = () => {
           {latest && latest.version && <UpdaterButton iconOnly={true} latest={latest} />}
           <OutboundModeSwitcher iconOnly />
           <Button
-            size="sm"
+            size="icon-sm"
             className="app-nodrag"
-            isIconOnly
-            color={location.pathname.includes('/settings') ? 'primary' : 'default'}
-            variant={location.pathname.includes('/settings') ? 'solid' : 'light'}
-            onPress={() => navigate('/settings')}
+            title={t('common.pinWindow')}
+            variant={location.pathname.includes('/settings') ? 'default' : 'ghost'}
+            onClick={() => navigate('/settings')}
           >
             <IoSettings className="text-[20px]" />
           </Button>
         </div>
       </div>
-      <Divider orientation="vertical" />
+      <Separator orientation="vertical" />
       <div
         style={{ width: `calc(100% - ${narrowWidth + 1}px)` }}
         className="main grow h-full overflow-y-auto"

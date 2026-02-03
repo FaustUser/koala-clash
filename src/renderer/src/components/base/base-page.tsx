@@ -1,4 +1,6 @@
-import { Button, Divider } from '@heroui/react'
+import { Button } from '@renderer/components/ui/button'
+import { Separator } from '@renderer/components/ui/separator'
+import { cn } from '@renderer/lib/utils'
 import { useAppConfig } from '@renderer/hooks/use-app-config'
 import { platform } from '@renderer/utils/init'
 import { isAlwaysOnTop, setAlwaysOnTop } from '@renderer/utils/ipc'
@@ -50,28 +52,25 @@ const BasePage = forwardRef<HTMLDivElement, Props>((props, ref) => {
           <div style={{ marginRight: overlayWidth }} className="header flex gap-1 h-full">
             {props.header}
             <Button
-              size="sm"
+              size="icon-sm"
               className="app-nodrag"
-              isIconOnly
               title={t('common.pinWindow')}
-              variant="light"
-              color={onTop ? 'primary' : 'default'}
-              onPress={async () => {
+              variant="ghost"
+              onClick={async () => {
                 await setAlwaysOnTop(!onTop)
                 await updateAlwaysOnTop()
               }}
-              startContent={
-                onTop ? (
-                  <RiPushpin2Fill className="text-lg" />
-                ) : (
-                  <RiPushpin2Line className="text-lg" />
-                )
-              }
-            />
+            >
+              {onTop ? (
+                <RiPushpin2Fill className={cn('text-lg', onTop && 'text-primary')} />
+              ) : (
+                <RiPushpin2Line className="text-lg" />
+              )}
+            </Button>
           </div>
         </div>
 
-        <Divider />
+        <Separator />
       </div>
       <div className="content h-[calc(100vh-49px)] overflow-y-auto custom-scrollbar">
         {props.children}

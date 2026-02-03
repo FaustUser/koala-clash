@@ -1,4 +1,4 @@
-import { Button } from '@heroui/react'
+import { Button } from '@renderer/components/ui/button'
 import BasePage from '@renderer/components/base/base-page'
 // import { CgWebsite } from 'react-icons/cg'
 import { IoLogoGithub } from 'react-icons/io5'
@@ -20,12 +20,11 @@ const Settings: React.FC = () => {
       header={
         <>
           <Button
-            isIconOnly
-            size="sm"
-            variant="light"
+            size="icon-sm"
+            variant="ghost"
             className="app-nodrag"
             title={t('pages.settings.githubRepo')}
-            onPress={() => {
+            onClick={() => {
               window.open('https://github.com/xishang0128/sparkle')
             }}
           >

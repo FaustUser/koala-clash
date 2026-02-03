@@ -1,4 +1,4 @@
-import { Button } from '@heroui/react'
+import { Button } from '@renderer/components/ui/button'
 import React, { useState, useEffect } from 'react'
 import UpdaterModal from './updater-modal'
 import { GrUpgrade } from 'react-icons/gr'
@@ -65,11 +65,10 @@ const UpdaterButton: React.FC<Props> = (props) => {
       )}
       {iconOnly ? (
         <Button
-          isIconOnly
-          className={`app-nodrag`}
-          color="danger"
-          size="md"
-          onPress={() => {
+          size="icon"
+          className="app-nodrag"
+          variant="destructive"
+          onClick={() => {
             setOpenModal(true)
           }}
         >
@@ -77,11 +76,10 @@ const UpdaterButton: React.FC<Props> = (props) => {
         </Button>
       ) : (
         <Button
-          isIconOnly
-          className={`fixed right-[45px] app-nodrag`}
-          color="danger"
-          size="sm"
-          onPress={() => {
+          size="icon-sm"
+          className="fixed right-[45px] app-nodrag"
+          variant="destructive"
+          onClick={() => {
             setOpenModal(true)
           }}
         >

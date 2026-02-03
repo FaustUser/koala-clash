@@ -14,10 +14,9 @@ import {
 import React, { useState, useEffect, useRef } from 'react'
 import SettingItem from '../base/base-setting-item'
 import { useAppConfig } from '@renderer/hooks/use-app-config'
-import { getGistUrl, getUserAgent } from '@renderer/utils/ipc'
+import { getUserAgent } from '@renderer/utils/ipc'
 import debounce from '@renderer/utils/debounce'
 import { IoIosHelpCircle } from 'react-icons/io'
-import { BiCopy } from 'react-icons/bi'
 import { t } from 'i18next'
 
 interface Props {
@@ -32,7 +31,6 @@ const ProfileSettingModal: React.FC<Props> = (props) => {
     profileDisplayDate = 'update',
     userAgent,
     diffWorkDir = false,
-    githubToken = ''
   } = appConfig || {}
 
   const [ua, setUa] = useState(userAgent ?? '')
@@ -112,40 +110,6 @@ const ProfileSettingModal: React.FC<Props> = (props) => {
               onValueChange={(v) => {
                 setUa(v)
                 setUaDebounce(v)
-              }}
-            />
-          </SettingItem>
-          <SettingItem
-            title={t('profile.syncRuntimeConfigGist')}
-            actions={
-              <Button
-                title={t('profile.copyGistUrl')}
-                isIconOnly
-                size="sm"
-                variant="light"
-                onPress={async () => {
-                  try {
-                    const url = await getGistUrl()
-                    if (url !== '') {
-                      await navigator.clipboard.writeText(`${url}/raw/sparkle.yaml`)
-                    }
-                  } catch (e) {
-                    alert(e)
-                  }
-                }}
-              >
-                <BiCopy className="text-lg" />
-              </Button>
-            }
-          >
-            <Input
-              type="password"
-              size="sm"
-              className="w-[60%]"
-              value={githubToken}
-              placeholder={t('profile.githubToken')}
-              onValueChange={(v) => {
-                patchAppConfig({ githubToken: v })
               }}
             />
           </SettingItem>

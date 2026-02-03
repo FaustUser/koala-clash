@@ -1,4 +1,5 @@
-import { Button, Tooltip } from '@heroui/react'
+import { Button } from '@renderer/components/ui/button'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
 import SettingCard from '../base/base-setting-card'
 import SettingItem from '../base/base-setting-item'
 import {
@@ -91,15 +92,15 @@ const Actions: React.FC = () => {
       )}
       <SettingCard>
         <SettingItem title={t('settings.actions.openGuidePage')} divider>
-          <Button size="sm" onPress={() => startTour(navigate)}>
+          <Button size="sm" onClick={() => startTour(navigate)}>
             {t('settings.actions.openGuide')}
           </Button>
         </SettingItem>
         <SettingItem title={t('settings.actions.checkUpdate')} divider>
           <Button
             size="sm"
-            isLoading={checkingUpdate}
-            onPress={async () => {
+            disabled={checkingUpdate}
+            onClick={async () => {
               try {
                 setCheckingUpdate(true)
                 const version = await checkUpdate()
@@ -125,75 +126,90 @@ const Actions: React.FC = () => {
         <SettingItem
           title={t('settings.actions.resetApp')}
           actions={
-            <Tooltip content={t('settings.actions.resetAppHelp')}>
-              <Button isIconOnly size="sm" variant="light">
-                <IoIosHelpCircle className="text-lg" />
-              </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button size="icon-sm" variant="ghost">
+                  <IoIosHelpCircle className="text-lg" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>{t('settings.actions.resetAppHelp')}</TooltipContent>
             </Tooltip>
           }
           divider
         >
-          <Button size="sm" onPress={() => setConfirmOpen(true)}>
+          <Button size="sm" onClick={() => setConfirmOpen(true)}>
             {t('settings.actions.resetApp')}
           </Button>
         </SettingItem>
         <SettingItem
           title={t('settings.actions.clearCache')}
           actions={
-            <Tooltip content={t('settings.actions.clearCacheHelp')}>
-              <Button isIconOnly size="sm" variant="light">
-                <IoIosHelpCircle className="text-lg" />
-              </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button size="icon-sm" variant="ghost">
+                  <IoIosHelpCircle className="text-lg" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>{t('settings.actions.clearCacheHelp')}</TooltipContent>
             </Tooltip>
           }
           divider
         >
-          <Button size="sm" onPress={() => localStorage.clear()}>
+          <Button size="sm" onClick={() => localStorage.clear()}>
             {t('settings.actions.clearCache')}
           </Button>
         </SettingItem>
         <SettingItem
           title={t('settings.actions.createHeapSnapshot')}
           actions={
-            <Tooltip content={t('settings.actions.createHeapSnapshotHelp')}>
-              <Button isIconOnly size="sm" variant="light">
-                <IoIosHelpCircle className="text-lg" />
-              </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button size="icon-sm" variant="ghost">
+                  <IoIosHelpCircle className="text-lg" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>{t('settings.actions.createHeapSnapshotHelp')}</TooltipContent>
             </Tooltip>
           }
           divider
         >
-          <Button size="sm" onPress={createHeapSnapshot}>
+          <Button size="sm" onClick={createHeapSnapshot}>
             {t('settings.actions.createHeapSnapshot')}
           </Button>
         </SettingItem>
         <SettingItem
           title={t('settings.actions.quitKeepCore')}
           actions={
-            <Tooltip content={t('settings.actions.quitKeepCoreHelp')}>
-              <Button isIconOnly size="sm" variant="light">
-                <IoIosHelpCircle className="text-lg" />
-              </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button size="icon-sm" variant="ghost">
+                  <IoIosHelpCircle className="text-lg" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>{t('settings.actions.quitKeepCoreHelp')}</TooltipContent>
             </Tooltip>
           }
           divider
         >
-          <Button size="sm" onPress={quitWithoutCore}>
+          <Button size="sm" onClick={quitWithoutCore}>
             {t('common.quit')}
           </Button>
         </SettingItem>
         <SettingItem title={t('settings.actions.quitApp')} divider>
-          <Button size="sm" onPress={quitApp}>
+          <Button size="sm" onClick={quitApp}>
             {t('settings.actions.quitApp')}
           </Button>
         </SettingItem>
         <SettingItem
           title={t('settings.actions.mihomoVersion')}
           actions={
-            <Tooltip content={t('settings.actions.mihomoSettings')}>
-              <Button isIconOnly size="sm" variant="light" onPress={() => navigate('/mihomo')}>
-                <IoSettings className="text-lg" />
-              </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button size="icon-sm" variant="ghost" onClick={() => navigate('/mihomo')}>
+                  <IoSettings className="text-lg" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>{t('settings.actions.mihomoSettings')}</TooltipContent>
             </Tooltip>
           }
           divider

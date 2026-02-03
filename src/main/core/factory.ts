@@ -3,30 +3,22 @@ import {
   getProfileConfig,
   getProfile,
   getProfileStr,
-  getProfileItem,
-  getOverride,
-  getOverrideItem,
-  getOverrideConfig,
   getAppConfig
 } from '../config'
 import {
   mihomoProfileWorkDir,
   mihomoWorkConfigPath,
-  mihomoWorkDir,
-  overridePath, rulePath
+  mihomoWorkDir, rulePath
 } from '../utils/dirs'
 import { parseYaml, stringifyYaml } from '../utils/yaml'
 import { copyFile, mkdir, readFile, writeFile } from 'fs/promises'
 import { deepMerge } from '../utils/merge'
-import vm from 'vm'
-import { existsSync, writeFileSync } from 'fs'
+import { existsSync } from 'fs'
 import path from 'path'
-import { t } from '../utils/i18n'
 
 let runtimeConfigStr: string,
   rawProfileStr: string,
   currentProfileStr: string,
-  overrideProfileStr: string,
   runtimeConfig: MihomoConfig
 
 // 辅助函数：处理带偏移量的规则
@@ -63,11 +55,9 @@ function processRulesWithOffset(ruleStrings: string[], currentRules: string[], i
 export async function generateProfile(): Promise<void> {
   const { current } = await getProfileConfig()
   const { diffWorkDir = false, controlDns = true, controlSniff = true } = await getAppConfig()
-  const currentProfileConfig = await getProfile(current)
+  const currentProfile = await getProfile(current)
   rawProfileStr = await getProfileStr(current)
-  currentProfileStr = stringifyYaml(currentProfileConfig)
-  const currentProfile = await overrideProfile(current, currentProfileConfig)
-  overrideProfileStr = stringifyYaml(currentProfile)
+  currentProfileStr = stringifyYaml(currentProfile)
   const controledMihomoConfig = await getControledMihomoConfig()
 
   const configToMerge = JSON.parse(JSON.stringify(controledMihomoConfig))
@@ -381,93 +371,6 @@ async function prepareProfileWorkDir(current: string | undefined): Promise<void>
   ])
 }
 
-async function overrideProfile(
-  current: string | undefined,
-  profile: MihomoConfig
-): Promise<MihomoConfig> {
-  const { items = [] } = (await getOverrideConfig()) || {}
-  const globalOverride = items.filter((item) => item.global).map((item) => item.id)
-  const { override = [] } = (await getProfileItem(current)) || {}
-  for (const ov of new Set(globalOverride.concat(override))) {
-    const item = await getOverrideItem(ov)
-    const content = await getOverride(ov, item?.ext || 'js')
-    switch (item?.ext) {
-      case 'js':
-        profile = await runOverrideScript(profile, content, item)
-        break
-      case 'yaml': {
-        let patch = parseYaml<Partial<MihomoConfig>>(content)
-        if (typeof patch !== 'object') patch = {}
-        profile = deepMerge(profile, patch, true)
-        break
-      }
-    }
-  }
-  return profile
-}
-
-async function runOverrideScript(
-  profile: MihomoConfig,
-  script: string,
-  item: OverrideItem
-): Promise<MihomoConfig> {
-  const log = (type: string, data: string, flag = 'a'): void => {
-    writeFileSync(overridePath(item.id, 'log'), `[${type}] ${data}\n`, {
-      encoding: 'utf-8',
-      flag
-    })
-  }
-  try {
-    const b64d = (str: string): string => Buffer.from(str, 'base64').toString('utf-8')
-    const b64e = (data: Buffer | string): string =>
-      (Buffer.isBuffer(data) ? data : Buffer.from(String(data))).toString('base64')
-    const ctx = {
-      console: Object.freeze({
-        log: (...args: unknown[]) => log('log', args.map(format).join(' ')),
-        info: (...args: unknown[]) => log('info', args.map(format).join(' ')),
-        error: (...args: unknown[]) => log('error', args.map(format).join(' ')),
-        debug: (...args: unknown[]) => log('debug', args.map(format).join(' '))
-      }),
-      fetch,
-      yaml: { parse: parseYaml, stringify: stringifyYaml },
-      b64d,
-      b64e,
-      Buffer
-    }
-    vm.createContext(ctx)
-    log('info', t('ui.scriptStarted'), 'w')
-    vm.runInContext(script, ctx)
-    const promise = vm.runInContext(
-      `(async () => {
-        const result = main(${JSON.stringify(profile)})
-        if (result instanceof Promise) return await result
-        return result
-      })()`,
-      ctx
-    )
-    const newProfile = await promise
-    if (typeof newProfile !== 'object') {
-      throw new Error(t('error.scriptReturnMustBeObject'))
-    }
-    log('info', t('ui.scriptSuccess'))
-    return newProfile
-  } catch (e) {
-    log('exception', `${t('ui.scriptFailed')}：${e}`)
-    return profile
-  }
-}
-
-function format(data: unknown): string {
-  if (data instanceof Error) {
-    return `${data.name}: ${data.message}\n${data.stack}`
-  }
-  try {
-    return JSON.stringify(data)
-  } catch {
-    return String(data)
-  }
-}
-
 export async function getRuntimeConfigStr(): Promise<string> {
   return runtimeConfigStr
 }
@@ -478,10 +381,6 @@ export async function getRawProfileStr(): Promise<string> {
 
 export async function getCurrentProfileStr(): Promise<string> {
   return currentProfileStr
-}
-
-export async function getOverrideProfileStr(): Promise<string> {
-  return overrideProfileStr
 }
 
 export async function getRuntimeConfig(): Promise<MihomoConfig> {

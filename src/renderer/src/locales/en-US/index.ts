@@ -84,7 +84,6 @@ export default {
     rules: 'Rules',
     connection: 'Connections',
     logs: 'Logs',
-    override: 'Overrides',
     domainSniffing: 'Domain Sniffing',
     coreSettings: 'Core Settings',
     systemProxy: 'System Proxy',
@@ -95,7 +94,6 @@ export default {
     compareCurrentConfig: 'Compare current configuration',
     sideBySide: 'Side-by-side',
     showRawText: 'Show raw text',
-    showOverrideText: 'Show overridden text',
     longTermValid: 'Long-term valid',
     searchNode: 'Search nodes',
     locateCurrentNode: 'Locate current node',
@@ -229,15 +227,6 @@ export default {
       exampleIP: 'e.g.: 1.1.1.1/32',
       exampleCIDR: 'e.g.: 192.168.1.1/24'
     },
-    override: {
-      title: 'Overrides',
-      usageDocs: 'Usage Documentation',
-      commonOverrideRepo: 'Common Override Repository',
-      openLocalOverride: 'Open local override',
-      importRemoteOverride: 'Import remote override',
-      newYAML: 'New YAML',
-      newJavaScript: 'New JavaScript'
-    },
     tun: {
       title: 'Virtual Network Interface Settings',
       resetFirewall: 'Reset Firewall',
@@ -366,9 +355,7 @@ export default {
   modal: {
     pleaseConfirm: 'Please Confirm',
     confirmDelete: 'Confirm Delete',
-    confirmDeleteOverride: 'Confirm delete override?',
     confirmImportProfile: 'Confirm import subscription config?',
-    confirmImportOverride: 'Confirm import override file?',
     confirmQuit: 'Are you sure you want to quit Sparkle?',
     quitWarning: 'Proxy functionality will stop working after quitting',
     quickQuitHint: 'Double press or long press',
@@ -377,8 +364,6 @@ export default {
     linkLabel: 'Link: ',
     ensureTrustedSource:
       'Please ensure that the subscription config source is trusted, malicious configs may affect your network security',
-    ensureTrustedOverride:
-      'Please ensure that the override file source is trusted, malicious override files may affect your network security',
     confirmRestart: 'Are you sure you want to restart the application?',
     restartForGPUChange:
       'Modifying GPU acceleration settings requires restarting the application to take effect',
@@ -436,22 +421,6 @@ export default {
       systemTitleBar: 'System Title Bar',
       statusBarSpeed: 'Status Bar Speed',
       taskbarSpeed: 'Taskbar Speed'
-    },
-    webdav: {
-      title: 'WebDAV Settings',
-      backupTitle: 'WebDAV Backup',
-      backupSuccess: 'Backup Successful',
-      backupSuccessBody: 'Backup file uploaded to WebDAV',
-      noBackup: 'No backups yet',
-      getBackupListFailed: 'Failed to get backup list: ',
-      address: 'WebDAV Address',
-      backupDirectory: 'WebDAV Backup Directory',
-      username: 'WebDAV Username',
-      password: 'WebDAV Password',
-      backup: 'Backup',
-      restore: 'Restore',
-      restoreFailed: 'Restore failed: ',
-      deleteFailed: 'Delete failed: '
     },
     advanced: {
       title: 'Advanced Settings',
@@ -533,7 +502,6 @@ export default {
       proxyCardStatus: 'Proxy Groups',
       ruleCardStatus: 'Rules',
       resourceCardStatus: 'External Resources',
-      overrideCardStatus: 'Overrides',
       connectionCardStatus: 'Connections',
       mihomoCoreCardStatus: 'Core',
       dnsCardStatus: 'DNS',
@@ -676,19 +644,6 @@ export default {
     domainOrIPCommaSeparated: 'Domain or IP, separate multiple values with commas'
   },
 
-  override: {
-    editInfo: 'Edit Info',
-    editFile: 'Edit File',
-    openFile: 'Open File',
-    execLog: 'Execution Log',
-    delete: 'Delete',
-    confirmDeleteOverride: 'Confirm Delete Override?',
-    importRemoteOverride: 'Import Remote Override',
-    overrideAddress: 'Override Address',
-    editOverrideScript: 'Edit Override Script',
-    editOverrideConfig: 'Edit Override Config'
-  },
-
   profile: {
     editInfo: 'Edit Info',
     editFile: 'Edit File',
@@ -732,9 +687,6 @@ export default {
     separateWorkDirHelp:
       'When enabled, avoids conflicts when different profiles share the same proxy group name',
     defaultUserAgent: 'Default: {{value}}',
-    syncRuntimeConfigGist: 'Sync runtime config to Gist',
-    copyGistUrl: 'Copy Gist URL',
-    githubToken: 'GitHub Token',
     confirmDiscardTitle: 'Discard changes?',
     unsavedChanges: 'You have unsaved changes. Are you sure you want to discard them?',
     discardChanges: 'Discard changes',
@@ -751,8 +703,6 @@ export default {
     autoUpdate: 'Auto update',
     updateIntervalMinutes: 'Update Interval (minutes)',
     updateIntervalLockedHelp: 'The update interval is managed remotely',
-    override: 'Overrides',
-    noAvailableOverrides: 'No overrides available'
   },
 
   connection: {
@@ -919,9 +869,6 @@ export default {
     tunSettings: 'Virtual Network Interface Settings',
     tunSettingsDesc:
       'Virtual network interface mode requires authorization. If you haven\'t set up authorization yet, please set it up first in "Core Settings".',
-    override: 'Overrides',
-    overrideDesc:
-      'Overrides allow you to modify the runtime configuration without changing the original subscription content.',
     dnsDesc:
       'DNS settings can help you resolve domain names more efficiently and prevent DNS pollution.',
     tutorialEnd: 'Tutorial Complete',

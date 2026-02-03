@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import SettingCard from '../base/base-setting-card'
 import SettingItem from '../base/base-setting-item'
 import EditableList from '../base/base-list-editor'
-import { Switch } from '@heroui/react'
+import { Switch } from '@renderer/components/ui/switch'
 import { isValidDnsServer, isValidDomainWildcard } from '@renderer/utils/validate'
 import { useTranslation } from 'react-i18next'
 
@@ -65,9 +65,9 @@ const AdvancedDnsSetting: React.FC<AdvancedDnsSettingProps> = ({
       <SettingItem title={t('dns.connectionRespectRules')} divider>
         <Switch
           size="sm"
-          isSelected={respectRules}
-          isDisabled={proxyServerNameserver.length === 0}
-          onValueChange={onRespectRulesChange}
+          checked={respectRules}
+          disabled={proxyServerNameserver.length === 0}
+          onCheckedChange={onRespectRulesChange}
         />
       </SettingItem>
       <EditableList
@@ -163,10 +163,10 @@ const AdvancedDnsSetting: React.FC<AdvancedDnsSettingProps> = ({
         objectMode="record"
       />
       <SettingItem title={t('dns.useSystemHosts')} divider>
-        <Switch size="sm" isSelected={useSystemHosts} onValueChange={onUseSystemHostsChange} />
+        <Switch size="sm" checked={useSystemHosts} onCheckedChange={onUseSystemHostsChange} />
       </SettingItem>
       <SettingItem title={t('dns.customHosts')}>
-        <Switch size="sm" isSelected={useHosts} onValueChange={onUseHostsChange} />
+        <Switch size="sm" checked={useHosts} onCheckedChange={onUseHostsChange} />
       </SettingItem>
       {useHosts && (
         <EditableList

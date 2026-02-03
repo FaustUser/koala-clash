@@ -1,4 +1,5 @@
-import { Button, Tooltip } from '@heroui/react'
+import { Button } from '@renderer/components/ui/button'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
 import React from 'react'
 import { useTranslation } from 'react-i18next'
 import { useLocation, useNavigate } from 'react-router-dom'
@@ -20,18 +21,19 @@ const HomeCard: React.FC<Props> = () => {
 
   return (
     <div className={`${homeCardStatus} flex justify-center`}>
-      <Tooltip content={t('sider.home')} placement="right">
-        <Button
-          size="sm"
-          isIconOnly
-          color={match ? 'primary' : 'default'}
-          variant={match ? 'solid' : 'light'}
-          onPress={() => {
-            navigate('/home')
-          }}
-        >
-          <IoHomeOutline className="text-[20px]" />
-        </Button>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            size="icon-sm"
+            variant={match ? 'default' : 'ghost'}
+            onClick={() => {
+              navigate('/home')
+            }}
+          >
+            <IoHomeOutline className="text-[20px]" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="right">{t('sider.home')}</TooltipContent>
       </Tooltip>
     </div>
   )

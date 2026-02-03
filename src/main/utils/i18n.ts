@@ -88,15 +88,13 @@ const zhCN: LocaleTranslations = {
     switchedToRuleMode: '已切换至规则模式',
     switchedToGlobalMode: '已切换至全局模式',
     switchedToDirectMode: '已切换至直连模式',
-    profileImportSuccess: '订阅导入成功',
-    overrideImportSuccess: '覆写导入成功'
+    profileImportSuccess: '订阅导入成功'
   },
   dialog: {
     firstRunAdmin: '首次启动请以管理员权限运行',
     appInitFailed: '应用初始化失败',
     coreStartError: '内核启动出错',
     profileImportFailed: '订阅导入失败',
-    overrideImportFailed: '覆写导入失败',
     selectSubscriptionFile: '选择订阅文件'
   },
   error: {
@@ -228,14 +226,12 @@ const enUS: LocaleTranslations = {
     switchedToGlobalMode: 'Switched to Global Mode',
     switchedToDirectMode: 'Switched to Direct Mode',
     profileImportSuccess: 'Profile imported successfully',
-    overrideImportSuccess: 'Override imported successfully'
   },
   dialog: {
     firstRunAdmin: 'Please run as administrator for the first time',
     appInitFailed: 'Application initialization failed',
     coreStartError: 'Core startup error',
     profileImportFailed: 'Profile import failed',
-    overrideImportFailed: 'Override import failed',
     selectSubscriptionFile: 'Select subscription file'
   },
   error: {
@@ -366,15 +362,13 @@ const ruRU: LocaleTranslations = {
     switchedToRuleMode: 'Переключено на режим правил',
     switchedToGlobalMode: 'Переключено на глобальный режим',
     switchedToDirectMode: 'Переключено на прямой режим',
-    profileImportSuccess: 'Подписка успешно импортирована',
-    overrideImportSuccess: 'Переопределение успешно импортировано'
+    profileImportSuccess: 'Подписка успешно импортирована'
   },
   dialog: {
     firstRunAdmin: 'Первый запуск — запустите от имени администратора',
     appInitFailed: 'Ошибка инициализации приложения',
     coreStartError: 'Ошибка запуска ядра',
     profileImportFailed: 'Ошибка импорта подписки',
-    overrideImportFailed: 'Ошибка импорта переопределения',
     selectSubscriptionFile: 'Выберите файл подписки'
   },
   error: {

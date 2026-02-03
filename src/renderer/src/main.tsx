@@ -10,7 +10,6 @@ import BaseErrorBoundary from './components/base/base-error-boundary'
 import { openDevTools, quitApp } from './utils/ipc'
 import { AppConfigProvider } from './hooks/use-app-config'
 import { ControledMihomoConfigProvider } from './hooks/use-controled-mihomo-config'
-import { OverrideConfigProvider } from './hooks/use-override-config'
 import { ProfileConfigProvider } from './hooks/use-profile-config'
 import { RulesProvider } from './hooks/use-rules'
 import { GroupsProvider } from './hooks/use-groups'
@@ -51,13 +50,11 @@ ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
             <AppConfigProvider>
               <ControledMihomoConfigProvider>
                 <ProfileConfigProvider>
-                  <OverrideConfigProvider>
-                    <GroupsProvider>
-                      <RulesProvider>
-                        <App />
-                      </RulesProvider>
-                    </GroupsProvider>
-                  </OverrideConfigProvider>
+                  <GroupsProvider>
+                    <RulesProvider>
+                      <App />
+                    </RulesProvider>
+                  </GroupsProvider>
                 </ProfileConfigProvider>
               </ControledMihomoConfigProvider>
             </AppConfigProvider>

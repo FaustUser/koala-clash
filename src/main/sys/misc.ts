@@ -7,7 +7,6 @@ import {
   dataDir,
   exePath,
   mihomoCorePath,
-  overridePath,
   profilePath,
   resourcesDir,
   resourcesFilesDir,
@@ -28,13 +27,8 @@ export async function readTextFile(filePath: string): Promise<string> {
   return await readFile(filePath, 'utf8')
 }
 
-export function openFile(type: 'profile' | 'override', id: string, ext?: 'yaml' | 'js'): void {
-  if (type === 'profile') {
-    shell.openPath(profilePath(id))
-  }
-  if (type === 'override') {
-    shell.openPath(overridePath(id, ext || 'js'))
-  }
+export function openFile(id: string): void {
+  shell.openPath(profilePath(id))
 }
 
 export async function openUWPTool(): Promise<void> {

@@ -137,10 +137,6 @@ export const defaultProfileConfig: ProfileConfig = {
   items: []
 }
 
-export const defaultOverrideConfig: OverrideConfig = {
-  items: []
-}
-
 export const defaultProfile: Partial<MihomoConfig> = {
   proxies: [],
   'proxy-groups': [],

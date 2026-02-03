@@ -1,7 +1,10 @@
 import BasePage from '@renderer/components/base/base-page'
 import LogItem from '@renderer/components/logs/log-item'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Button, Divider, Input } from '@heroui/react'
+import { Button } from '@renderer/components/ui/button'
+import { Separator } from '@renderer/components/ui/separator'
+import { Input } from '@renderer/components/ui/input'
+import { cn } from '@renderer/lib/utils'
 import { Virtuoso, VirtuosoHandle } from 'react-virtuoso'
 import { IoLocationSharp } from 'react-icons/io5'
 import { CgTrash } from 'react-icons/cg'
@@ -74,40 +77,35 @@ const Logs: React.FC = () => {
       <div className="sticky top-0 z-40">
         <div className="w-full flex p-2">
           <Input
-            size="sm"
+            className="h-8 text-sm"
             value={filter}
             placeholder={t('common.filter')}
-            isClearable
-            onValueChange={setFilter}
+            onChange={(e) => setFilter(e.target.value)}
           />
           <Button
-            size="sm"
-            isIconOnly
-            className="ml-2"
-            color={trace ? 'primary' : 'default'}
-            variant={trace ? 'solid' : 'bordered'}
+            size="icon-sm"
+            className={cn('ml-2', trace && 'bg-primary text-primary-foreground')}
+            variant={trace ? 'default' : 'outline'}
             title={t('logs.autoScroll')}
-            onPress={() => {
+            onClick={() => {
               setTrace((prev) => !prev)
             }}
           >
             <IoLocationSharp className="text-lg" />
           </Button>
           <Button
-            size="sm"
-            isIconOnly
+            size="icon-sm"
             title={t('pages.logs.clearLogs')}
             className="ml-2"
-            variant="light"
-            color="danger"
-            onPress={() => {
+            variant="ghost"
+            onClick={() => {
               cachedLogs.clean()
             }}
           >
-            <CgTrash className="text-lg" />
+            <CgTrash className="text-lg text-destructive" />
           </Button>
         </div>
-        <Divider />
+        <Separator />
       </div>
       <div className="h-[calc(100vh-100px)] mt-px">
         <Virtuoso

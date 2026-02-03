@@ -5,8 +5,6 @@ import {
   logDir,
   mihomoTestDir,
   mihomoWorkDir,
-  overrideConfigPath,
-  overrideDir,
   profileConfigPath,
   profilePath,
   profilesDir,
@@ -17,7 +15,6 @@ import {
 import {
   defaultConfig,
   defaultControledMihomoConfig,
-  defaultOverrideConfig,
   defaultProfile,
   defaultProfileConfig
 } from './template'
@@ -47,7 +44,6 @@ async function initDirs(): Promise<void> {
   const dirs = [
     themesDir(),
     profilesDir(),
-    overrideDir(),
     rulesDir(),
     mihomoWorkDir(),
     logDir(),
@@ -70,9 +66,6 @@ async function initConfig(): Promise<void> {
   }
   if (!existsSync(profileConfigPath())) {
     configTasks.push(writeFile(profileConfigPath(), stringifyYaml(defaultProfileConfig)))
-  }
-  if (!existsSync(overrideConfigPath())) {
-    configTasks.push(writeFile(overrideConfigPath(), stringifyYaml(defaultOverrideConfig)))
   }
   if (!existsSync(profilePath('default'))) {
     configTasks.push(writeFile(profilePath('default'), stringifyYaml(defaultProfile)))
@@ -105,9 +98,7 @@ async function initFiles(): Promise<void> {
     copy('geoip.metadb'),
     copy('geoip.dat'),
     copy('geosite.dat'),
-    copy('ASN.mmdb'),
-    copy('sub-store.bundle.js'),
-    copy('sub-store-frontend')
+    copy('ASN.mmdb')
   ])
 }
 

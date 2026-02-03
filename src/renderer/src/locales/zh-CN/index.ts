@@ -109,9 +109,6 @@ export default {
     tunSettings: '虚拟网卡设置',
     tunSettingsDesc:
       '这里可以更改虚拟网卡相关设置，Sparkle 理论上已经完全解决权限问题，如果您的虚拟网卡仍然不可用，可以尝试重设防火墙（Windows）或手动授权内核（MacOS/Linux）后重启内核',
-    override: '覆写',
-    overrideDesc:
-      'Sparkle 提供强大的覆写功能，可以对您导入的订阅配置进行个性化修改，如添加规则、自定义代理组等，您可以直接导入别人写好的覆写文件，也可以自己动手编写，<b>编辑好覆写文件一定要记得在需要覆写的订阅上启用</b>，覆写文件的语法请参考 <a href="https://mihomo.party/docs/guide/override" target="_blank">官方文档</a>',
     dnsDesc:
       '软件默认接管了内核的 DNS 设置，如果您需要使用订阅配置中的 DNS 设置，可以到应用设置中关闭"接管 DNS 设置"，域名嗅探同理',
     tutorialEnd: '教程结束',
@@ -125,7 +122,6 @@ export default {
     rules: '规则',
     connection: '连接',
     logs: '日志',
-    override: '覆写',
     domainSniffing: '域名嗅探',
     coreSettings: '内核设置',
     systemProxy: '系统代理',
@@ -136,7 +132,6 @@ export default {
     compareCurrentConfig: '对比当前配置',
     sideBySide: '侧边显示',
     showRawText: '显示原始文本',
-    showOverrideText: '显示覆写后文本',
     longTermValid: '长期有效',
     searchNode: '搜索节点',
     locateCurrentNode: '定位到当前节点',
@@ -270,15 +265,6 @@ export default {
       exampleIP: '例：1.1.1.1/32',
       exampleCIDR: '例：192.168.1.1/24'
     },
-    override: {
-      title: '覆写',
-      usageDocs: '使用文档',
-      commonOverrideRepo: '常用覆写仓库',
-      openLocalOverride: '打开本地覆写',
-      importRemoteOverride: '导入远程覆写',
-      newYAML: '新建 YAML',
-      newJavaScript: '新建 JavaScript'
-    },
     tun: {
       title: '虚拟网卡设置',
       resetFirewall: '重设防火墙',
@@ -402,9 +388,7 @@ export default {
   modal: {
     pleaseConfirm: '请确认',
     confirmDelete: '确认删除',
-    confirmDeleteOverride: '确认删除覆写？',
     confirmImportProfile: '确定要导入订阅配置吗？',
-    confirmImportOverride: '确定要导入覆写文件吗？',
     confirmQuit: '确定要退出 Sparkle 吗？',
     quitWarning: '退出后代理功能将停止工作',
     quickQuitHint: '快按两次或长按',
@@ -412,7 +396,6 @@ export default {
     nameLabel: '名称：',
     linkLabel: '链接：',
     ensureTrustedSource: '请确保订阅配置来源可信，恶意配置可能影响您的网络安全',
-    ensureTrustedOverride: '请确保覆写文件来源可信，恶意覆写文件可能影响您的网络安全',
     confirmRestart: '确定要重启应用吗？',
     restartForGPUChange: '修改 GPU 加速设置需要重启应用才能生效',
     editInfo: '编辑信息',
@@ -466,22 +449,6 @@ export default {
       systemTitleBar: '系统标题栏',
       statusBarSpeed: '状态栏网速',
       taskbarSpeed: '任务栏网速'
-    },
-    webdav: {
-      title: 'WebDAV 设置',
-      backupTitle: 'WebDAV 备份',
-      backupSuccess: '备份成功',
-      backupSuccessBody: '备份文件已上传至 WebDAV',
-      noBackup: '还没有备份',
-      getBackupListFailed: '获取备份列表失败：',
-      address: 'WebDAV 地址',
-      backupDirectory: 'WebDAV 备份目录',
-      username: 'WebDAV 用户名',
-      password: 'WebDAV 密码',
-      backup: '备份',
-      restore: '恢复',
-      restoreFailed: '恢复失败：',
-      deleteFailed: '删除失败：'
     },
     advanced: {
       title: '高级设置',
@@ -562,7 +529,6 @@ export default {
       proxyCardStatus: '代理组',
       ruleCardStatus: '规则',
       resourceCardStatus: '外部资源',
-      overrideCardStatus: '覆写',
       connectionCardStatus: '连接',
       mihomoCoreCardStatus: '内核',
       dnsCardStatus: 'DNS',
@@ -701,19 +667,6 @@ export default {
     domainOrIPCommaSeparated: '域名或 IP，用逗号分隔多个值'
   },
 
-  override: {
-    editInfo: '编辑信息',
-    editFile: '编辑文件',
-    openFile: '打开文件',
-    execLog: '执行日志',
-    delete: '删除',
-    confirmDeleteOverride: '确认删除覆写？',
-    importRemoteOverride: '导入远程覆写',
-    overrideAddress: '覆写地址',
-    editOverrideScript: '编辑覆写脚本',
-    editOverrideConfig: '编辑覆写配置'
-  },
-
   profile: {
     editInfo: '编辑信息',
     editFile: '编辑文件',
@@ -756,9 +709,6 @@ export default {
     separateWorkDir: '为不同订阅分别指定工作目录',
     separateWorkDirHelp: '开启后可以避免不同订阅中存在相同代理组名时无法分别保存选择的节点',
     defaultUserAgent: '默认 {{value}}',
-    syncRuntimeConfigGist: '同步运行时配置到 Gist',
-    copyGistUrl: '复制 Gist URL',
-    githubToken: 'GitHub Token',
     confirmDiscardTitle: '确认取消',
     unsavedChanges: '您有未保存的修改，确定要取消吗？',
     discardChanges: '放弃修改',
@@ -774,8 +724,6 @@ export default {
     autoUpdate: '自动更新',
     updateIntervalMinutes: '更新间隔（分钟）',
     updateIntervalLockedHelp: '当前更新间隔由远程管理',
-    override: '覆写',
-    noAvailableOverrides: '没有可用的覆写'
   },
 
   connection: {

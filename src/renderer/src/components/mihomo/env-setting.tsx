@@ -1,7 +1,8 @@
 import React, { useState } from 'react'
 import SettingCard from '../base/base-setting-card'
 import SettingItem from '../base/base-setting-item'
-import { Button, Switch } from '@heroui/react'
+import { Button } from '@renderer/components/ui/button'
+import { Switch } from '@renderer/components/ui/switch'
 import { useAppConfig } from '@renderer/hooks/use-app-config'
 import { restartCore } from '@renderer/utils/ipc'
 import EditableList from '../base/base-list-editor'
@@ -35,8 +36,8 @@ const EnvSetting: React.FC = () => {
       <SettingItem title={t('mihomo.envSettings.disableSystemCA')} divider>
         <Switch
           size="sm"
-          isSelected={disableSystemCA}
-          onValueChange={(v) => {
+          checked={disableSystemCA}
+          onCheckedChange={(v) => {
             handleConfigChangeWithRestart('disableSystemCA', v)
           }}
         />
@@ -44,8 +45,8 @@ const EnvSetting: React.FC = () => {
       <SettingItem title={t('mihomo.envSettings.disableBuiltinCA')} divider>
         <Switch
           size="sm"
-          isSelected={disableEmbedCA}
-          onValueChange={(v) => {
+          checked={disableEmbedCA}
+          onCheckedChange={(v) => {
             handleConfigChangeWithRestart('disableEmbedCA', v)
           }}
         />
@@ -53,8 +54,8 @@ const EnvSetting: React.FC = () => {
       <SettingItem title={t('mihomo.envSettings.disableLoopbackDetection')} divider>
         <Switch
           size="sm"
-          isSelected={disableLoopbackDetector}
-          onValueChange={(v) => {
+          checked={disableLoopbackDetector}
+          onCheckedChange={(v) => {
             handleConfigChangeWithRestart('disableLoopbackDetector', v)
           }}
         />
@@ -63,8 +64,8 @@ const EnvSetting: React.FC = () => {
         <SettingItem title={t('mihomo.envSettings.disableNftables')} divider>
           <Switch
             size="sm"
-            isSelected={disableNftables}
-            onValueChange={(v) => {
+            checked={disableNftables}
+            onCheckedChange={(v) => {
               handleConfigChangeWithRestart('disableNftables', v)
             }}
           />
@@ -74,8 +75,7 @@ const EnvSetting: React.FC = () => {
         {safePathsInput.join('') != safePaths.join('') && (
           <Button
             size="sm"
-            color="primary"
-            onPress={() => {
+            onClick={() => {
               handleConfigChangeWithRestart('safePaths', safePathsInput)
             }}
           >

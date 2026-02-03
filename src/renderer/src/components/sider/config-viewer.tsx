@@ -13,8 +13,7 @@ import {
   getProfileConfig,
   getRawProfileStr,
   getRuntimeConfigStr,
-  getCurrentProfileStr,
-  getOverrideProfileStr
+  getCurrentProfileStr
 } from '@renderer/utils/ipc'
 import useSWR from 'swr'
 import { useAppConfig } from '@renderer/hooks/use-app-config'
@@ -28,10 +27,8 @@ const ConfigViewer: React.FC<Props> = ({ onClose }) => {
   const [runtimeConfig, setRuntimeConfig] = useState('')
   const [rawProfile, setRawProfile] = useState('')
   const [profileConfig, setProfileConfig] = useState('')
-  const [overrideConfig, setOverrideConfig] = useState('')
   const [isDiff, setIsDiff] = useState(false)
   const [isRaw, setIsRaw] = useState(false)
-  const [isOverride, setIsOverride] = useState(false)
   const [sideBySide, setSideBySide] = useState(false)
 
   const { data: config } = useSWR('getProfileConfig', getProfileConfig)
@@ -40,7 +37,6 @@ const ConfigViewer: React.FC<Props> = ({ onClose }) => {
     setRuntimeConfig(await getRuntimeConfigStr())
     setRawProfile(await getRawProfileStr())
     setProfileConfig(await getCurrentProfileStr())
-    setOverrideConfig(await getOverrideProfileStr())
   }, [config])
 
   useEffect(() => {
@@ -68,13 +64,7 @@ const ConfigViewer: React.FC<Props> = ({ onClose }) => {
             language="yaml"
             value={runtimeConfig}
             originalValue={
-              isDiff
-                ? isOverride
-                  ? overrideConfig
-                  : isRaw
-                    ? rawProfile
-                    : profileConfig
-                : undefined
+              isDiff ? isRaw ? rawProfile : profileConfig : undefined
             }
             readOnly
             diffRenderSideBySide={sideBySide}
@@ -93,24 +83,9 @@ const ConfigViewer: React.FC<Props> = ({ onClose }) => {
               isSelected={isRaw}
               onValueChange={(value) => {
                 setIsRaw(value)
-                if (value) {
-                  setIsOverride(false)
-                }
               }}
             >
               {t('sider.showRawText')}
-            </Switch>
-            <Switch
-              size="sm"
-              isSelected={isOverride}
-              onValueChange={(value) => {
-                setIsOverride(value)
-                if (value) {
-                  setIsRaw(false)
-                }
-              }}
-            >
-              {t('sider.showOverrideText')}
             </Switch>
           </div>
           <Button size="sm" variant="light" onPress={onClose}>

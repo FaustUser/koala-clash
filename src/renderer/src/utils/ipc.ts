@@ -193,38 +193,6 @@ export async function setProfileStr(id: string, str: string): Promise<void> {
   return ipcErrorWrapper(await window.electron.ipcRenderer.invoke('setProfileStr', id, str))
 }
 
-export async function getOverrideConfig(force = false): Promise<OverrideConfig> {
-  return ipcErrorWrapper(await window.electron.ipcRenderer.invoke('getOverrideConfig', force))
-}
-
-export async function setOverrideConfig(config: OverrideConfig): Promise<void> {
-  return ipcErrorWrapper(await window.electron.ipcRenderer.invoke('setOverrideConfig', config))
-}
-
-export async function getOverrideItem(id: string): Promise<OverrideItem | undefined> {
-  return ipcErrorWrapper(await window.electron.ipcRenderer.invoke('getOverrideItem', id))
-}
-
-export async function addOverrideItem(item: Partial<OverrideItem>): Promise<void> {
-  return ipcErrorWrapper(await window.electron.ipcRenderer.invoke('addOverrideItem', item))
-}
-
-export async function removeOverrideItem(id: string): Promise<void> {
-  return ipcErrorWrapper(await window.electron.ipcRenderer.invoke('removeOverrideItem', id))
-}
-
-export async function updateOverrideItem(item: OverrideItem): Promise<void> {
-  return ipcErrorWrapper(await window.electron.ipcRenderer.invoke('updateOverrideItem', item))
-}
-
-export async function getOverride(id: string, ext: 'js' | 'yaml' | 'log'): Promise<string> {
-  return ipcErrorWrapper(await window.electron.ipcRenderer.invoke('getOverride', id, ext))
-}
-
-export async function setOverride(id: string, ext: 'js' | 'yaml', str: string): Promise<void> {
-  return ipcErrorWrapper(await window.electron.ipcRenderer.invoke('setOverride', id, ext, str))
-}
-
 export async function restartCore(): Promise<void> {
   return ipcErrorWrapper(await window.electron.ipcRenderer.invoke('restartCore'))
 }
@@ -333,10 +301,6 @@ export async function getCurrentProfileStr(): Promise<string> {
   return ipcErrorWrapper(await window.electron.ipcRenderer.invoke('getCurrentProfileStr'))
 }
 
-export async function getOverrideProfileStr(): Promise<string> {
-  return ipcErrorWrapper(await window.electron.ipcRenderer.invoke('getOverrideProfileStr'))
-}
-
 export async function getRuntimeConfig(): Promise<MihomoConfig> {
   return ipcErrorWrapper(await window.electron.ipcRenderer.invoke('getRuntimeConfig'))
 }
@@ -371,22 +335,6 @@ export async function getInterfaces(): Promise<Record<string, NetworkInterfaceIn
   return ipcErrorWrapper(await window.electron.ipcRenderer.invoke('getInterfaces'))
 }
 
-export async function webdavBackup(): Promise<boolean> {
-  return ipcErrorWrapper(await window.electron.ipcRenderer.invoke('webdavBackup'))
-}
-
-export async function webdavRestore(filename: string): Promise<void> {
-  return ipcErrorWrapper(await window.electron.ipcRenderer.invoke('webdavRestore', filename))
-}
-
-export async function listWebdavBackups(): Promise<string[]> {
-  return ipcErrorWrapper(await window.electron.ipcRenderer.invoke('listWebdavBackups'))
-}
-
-export async function webdavDelete(filename: string): Promise<void> {
-  return ipcErrorWrapper(await window.electron.ipcRenderer.invoke('webdavDelete', filename))
-}
-
 export async function setTitleBarOverlay(overlay: TitleBarOverlayOptions): Promise<void> {
   return ipcErrorWrapper(await window.electron.ipcRenderer.invoke('setTitleBarOverlay', overlay))
 }
@@ -417,10 +365,6 @@ export async function notDialogQuit(): Promise<void> {
 
 export async function setNativeTheme(theme: 'system' | 'light' | 'dark'): Promise<void> {
   return ipcErrorWrapper(await window.electron.ipcRenderer.invoke('setNativeTheme', theme))
-}
-
-export async function getGistUrl(): Promise<string> {
-  return ipcErrorWrapper(await window.electron.ipcRenderer.invoke('getGistUrl'))
 }
 
 export async function showTrayIcon(): Promise<void> {
@@ -459,12 +403,8 @@ export async function showContextMenu(): Promise<void> {
   return ipcErrorWrapper(await window.electron.ipcRenderer.invoke('showContextMenu'))
 }
 
-export async function openFile(
-  type: 'profile' | 'override',
-  id: string,
-  ext?: 'yaml' | 'js'
-): Promise<void> {
-  return ipcErrorWrapper(await window.electron.ipcRenderer.invoke('openFile', type, id, ext))
+export async function openFile(id: string): Promise<void> {
+  return ipcErrorWrapper(await window.electron.ipcRenderer.invoke('openFile', id))
 }
 
 export async function openDevTools(): Promise<void> {

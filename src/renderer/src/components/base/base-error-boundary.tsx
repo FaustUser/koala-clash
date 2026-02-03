@@ -1,4 +1,4 @@
-import { Button } from '@heroui/react'
+import { Button } from '@renderer/components/ui/button'
 import { JSX, ReactNode } from 'react'
 import { ErrorBoundary, FallbackProps } from 'react-error-boundary'
 import { useTranslation } from 'react-i18next'
@@ -13,27 +13,25 @@ const ErrorFallback = ({ error }: FallbackProps): JSX.Element => {
 
       {/* <Button
         size="sm"
-        color="primary"
-        variant="flat"
-        onPress={() => open('https://github.com/xishang0128/sparkle/issues/new/choose')}
+        variant="secondary"
+        onClick={() => open('https://github.com/xishang0128/sparkle/issues/new/choose')}
       >
         GitHub
       </Button> */}
       <Button
         size="sm"
-        color="primary"
-        variant="flat"
+        variant="secondary"
         className="ml-2"
-        onPress={() => open('https://t.me/+y7rcYjEKIiI1NzZl')}
+        onClick={() => open('https://t.me/+y7rcYjEKIiI1NzZl')}
       >
         Telegram
       </Button>
 
       <Button
         size="sm"
-        variant="flat"
+        variant="secondary"
         className="ml-2"
-        onPress={() =>
+        onClick={() =>
           navigator.clipboard.writeText('```\n' + error.message + '\n' + error.stack + '\n```')
         }
       >

@@ -2,7 +2,8 @@ import BasePage from '@renderer/components/base/base-page'
 import RuleItem from '@renderer/components/rules/rule-item'
 import { Virtuoso } from 'react-virtuoso'
 import { useMemo, useState } from 'react'
-import { Divider, Input } from '@heroui/react'
+import { Separator } from '@renderer/components/ui/separator'
+import { Input } from '@renderer/components/ui/input'
 import { useRules } from '@renderer/hooks/use-rules'
 import { includesIgnoreCase } from '@renderer/utils/includes'
 import { useTranslation } from 'react-i18next'
@@ -29,14 +30,13 @@ const Rules: React.FC = () => {
       <div className="sticky top-0 z-40">
         <div className="flex p-2">
           <Input
-            size="sm"
+            className="h-8 text-sm"
             value={filter}
             placeholder={t('common.filter')}
-            isClearable
-            onValueChange={setFilter}
+            onChange={(e) => setFilter(e.target.value)}
           />
         </div>
-        <Divider />
+        <Separator />
       </div>
       <div className="h-[calc(100vh-100px)] mt-px">
         <Virtuoso

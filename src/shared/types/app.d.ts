@@ -50,7 +50,6 @@ interface AppConfig {
   logCardStatus?: CardStatus
   pauseSSID?: string[]
   mihomoCoreCardStatus?: CardStatus
-  overrideCardStatus?: CardStatus
   profileCardStatus?: CardStatus
   proxyCardStatus?: CardStatus
   resourceCardStatus?: CardStatus
@@ -59,7 +58,6 @@ interface AppConfig {
   sysproxyCardStatus?: CardStatus
   tunCardStatus?: CardStatus
   homeCardStatus?: CardStatus
-  githubToken?: string
   autoLightweight?: boolean
   autoLightweightDelay?: number
   autoLightweightMode?: 'core' | 'tray'
@@ -86,10 +84,6 @@ interface AppConfig {
   useDockIcon?: boolean
   showTraffic?: boolean
   useCustomTrayMenu?: boolean
-  webdavUrl?: string
-  webdavDir?: string
-  webdavUsername?: string
-  webdavPassword?: string
   hosts: IHost[]
   showWindowShortcut?: string
   showFloatingWindowShortcut?: string
@@ -121,14 +115,12 @@ interface ProfileItem {
   type: 'remote' | 'local'
   name: string
   url?: string // remote
-  fingerprint?: string // remote
   ua?: string // remote
   file?: string // local
   verify?: boolean // remote
   interval?: number
   home?: string
   updated?: number
-  override?: string[]
   useProxy?: boolean
   extra?: SubscriptionUserInfo
   locked?: boolean
@@ -140,20 +132,4 @@ interface SubscriptionUserInfo {
   download: number
   total: number
   expire: number
-}
-
-interface OverrideConfig {
-  items: OverrideItem[]
-}
-
-interface OverrideItem {
-  id: string
-  type: 'remote' | 'local'
-  ext: 'js' | 'yaml'
-  name: string
-  updated: number
-  global?: boolean
-  url?: string
-  file?: string
-  fingerprint?: string
 }

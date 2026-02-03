@@ -149,15 +149,6 @@ export async function createDriver(navigate: NavigateFunction): Promise<Driver> 
         }
       },
       {
-        element: '.override-card',
-        popover: {
-          title: t('guide.override'),
-          description: t('guide.overrideDesc'),
-          side: 'right',
-          align: 'center'
-        }
-      },
-      {
         element: '.dns-card',
         popover: {
           title: 'DNS',

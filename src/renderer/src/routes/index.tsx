@@ -1,5 +1,4 @@
 import { Navigate } from 'react-router-dom'
-import Override from '@renderer/pages/override'
 import Proxies from '@renderer/pages/proxies'
 import Rules from '@renderer/pages/rules'
 import Settings from '@renderer/pages/settings'
@@ -53,10 +52,6 @@ const routes = [
   {
     path: '/connections',
     element: <Connections />
-  },
-  {
-    path: '/override',
-    element: <Override />
   },
   {
     path: '/profiles',

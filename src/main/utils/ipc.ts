@@ -41,14 +41,6 @@ import {
   setProfileStr,
   updateProfileItem,
   setProfileConfig,
-  getOverrideConfig,
-  setOverrideConfig,
-  getOverrideItem,
-  addOverrideItem,
-  removeOverrideItem,
-  getOverride,
-  setOverride,
-  updateOverrideItem,
   convertMrsRuleset
 } from '../config'
 import {
@@ -88,10 +80,8 @@ import {
   getRuntimeConfig,
   getRuntimeConfigStr,
   getRawProfileStr,
-  getCurrentProfileStr,
-  getOverrideProfileStr
+  getCurrentProfileStr
 } from '../core/factory'
-import { listWebdavBackups, webdavBackup, webdavDelete, webdavRestore } from '../resolve/backup'
 import { getInterfaces } from '../sys/interface'
 import { closeTrayIcon, copyEnv, setDockVisible, showTrayIcon } from '../resolve/tray'
 import { registerShortcut } from '../resolve/shortcut'
@@ -114,7 +104,6 @@ import {
 import { logDir } from './dirs'
 import path from 'path'
 import v8 from 'v8'
-import { getGistUrl } from '../resolve/gistApi'
 import { getIconDataURL, getImageDataURL } from './icon'
 import { startMonitor } from '../resolve/trafficMonitor'
 import { closeFloatingWindow, showContextMenu, showFloatingWindow } from '../resolve/floatingWindow'
@@ -205,14 +194,6 @@ export function registerIpcMainHandlers(): void {
   ipcMain.handle('changeCurrentProfile', (_e, id) => ipcErrorWrapper(changeCurrentProfile)(id))
   ipcMain.handle('addProfileItem', (_e, item) => ipcErrorWrapper(addProfileItem)(item))
   ipcMain.handle('removeProfileItem', (_e, id) => ipcErrorWrapper(removeProfileItem)(id))
-  ipcMain.handle('getOverrideConfig', (_e, force) => ipcErrorWrapper(getOverrideConfig)(force))
-  ipcMain.handle('setOverrideConfig', (_e, config) => ipcErrorWrapper(setOverrideConfig)(config))
-  ipcMain.handle('getOverrideItem', (_e, id) => ipcErrorWrapper(getOverrideItem)(id))
-  ipcMain.handle('addOverrideItem', (_e, item) => ipcErrorWrapper(addOverrideItem)(item))
-  ipcMain.handle('removeOverrideItem', (_e, id) => ipcErrorWrapper(removeOverrideItem)(id))
-  ipcMain.handle('updateOverrideItem', (_e, item) => ipcErrorWrapper(updateOverrideItem)(item))
-  ipcMain.handle('getOverride', (_e, id, ext) => ipcErrorWrapper(getOverride)(id, ext))
-  ipcMain.handle('setOverride', (_e, id, ext, str) => ipcErrorWrapper(setOverride)(id, ext, str))
   ipcMain.handle('restartCore', ipcErrorWrapper(restartCore))
   ipcMain.handle('restartMihomoConnections', ipcErrorWrapper(restartMihomoConnections))
   ipcMain.handle('startMonitor', (_e, detached) => ipcErrorWrapper(startMonitor)(detached))
@@ -242,7 +223,6 @@ export function registerIpcMainHandlers(): void {
   ipcMain.handle('getRuntimeConfigStr', ipcErrorWrapper(getRuntimeConfigStr))
   ipcMain.handle('getRawProfileStr', ipcErrorWrapper(getRawProfileStr))
   ipcMain.handle('getCurrentProfileStr', ipcErrorWrapper(getCurrentProfileStr))
-  ipcMain.handle('getOverrideProfileStr', ipcErrorWrapper(getOverrideProfileStr))
   ipcMain.handle('getRuntimeConfig', ipcErrorWrapper(getRuntimeConfig))
   ipcMain.handle('downloadAndInstallUpdate', (_e, version) =>
     ipcErrorWrapper(downloadAndInstallUpdate)(version)
@@ -254,14 +234,9 @@ export function registerIpcMainHandlers(): void {
   ipcMain.handle('openUWPTool', ipcErrorWrapper(openUWPTool))
   ipcMain.handle('setupFirewall', ipcErrorWrapper(setupFirewall))
   ipcMain.handle('getInterfaces', getInterfaces)
-  ipcMain.handle('webdavBackup', ipcErrorWrapper(webdavBackup))
-  ipcMain.handle('webdavRestore', (_e, filename) => ipcErrorWrapper(webdavRestore)(filename))
-  ipcMain.handle('listWebdavBackups', ipcErrorWrapper(listWebdavBackups))
-  ipcMain.handle('webdavDelete', (_e, filename) => ipcErrorWrapper(webdavDelete)(filename))
   ipcMain.handle('registerShortcut', (_e, oldShortcut, newShortcut, action) =>
     ipcErrorWrapper(registerShortcut)(oldShortcut, newShortcut, action)
   )
-  ipcMain.handle('getGistUrl', ipcErrorWrapper(getGistUrl))
   ipcMain.handle('setNativeTheme', (_e, theme) => {
     setNativeTheme(theme)
   })
@@ -287,7 +262,7 @@ export function registerIpcMainHandlers(): void {
   ipcMain.handle('showFloatingWindow', () => ipcErrorWrapper(showFloatingWindow)())
   ipcMain.handle('closeFloatingWindow', () => ipcErrorWrapper(closeFloatingWindow)())
   ipcMain.handle('showContextMenu', () => ipcErrorWrapper(showContextMenu)())
-  ipcMain.handle('openFile', (_e, type, id, ext) => openFile(type, id, ext))
+  ipcMain.handle('openFile', (_e, id) => openFile(id))
   ipcMain.handle('openDevTools', () => {
     mainWindow?.webContents.openDevTools()
   })

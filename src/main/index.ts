@@ -2,7 +2,7 @@ import { electronApp, is, optimizer } from '@electron-toolkit/utils'
 import { registerIpcMainHandlers } from './utils/ipc'
 import windowStateKeeper from 'electron-window-state'
 import { app, BrowserWindow, dialog, ipcMain, Menu, Notification, powerMonitor, shell } from 'electron'
-import { addOverrideItem, addProfileItem, getAppConfig, patchControledMihomoConfig } from './config'
+import { addProfileItem, getAppConfig, patchControledMihomoConfig } from './config'
 import { quitWithoutCore, startCore, stopCore } from './core/manager'
 import { triggerSysProxy } from './sys/sysproxy'
 import icon from '../../resources/icon.png?asset'
@@ -353,33 +353,6 @@ async function handleDeepLink(url: string): Promise<void> {
       }
       break
     }
-    case 'install-override': {
-      try {
-        const urlParam = urlObj.searchParams.get('url')
-        const profileName = urlObj.searchParams.get('name')
-        if (!urlParam) {
-          throw new Error(t('error.missingUrlParam'))
-        }
-
-        const confirmed = await showOverrideInstallConfirm(urlParam, profileName)
-
-        if (confirmed) {
-          const url = new URL(urlParam)
-          const name = url.pathname.split('/').pop()
-          await addOverrideItem({
-            type: 'remote',
-            name: profileName ?? (name ? decodeURIComponent(name) : undefined),
-            url: urlParam,
-            ext: url.pathname.endsWith('.js') ? 'js' : 'yaml'
-          })
-          mainWindow?.webContents.send('overrideConfigUpdated')
-          new Notification({ title: t('notification.overrideImportSuccess') }).show()
-        }
-      } catch (e) {
-        dialog.showErrorBox(t('dialog.overrideImportFailed'), `${url}\n${e}`)
-      }
-      break
-    }
   }
 }
 
@@ -430,33 +403,6 @@ function parseFilename(str: string): string {
     const filename = str.split('filename=')[1]
     return filename?.replace(/"/g, '') || ''
   }
-}
-
-async function showOverrideInstallConfirm(url: string, name?: string | null): Promise<boolean> {
-  if (!mainWindow) {
-    await createWindow()
-  }
-  return new Promise((resolve) => {
-    let finalName = name
-    if (!finalName) {
-      const urlObj = new URL(url)
-      const pathName = urlObj.pathname.split('/').pop()
-      finalName = pathName ? decodeURIComponent(pathName) : undefined
-    }
-
-    const delay = showWindow()
-    setTimeout(() => {
-      mainWindow?.webContents.send('show-override-install-confirm', {
-        url,
-        name: finalName
-      })
-      const handleConfirm = (_event: Electron.IpcMainEvent, confirmed: boolean): void => {
-        ipcMain.off('override-install-confirm-result', handleConfirm)
-        resolve(confirmed)
-      }
-      ipcMain.once('override-install-confirm-result', handleConfirm)
-    }, delay)
-  })
 }
 
 export async function createWindow(appConfig?: AppConfig): Promise<void> {

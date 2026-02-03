@@ -36,7 +36,6 @@ import { mainWindow } from '..'
 import path from 'path'
 import os from 'os'
 import { createWriteStream, existsSync } from 'fs'
-import { uploadRuntimeConfig } from '../resolve/gistApi'
 import { startMonitor } from '../resolve/trafficMonitor'
 import { disableSysProxy, triggerSysProxy } from '../sys/sysproxy'
 import { getAxios } from './mihomoApi'
@@ -245,7 +244,6 @@ export async function startCore(detached = false): Promise<Promise<void>[]> {
                     mainWindow?.webContents.send('groupsUpdated')
                     mainWindow?.webContents.send('rulesUpdated')
                   }),
-                  uploadRuntimeConfig(),
                   new Promise((r) => setTimeout(r, 100)).then(() =>
                     patchMihomoConfig({ 'log-level': logLevel })
                   )

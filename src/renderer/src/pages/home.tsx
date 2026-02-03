@@ -1,5 +1,5 @@
 import BasePage from '@renderer/components/base/base-page'
-import { Switch } from '@heroui/react'
+import { Switch } from '@renderer/components/ui/switch'
 import { useAppConfig } from '@renderer/hooks/use-app-config'
 import { useControledMihomoConfig } from '@renderer/hooks/use-controled-mihomo-config'
 import { restartCore, triggerSysProxy } from '@renderer/utils/ipc'
@@ -38,7 +38,7 @@ const Home: React.FC = () => {
     ? 'text-warning'
     : isSelected
       ? 'text-success'
-      : 'text-default-400'
+      : 'text-muted-foreground'
 
   const onValueChange = async (enable: boolean): Promise<void> => {
     setLoading(true)
@@ -72,11 +72,10 @@ const Home: React.FC = () => {
       <div className="flex flex-col h-full items-center justify-center">
         <span className={`text-sm font-medium mb-[80px] ${statusColor}`}>{status}</span>
         <Switch
-          size="lg"
           className="scale-500"
-          isSelected={isSelected}
-          isDisabled={isDisabled}
-          onValueChange={onValueChange}
+          checked={isSelected}
+          disabled={isDisabled}
+          onCheckedChange={onValueChange}
         />
       </div>
     </BasePage>

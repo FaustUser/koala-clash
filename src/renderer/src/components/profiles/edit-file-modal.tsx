@@ -10,27 +10,24 @@ import {
 import React, { useEffect, useState } from 'react'
 import { BaseEditor } from '../base/base-editor-lazy'
 import { getProfileStr, setProfileStr } from '@renderer/utils/ipc'
-import { useNavigate } from 'react-router-dom'
 import { useAppConfig } from '@renderer/hooks/use-app-config'
 import ConfirmModal from '../base/base-confirm'
 import { useTranslation } from 'react-i18next'
 
 interface Props {
   id: string
-  isRemote: boolean
   onClose: () => void
 }
 
 const EditFileModal: React.FC<Props> = (props) => {
   const { t } = useTranslation()
-  const { id, isRemote, onClose } = props
+  const { id, onClose } = props
   const { appConfig: { disableAnimation = false } = {} } = useAppConfig()
   const [currData, setCurrData] = useState('')
   const [originalData, setOriginalData] = useState('')
   const [isDiff, setIsDiff] = useState(false)
   const [sideBySide, setSideBySide] = useState(false)
   const [isConfirmOpen, setIsConfirmOpen] = useState(false)
-  const navigate = useNavigate()
 
   const isModified = currData !== originalData
 
@@ -80,23 +77,6 @@ const EditFileModal: React.FC<Props> = (props) => {
         <ModalHeader className="flex pb-0 app-drag">
           <div className="flex justify-start">
             <div className="flex items-center">{t('profile.editSubscription')}</div>
-            {isRemote && (
-              <small className="ml-2 text-foreground-500">
-                {t('profile.editSubscriptionNoticePrefix')}
-                <Button
-                  size="sm"
-                  color="primary"
-                  variant="light"
-                  className="app-nodrag"
-                  onPress={() => {
-                    navigate('/override')
-                  }}
-                >
-                  {t('pages.override.title')}
-                </Button>
-                {t('profile.editSubscriptionNoticeSuffix')}
-              </small>
-            )}
           </div>
         </ModalHeader>
         <ModalBody className="h-full">

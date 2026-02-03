@@ -7,10 +7,6 @@ import { getAppConfig } from './app'
 import { existsSync } from 'fs'
 import axios, { AxiosResponse } from 'axios'
 import https from 'https'
-import http from 'http'
-import tls from 'tls'
-import crypto from 'crypto'
-import { URL } from 'url'
 import { parseYaml, stringifyYaml } from '../utils/yaml'
 import { defaultProfile } from '../utils/template'
 import { dirname, join } from 'path'
@@ -19,10 +15,6 @@ import { getUserAgent } from '../utils/userAgent'
 import { t } from '../utils/i18n'
 
 let profileConfig: ProfileConfig // profile.yaml
-
-export function getCertFingerprint(cert: tls.PeerCertificate) {
-  return crypto.createHash('sha256').update(cert.raw).digest('hex').toUpperCase()
-}
 
 export async function getProfileConfig(force = false): Promise<ProfileConfig> {
   if (force || !profileConfig) {
@@ -123,12 +115,10 @@ export async function createProfile(item: Partial<ProfileItem>): Promise<Profile
     name: item.name || (item.type === 'remote' ? 'Remote File' : 'Local File'),
     type: item.type,
     url: item.url,
-    fingerprint: item.fingerprint,
     ua: item.ua,
     verify: item.verify ?? true,
     autoUpdate: item.autoUpdate ?? true,
     interval: item.interval || 0,
-    override: item.override || [],
     useProxy: item.useProxy || false,
     updated: new Date().getTime()
   } as ProfileItem
@@ -138,61 +128,12 @@ export async function createProfile(item: Partial<ProfileItem>): Promise<Profile
       if (!item.url) throw new Error('Empty URL')
       let res: AxiosResponse
       try {
-        const httpsAgent = new https.Agent({ rejectUnauthorized: !item.fingerprint })
-
-        if (item.fingerprint) {
-          const expected = item.fingerprint.replace(/:/g, '').toUpperCase()
-          const verify = (s: tls.TLSSocket) => {
-            if (getCertFingerprint(s.getPeerCertificate()) !== expected)
-              s.destroy(new Error(t('error.certFingerprintMismatch')))
-          }
-
-          if (newItem.useProxy && mixedPort != 0) {
-            const urlObj = new URL(item.url)
-            const hostname = urlObj.hostname
-            const port = urlObj.port || '443'
-            httpsAgent.createConnection = (_, cb) => {
-              const req = http.request({
-                host: '127.0.0.1',
-                port: mixedPort,
-                method: 'CONNECT',
-                path: `${hostname}:${port}`
-              })
-
-              req.on('connect', (res, sock, head) => {
-                if (res.statusCode !== 200) {
-                  cb?.(new Error(`${t('error.proxyConnectionFailed')}：${res.statusCode}`), null!)
-                  return
-                }
-                if (head.length > 0) sock.unshift(head)
-                const tls$ = tls.connect(
-                  { socket: sock, servername: hostname, rejectUnauthorized: false },
-                  () => verify(tls$)
-                )
-                cb?.(null, tls$)
-              })
-
-              req.on('error', (e) => cb?.(e, null!))
-              req.end()
-              return null!
-            }
-          } else {
-            const conn = httpsAgent.createConnection.bind(httpsAgent)
-            httpsAgent.createConnection = (o, c) => {
-              const sock = conn(o, c)
-              sock?.once('secureConnect', function (this: tls.TLSSocket) {
-                verify(this)
-              })
-              return sock
-            }
-          }
-        }
+        const httpsAgent = new https.Agent()
 
         res = await axios.get(item.url, {
           httpsAgent,
           ...(newItem.useProxy &&
-            mixedPort &&
-            !item.fingerprint && {
+            mixedPort && {
               proxy: { protocol: 'http', host: '127.0.0.1', port: mixedPort }
             }),
           headers: { 'User-Agent': newItem.ua || (await getUserAgent()) },

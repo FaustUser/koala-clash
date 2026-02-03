@@ -82,7 +82,6 @@ export default {
     rules: 'Правила',
     connection: 'Подключения',
     logs: 'Логи',
-    override: 'Переопределения',
     domainSniffing: 'Сниффинг доменов',
     coreSettings: 'Настройки ядра',
     systemProxy: 'Системный прокси',
@@ -93,7 +92,6 @@ export default {
     compareCurrentConfig: 'Сравнить текущую конфигурацию',
     sideBySide: 'Бок о бок',
     showRawText: 'Показать исходный текст',
-    showOverrideText: 'Показать текст с переопределениями',
     longTermValid: 'Действует бессрочно',
     searchNode: 'Поиск узлов',
     locateCurrentNode: 'Найти текущий узел',
@@ -227,15 +225,6 @@ export default {
       exampleIP: 'напр.: 1.1.1.1/32',
       exampleCIDR: 'напр.: 192.168.1.1/24'
     },
-    override: {
-      title: 'Переопределения',
-      usageDocs: 'Документация по использованию',
-      commonOverrideRepo: 'Репозиторий общих переопределений',
-      openLocalOverride: 'Открыть локальное переопределение',
-      importRemoteOverride: 'Импорт удаленного переопределения',
-      newYAML: 'Новый YAML',
-      newJavaScript: 'Новый JavaScript'
-    },
     tun: {
       title: 'Настройки виртуального сетевого интерфейса',
       resetFirewall: 'Сбросить брандмауэр',
@@ -359,9 +348,7 @@ export default {
   modal: {
     pleaseConfirm: 'Пожалуйста, подтвердите',
     confirmDelete: 'Подтвердить удаление',
-    confirmDeleteOverride: 'Подтвердить удаление переопределения?',
     confirmImportProfile: 'Подтвердить импорт конфигурации подписки?',
-    confirmImportOverride: 'Подтвердить импорт файла переопределения?',
     confirmQuit: 'Вы уверены, что хотите выйти из Sparkle?',
     quitWarning: 'После выхода функция прокси перестанет работать',
     quickQuitHint: 'Дважды нажмите или длительно нажмите',
@@ -369,7 +356,6 @@ export default {
     nameLabel: 'Имя: ',
     linkLabel: 'Ссылка: ',
     ensureTrustedSource: 'Пожалуйста, убедитесь, что источник конфигурации подписки заслуживает доверия, вредоносные конфигурации могут повлиять на вашу сетевую безопасность',
-    ensureTrustedOverride: 'Пожалуйста, убедитесь, что источник файла переопределения заслуживает доверия, вредоносные файлы переопределения могут повлиять на вашу сетевую безопасность',
     confirmRestart: 'Вы уверены, что хотите перезапустить приложение?',
     restartForGPUChange: 'Изменение настроек ускорения GPU требует перезапуска приложения для вступления в силу',
     editInfo: 'Редактировать информацию',
@@ -423,22 +409,6 @@ export default {
       systemTitleBar: 'Системная строка заголовка',
       statusBarSpeed: 'Скорость в строке состояния',
       taskbarSpeed: 'Скорость на панели задач'
-    },
-    webdav: {
-      title: 'Настройки WebDAV',
-      backupTitle: 'Резервное копирование WebDAV',
-      backupSuccess: 'Резервное копирование выполнено',
-      backupSuccessBody: 'Файл резервной копии загружен в WebDAV',
-      noBackup: 'Резервных копий пока нет',
-      getBackupListFailed: 'Не удалось получить список резервных копий: ',
-      address: 'Адрес WebDAV',
-      backupDirectory: 'Каталог резервных копий WebDAV',
-      username: 'Имя пользователя WebDAV',
-      password: 'Пароль WebDAV',
-      backup: 'Резервное копирование',
-      restore: 'Восстановить',
-      restoreFailed: 'Ошибка восстановления: ',
-      deleteFailed: 'Ошибка удаления: '
     },
     advanced: {
       title: 'Расширенные настройки',
@@ -518,7 +488,6 @@ export default {
       proxyCardStatus: 'Группы прокси',
       ruleCardStatus: 'Правила',
       resourceCardStatus: 'Внешние ресурсы',
-      overrideCardStatus: 'Переопределения',
       connectionCardStatus: 'Подключения',
       mihomoCoreCardStatus: 'Ядро',
       dnsCardStatus: 'DNS',
@@ -659,20 +628,6 @@ export default {
     customHosts: 'Пользовательские Hosts',
     domainOrIPCommaSeparated: 'Домен или IP, разделите несколько значений запятыми'
   },
-
-  override: {
-    editInfo: 'Редактировать информацию',
-    editFile: 'Редактировать файл',
-    openFile: 'Открыть файл',
-    execLog: 'Лог выполнения',
-    delete: 'Удалить',
-    confirmDeleteOverride: 'Подтвердить удаление переопределения?',
-    importRemoteOverride: 'Импорт удалённого переопределения',
-    overrideAddress: 'Адрес переопределения',
-    editOverrideScript: 'Редактировать скрипт переопределения',
-    editOverrideConfig: 'Редактировать конфигурацию переопределения'
-  },
-
   profile: {
     editInfo: 'Редактировать информацию',
     editFile: 'Редактировать файл',
@@ -716,9 +671,6 @@ export default {
     separateWorkDirHelp:
       'При включении избегаются конфликты, если в разных профилях совпадают имена групп прокси',
     defaultUserAgent: 'По умолчанию: {{value}}',
-    syncRuntimeConfigGist: 'Синхронизировать конфигурацию выполнения в Gist',
-    copyGistUrl: 'Копировать URL Gist',
-    githubToken: 'Токен GitHub',
     confirmDiscardTitle: 'Отменить изменения?',
     unsavedChanges: 'Есть несохраненные изменения. Отменить?',
     discardChanges: 'Отменить изменения',
@@ -735,8 +687,6 @@ export default {
     autoUpdate: 'Автообновление',
     updateIntervalMinutes: 'Интервал обновления (минуты)',
     updateIntervalLockedHelp: 'Интервал обновления управляется удаленно',
-    override: 'Переопределения',
-    noAvailableOverrides: 'Нет доступных переопределений'
   },
 
   connection: {
@@ -895,8 +845,6 @@ export default {
     tunDesc: 'Виртуальный сетевой интерфейс (режим TUN) может обрабатывать весь сетевой трафик, включая UDP. Нажмите на карточку для входа в настройки.',
     tunSettings: 'Настройки виртуального сетевого интерфейса',
     tunSettingsDesc: 'Режим виртуального сетевого интерфейса требует авторизации. Если вы ещё не настроили авторизацию, пожалуйста, сначала настройте её в «Настройках ядра».',
-    override: 'Переопределения',
-    overrideDesc: 'Переопределения позволяют изменять рабочую конфигурацию без изменения исходного содержимого подписки.',
     dnsDesc: 'Настройки DNS помогут вам более эффективно разрешать доменные имена и предотвратить загрязнение DNS.',
     tutorialEnd: 'Руководство завершено',
     tutorialEndDesc: 'Теперь вы знаете основы использования этого программного обеспечения. Если у вас есть вопросы, обратитесь к официальной документации.'

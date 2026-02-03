@@ -1,4 +1,6 @@
-import { Button, Card, CardBody } from '@heroui/react'
+import { Button } from '@renderer/components/ui/button'
+import { Card, CardContent } from '@renderer/components/ui/card'
+import { cn } from '@renderer/lib/utils'
 import { mihomoUnfixedProxy } from '@renderer/utils/ipc'
 import React, { useMemo, useState } from 'react'
 import { FaMapPin } from 'react-icons/fa6'
@@ -27,11 +29,11 @@ const ProxyItem: React.FC<Props> = (props) => {
   }, [proxy])
 
   const [loading, setLoading] = useState(false)
-  function delayColor(delay: number): 'primary' | 'success' | 'warning' | 'danger' {
-    if (delay === -1) return 'primary'
-    if (delay === 0) return 'danger'
-    if (delay < 500) return 'success'
-    return 'warning'
+  function delayColor(delay: number): string {
+    if (delay === -1) return 'text-primary'
+    if (delay === 0) return 'text-destructive'
+    if (delay < 500) return 'text-success'
+    return 'text-warning'
   }
 
   function delayText(delay: number): string {
@@ -52,15 +54,13 @@ const ProxyItem: React.FC<Props> = (props) => {
 
   return (
     <Card
-      as="div"
-      onPress={() => onSelect(group.name, proxy.name)}
-      isPressable
-      fullWidth
-      shadow="sm"
-      className={`${fixed ? 'bg-secondary/30' : selected ? 'bg-primary/30' : 'bg-content2'}`}
-      radius="sm"
+      onClick={() => onSelect(group.name, proxy.name)}
+      className={cn(
+        'w-full gap-0 py-0 border-0 shadow-sm rounded-sm cursor-pointer',
+        fixed ? 'bg-secondary/30' : selected ? 'bg-primary/30' : 'bg-accent'
+      )}
     >
-      <CardBody className="py-1.5 px-2">
+      <CardContent className="py-1.5 px-2">
         <div
           className={`flex ${proxyDisplayLayout === 'double' ? 'gap-1' : 'justify-between items-center'}`}
         >
@@ -72,34 +72,34 @@ const ProxyItem: React.FC<Props> = (props) => {
                     {proxy.name}
                   </div>
                 </div>
-                <div className="text-[12px] text-foreground-500 leading-none mt-0.5">
+                <div className="text-[12px] text-muted-foreground leading-none mt-0.5">
                   <span>{proxy.type}</span>
                 </div>
               </div>
               <div className="flex items-center justify-center gap-0.5 shrink-0">
                 {fixed && (
                   <Button
-                    isIconOnly
+                    variant="ghost"
                     title={t('proxies.unpin')}
-                    color="danger"
-                    onPress={async () => {
+                    onClick={async (e) => {
+                      e.stopPropagation()
                       await mihomoUnfixedProxy(group.name)
                       mutateProxies()
                     }}
-                    variant="light"
-                    className="h-[24px] w-[24px] min-w-[24px] p-0 text-xs"
+                    className="h-[24px] w-[24px] min-w-[24px] p-0 text-xs text-destructive"
                   >
-                    <FaMapPin className="text-xs le" />
+                    <FaMapPin className="text-xs" />
                   </Button>
                 )}
                 <Button
-                  isIconOnly
+                  variant="ghost"
                   title={proxy.type}
-                  isLoading={loading}
-                  color={delayColor(delay)}
-                  onPress={onDelay}
-                  variant="light"
-                  className="h-[32px] w-[32px] min-w-[32px] p-0 text-xs"
+                  disabled={loading}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onDelay()
+                  }}
+                  className={cn('h-[32px] w-[32px] min-w-[32px] p-0 text-xs', delayColor(delay))}
                 >
                   {delayText(delay)}
                 </Button>
@@ -112,7 +112,7 @@ const ProxyItem: React.FC<Props> = (props) => {
                   {proxy.name}
                 </div>
                 {proxyDisplayLayout === 'single' && (
-                  <div className="inline ml-2 text-foreground-500" title={proxy.type}>
+                  <div className="inline ml-2 text-muted-foreground" title={proxy.type}>
                     {proxy.type}
                   </div>
                 )}
@@ -121,29 +121,32 @@ const ProxyItem: React.FC<Props> = (props) => {
                 {fixed && (
                   <div className="flex items-center">
                     <Button
-                      isIconOnly
+                      variant="ghost"
                       title={t('proxies.unpin')}
-                      color="danger"
-                      onPress={async () => {
+                      onClick={async (e) => {
+                        e.stopPropagation()
                         await mihomoUnfixedProxy(group.name)
                         mutateProxies()
                       }}
-                      variant="light"
-                      className="h-[24px] w-[24px] min-w-[24px] p-0 text-xs"
+                      className="h-[24px] w-[24px] min-w-[24px] p-0 text-xs text-destructive"
                     >
-                      <FaMapPin className="text-xs le" />
+                      <FaMapPin className="text-xs" />
                     </Button>
                   </div>
                 )}
                 <div className="flex items-center">
                   <Button
-                    isIconOnly
+                    variant="ghost"
                     title={proxy.type}
-                    isLoading={loading}
-                    color={delayColor(delay)}
-                    onPress={onDelay}
-                    variant="light"
-                    className="h-full w-[32px] min-w-[32px] p-0 text-sm"
+                    disabled={loading}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onDelay()
+                    }}
+                    className={cn(
+                      'h-full w-[32px] min-w-[32px] p-0 text-sm',
+                      delayColor(delay)
+                    )}
                   >
                     {delayText(delay)}
                   </Button>
@@ -152,7 +155,7 @@ const ProxyItem: React.FC<Props> = (props) => {
             </>
           )}
         </div>
-      </CardBody>
+      </CardContent>
     </Card>
   )
 }
