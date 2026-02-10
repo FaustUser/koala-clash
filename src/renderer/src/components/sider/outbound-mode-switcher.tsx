@@ -36,7 +36,7 @@ const OutboundModeSwitcher: React.FC<Props> = (props) => {
         value={mode}
         onValueChange={(value) => onChangeMode(value as OutboundMode)}
       >
-        <TabsList className="bg-card shadow-md outbound-mode-card flex-col">
+        <TabsList className="shadow-md outbound-mode-card flex-col">
           <TabsTrigger value="rule" className={mode === 'rule' ? 'font-bold' : ''}>
             R
           </TabsTrigger>
