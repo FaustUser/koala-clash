@@ -36,7 +36,10 @@ export default {
     errorParsing: 'Error parsing',
     invalidDomain: 'Not a valid domain or wildcard expression',
     noData: 'No data',
-    disabled: 'Disabled'
+    disabled: 'Disabled',
+    settings: 'Settings',
+    toggleSidebar: 'Toggle Sidebar',
+    updateAvailable: 'Update'
   },
 
   validation: {
@@ -143,7 +146,14 @@ export default {
       disconnected: 'Disconnected',
       connecting: 'Connecting...',
       connected: 'Connected',
-      disconnecting: 'Disconnecting...'
+      disconnecting: 'Disconnecting...',
+      trafficRemaining: 'Traffic left:',
+      daysRemaining: 'Days left:',
+      expires: 'Expires:',
+      group: 'Group:',
+      proxy: 'Proxy:',
+      noProfile: 'No active profile',
+      unlimited: 'Unlimited'
     },
     settings: {
       title: 'Application Settings',

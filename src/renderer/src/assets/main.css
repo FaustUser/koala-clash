@@ -193,6 +193,12 @@
   border-right-color: var(--popover) !important;
 }
 
+[data-slot="sidebar-inner"] {
+  background: color-mix(in oklch, var(--sidebar) 60%, transparent);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
 .app-nodrag {
   -webkit-app-region: none;
 }

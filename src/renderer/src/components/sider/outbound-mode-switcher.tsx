@@ -49,15 +49,12 @@ const OutboundModeSwitcher: React.FC<Props> = (props) => {
   }
   return (
     <Tabs value={mode} onValueChange={(value) => onChangeMode(value as OutboundMode)}>
-      <TabsList className="bg-card shadow-md outbound-mode-card w-full">
+      <TabsList className="shadow-md outbound-mode-card w-full">
         <TabsTrigger value="rule" className={mode === 'rule' ? 'font-bold' : ''}>
           {t('sider.rules')}
         </TabsTrigger>
         <TabsTrigger value="global" className={mode === 'global' ? 'font-bold' : ''}>
           {t('common.global')}
-        </TabsTrigger>
-        <TabsTrigger value="direct" className={mode === 'direct' ? 'font-bold' : ''}>
-          {t('sider.directMode')}
         </TabsTrigger>
       </TabsList>
     </Tabs>

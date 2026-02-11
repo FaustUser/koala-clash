@@ -1,5 +1,6 @@
 import { Button } from '@renderer/components/ui/button'
 import React, { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import UpdaterModal from './updater-modal'
 import { GrUpgrade } from 'react-icons/gr'
 import { cancelUpdate } from '@renderer/utils/ipc'
@@ -13,6 +14,7 @@ interface Props {
 }
 
 const UpdaterButton: React.FC<Props> = (props) => {
+  const { t } = useTranslation()
   const { iconOnly, latest } = props
   const [openModal, setOpenModal] = useState(false)
   const [updateStatus, setUpdateStatus] = useState<{
@@ -76,14 +78,15 @@ const UpdaterButton: React.FC<Props> = (props) => {
         </Button>
       ) : (
         <Button
-          size="icon-sm"
-          className="fixed right-[45px] app-nodrag"
+          size="default"
+          className="app-nodrag w-full"
           variant="destructive"
           onClick={() => {
             setOpenModal(true)
           }}
         >
           <GrUpgrade />
+          <span className="truncate">{t('common.updateAvailable')}</span>
         </Button>
       )}
     </>

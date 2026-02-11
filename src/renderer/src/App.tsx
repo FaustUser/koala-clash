@@ -3,35 +3,19 @@ import React, { useEffect, useState } from 'react'
 import { NavigateFunction, useLocation, useNavigate, useRoutes } from 'react-router-dom'
 import './i18n'
 import { useTranslation } from 'react-i18next'
-import OutboundModeSwitcher from '@renderer/components/sider/outbound-mode-switcher'
-import { IoSettings } from 'react-icons/io5'
 import routes from '@renderer/routes'
-import ProfileCard from '@renderer/components/sider/profile-card'
-import ProxyCard from '@renderer/components/sider/proxy-card'
-import RuleCard from '@renderer/components/sider/rule-card'
-import ConnCard from '@renderer/components/sider/conn-card'
-import LogCard from '@renderer/components/sider/log-card'
-import UpdaterButton from '@renderer/components/updater/updater-button'
 import { useAppConfig } from '@renderer/hooks/use-app-config'
 import { applyTheme, checkUpdate, needsFirstRunAdmin, restartAsAdmin, setNativeTheme, setTitleBarOverlay } from '@renderer/utils/ipc'
 import { platform } from '@renderer/utils/init'
 import { TitleBarOverlayOptions } from 'electron'
-import MihomoIcon from './components/base/mihomo-icon'
 import useSWR from 'swr'
 import ConfirmModal from '@renderer/components/base/base-confirm'
-import MainCard from '@renderer/components/sider/main-card'
-import { Button } from '@renderer/components/ui/button'
+import { SidebarProvider } from '@renderer/components/ui/sidebar'
+import AppSidebar from '@renderer/components/app-sidebar'
+import mapDark from '@renderer/assets/map_darktheme.svg'
+import mapLight from '@renderer/assets/map_lighttheme.svg'
 
 let navigate: NavigateFunction
-
-const defaultSiderOrder = [
-  'main',
-  'proxy',
-  'connection',
-  'profile',
-  'rule',
-  'log'
-]
 
 const App: React.FC = () => {
   const { t } = useTranslation()
@@ -43,10 +27,11 @@ const App: React.FC = () => {
     autoCheckUpdate,
     updateChannel = 'stable'
   } = appConfig || {}
-  const narrowWidth = platform === 'darwin' ? 70 : 60
-  const { setTheme, systemTheme } = useTheme()
+  const { setTheme, systemTheme, resolvedTheme } = useTheme()
+  const mapBg = resolvedTheme === 'dark' ? mapDark : mapLight
   navigate = useNavigate()
   const location = useLocation()
+  const isHome = location.pathname === '/' || location.pathname.includes('/home')
   const page = useRoutes(routes)
   const setTitlebar = (): void => {
     if (!useWindowFrame && platform !== 'darwin') {
@@ -89,15 +74,6 @@ const App: React.FC = () => {
       setTitlebar()
     })
   }, [customTheme])
-
-  const componentMap = {
-    main: MainCard,
-    profile: ProfileCard,
-    proxy: ProxyCard,
-    connection: ConnCard,
-    log: LogCard,
-    rule: RuleCard
-  }
 
   const [showQuitConfirm, setShowQuitConfirm] = useState(false)
   const [showProfileInstallConfirm, setShowProfileInstallConfirm] = useState(false)
@@ -151,7 +127,18 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className={`w-full h-screen flex`}>
+    <SidebarProvider
+      defaultOpen={false}
+      className="relative w-full h-screen overflow-hidden"
+      style={{ backgroundColor: resolvedTheme === 'dark' ? '#080F16' : '#C5D4F1' }}
+    >
+      <img
+        src={mapBg}
+        alt=""
+        className={`pointer-events-none absolute inset-0 w-full h-full object-cover z-0 transition-[filter] duration-500 ${
+          isHome ? '' : 'blur-xl'
+        }`}
+      />
       {showQuitConfirm && (
         <ConfirmModal
           title={t('modal.confirmQuit')}
@@ -221,42 +208,11 @@ const App: React.FC = () => {
           }}
         />
       )}
-      <div style={{ width: `${narrowWidth}px` }} className="side h-full">
-        <div className="app-drag flex justify-center items-center z-40 bg-transparent h-[45px]">
-          {platform !== 'darwin' && <MihomoIcon className="h-8 leading-8 text-lg mx-px" />}
-        </div>
-        <div
-          className={`${latest ? 'h-[calc(100%-275px)]' : 'h-[calc(100%-185px)]'} overflow-y-auto no-scrollbar`}
-        >
-          <div className="h-full w-full flex flex-col gap-2">
-            {defaultSiderOrder.map((key: string) => {
-              const Component = componentMap[key]
-              if (!Component) return null
-              return <Component key={key} iconOnly={true} />
-            })}
-          </div>
-        </div>
-        <div className="p-2 flex flex-col items-center space-y-2">
-          {latest && latest.version && <UpdaterButton iconOnly={true} latest={latest} />}
-          <OutboundModeSwitcher iconOnly />
-          <Button
-            size="icon-sm"
-            className="app-nodrag"
-            title={t('common.pinWindow')}
-            variant={location.pathname.includes('/settings') ? 'default' : 'ghost'}
-            onClick={() => navigate('/settings')}
-          >
-            <IoSettings className="text-[20px]" />
-          </Button>
-        </div>
-      </div>
-      <div
-        style={{ width: `calc(100% - ${narrowWidth + 1}px)` }}
-        className="main grow h-full overflow-y-auto"
-      >
+      <AppSidebar latest={latest} />
+      <div className="relative z-10 main grow h-full overflow-y-auto">
         {page}
       </div>
-    </div>
+    </SidebarProvider>
   )
 }
 

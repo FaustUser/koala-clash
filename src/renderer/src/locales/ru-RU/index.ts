@@ -36,7 +36,10 @@ export default {
     errorParsing: 'Ошибка разбора',
     invalidDomain: 'Неверный домен или шаблон',
     noData: 'Нет данных',
-    disabled: 'Отключено'
+    disabled: 'Отключено',
+    settings: 'Настройки',
+    toggleSidebar: 'Свернуть/развернуть',
+    updateAvailable: 'Обновление'
   },
 
   validation: {
@@ -141,7 +144,14 @@ export default {
       disconnected: 'Отключено',
       connecting: 'Подключение...',
       connected: 'Подключено',
-      disconnecting: 'Отключение...'
+      disconnecting: 'Отключение...',
+      trafficRemaining: 'Трафика осталось:',
+      daysRemaining: 'Дней осталось:',
+      expires: 'Истекает:',
+      group: 'Группа:',
+      proxy: 'Прокси:',
+      noProfile: 'Нет активного профиля',
+      unlimited: 'Безлимит'
     },
     settings: {
       title: 'Настройки приложения',

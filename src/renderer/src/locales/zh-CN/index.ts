@@ -36,7 +36,10 @@ export default {
     errorParsing: '解析时出错',
     invalidDomain: '不是合法的域名或通配符表达式',
     noData: '暂无数据',
-    disabled: '禁用'
+    disabled: '禁用',
+    settings: '设置',
+    toggleSidebar: '展开/收起侧栏',
+    updateAvailable: '更新'
   },
 
   validation: {
@@ -181,7 +184,14 @@ export default {
       disconnected: '已断开',
       connecting: '连接中...',
       connected: '已连接',
-      disconnecting: '断开中...'
+      disconnecting: '断开中...',
+      trafficRemaining: '剩余流量:',
+      daysRemaining: '剩余天数:',
+      expires: '到期:',
+      group: '分组:',
+      proxy: '代理:',
+      noProfile: '没有活动配置',
+      unlimited: '无限'
     },
     settings: {
       title: '应用设置',
