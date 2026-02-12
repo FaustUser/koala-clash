@@ -6,6 +6,7 @@ import { init, platform } from '@renderer/utils/init'
 import '@renderer/assets/main.css'
 import App from '@renderer/App'
 import BaseErrorBoundary from './components/base/base-error-boundary'
+import { Toaster } from './components/ui/sonner'
 import { openDevTools, quitApp } from './utils/ipc'
 import { AppConfigProvider } from './hooks/use-app-config'
 import { ControledMihomoConfigProvider } from './hooks/use-controled-mihomo-config'
@@ -51,6 +52,7 @@ ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
                   <GroupsProvider>
                     <RulesProvider>
                       <App />
+                      <Toaster richColors position="bottom-right" />
                     </RulesProvider>
                   </GroupsProvider>
                 </ProfileConfigProvider>

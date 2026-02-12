@@ -1,3 +1,4 @@
+import { toast } from 'sonner'
 import { Button } from '@renderer/components/ui/button'
 import { Input } from '@renderer/components/ui/input'
 import { Switch } from '@renderer/components/ui/switch'
@@ -103,7 +104,7 @@ const Sysproxy: React.FC = () => {
       try {
         await triggerSysProxy(values.enable, onlyActiveDevice)
       } catch (e) {
-        alert(e)
+        toast.error(`${e}`)
         await patchAppConfig({ sysProxy: { enable: false } })
       }
     }

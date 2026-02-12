@@ -1,3 +1,4 @@
+import { toast } from 'sonner'
 import { Button } from '@renderer/components/ui/button'
 import { Kbd, KbdGroup } from '@renderer/components/ui/kbd'
 import { useTranslation } from 'react-i18next'
@@ -246,10 +247,10 @@ const ShortcutInput: React.FC<{
                 await patchAppConfig({ [action]: inputValue })
                 window.electron.ipcRenderer.send('updateTrayMenu')
               } else {
-                alert(t('settings.shortcuts.registerFailed'))
+                toast.error(t('settings.shortcuts.registerFailed'))
               }
             } catch (e) {
-              alert(`${t('settings.shortcuts.registerFailedWithError')}${e}`)
+              toast.error(`${t('settings.shortcuts.registerFailedWithError')}${e}`)
             }
           }}
         >

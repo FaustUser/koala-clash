@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react'
+import { toast } from 'sonner'
 import {
   Dialog,
   DialogContent,
@@ -97,7 +98,7 @@ const ServiceModal: React.FC<Props> = (props) => {
         await checkServiceConnection()
         return
       }
-      alert(e)
+      toast.error(`${e}`)
     } finally {
       setLoading(false)
     }

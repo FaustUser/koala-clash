@@ -25,6 +25,18 @@ import { t } from './utils/i18n'
 let quitTimeout: NodeJS.Timeout | null = null
 export let mainWindow: BrowserWindow | null = null
 export let needsFirstRunAdmin = false
+
+/**
+ * Show error to the user via renderer toast notification.
+ * Falls back to system dialog if the window is not available.
+ */
+export function showError(title: string, message: string): void {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('showError', title, message)
+  } else {
+    dialog.showErrorBox(title, message)
+  }
+}
 let isCreatingWindow = false
 let windowShown = false
 let createWindowPromiseResolve: (() => void) | null = null
@@ -280,7 +292,7 @@ app.whenReady().then(async () => {
       })
       coreStarted = true
     } catch (e) {
-      dialog.showErrorBox(t('dialog.coreStartError'), `${e}`)
+      showError(t('dialog.coreStartError'), `${e}`)
     }
   })()
 
@@ -340,7 +352,7 @@ async function handleDeepLink(url: string): Promise<void> {
           new Notification({ title: t('notification.profileImportSuccess') }).show()
         }
       } catch (e) {
-        dialog.showErrorBox(t('dialog.profileImportFailed'), `${url}\n${e}`)
+        showError(t('dialog.profileImportFailed'), `${url}\n${e}`)
       }
       break
     }

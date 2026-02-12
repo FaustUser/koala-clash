@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { toast } from 'sonner'
 import {
   Dialog,
   DialogContent,
@@ -61,7 +62,7 @@ const EditInfoModal: React.FC<Props> = (props) => {
       }
       onClose()
     } catch (e) {
-      alert(e)
+      toast.error(`${e}`)
     }
   }
 
@@ -92,7 +93,7 @@ const EditInfoModal: React.FC<Props> = (props) => {
         })
       }
     } catch (e) {
-      alert(e)
+      toast.error(`${e}`)
     }
   }
 

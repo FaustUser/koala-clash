@@ -1,3 +1,4 @@
+import { toast } from 'sonner'
 import { Button } from '@renderer/components/ui/button'
 import { Input } from '@renderer/components/ui/input'
 import { Switch } from '@renderer/components/ui/switch'
@@ -105,7 +106,7 @@ const DNS: React.FC = () => {
       await patchControledMihomoConfig(patch)
       await restartCore()
     } catch (e) {
-      alert(e)
+      toast.error(`${e}`)
     }
   }
 

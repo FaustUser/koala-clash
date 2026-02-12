@@ -1,5 +1,6 @@
 /* eslint-disable react/prop-types */
 import { useEffect, useState } from 'react'
+import { toast } from 'sonner'
 import { useTranslation } from 'react-i18next'
 import yaml from 'js-yaml'
 import {
@@ -35,10 +36,10 @@ const ByPassEditorModal: React.FC<Props> = (props) => {
       if (parsed && Array.isArray(parsed.bypass)) {
         onConfirm(parsed.bypass)
       } else {
-        alert(t('sysproxy.yamlFormatError'))
+        toast.error(t('sysproxy.yamlFormatError'))
       }
     } catch (e) {
-      alert(t('sysproxy.yamlParseFailed') + e)
+      toast.error(t('sysproxy.yamlParseFailed') + e)
     }
   }
 

@@ -1,3 +1,4 @@
+import { toast } from 'sonner'
 import { Button } from '@renderer/components/ui/button'
 
 
@@ -97,10 +98,10 @@ const Profiles: React.FC = () => {
             const content = await readTextFile(path)
             await addProfileItem({ name: file.name, type: 'local', file: content })
           } catch (e) {
-            alert(t('pages.profiles.fileImportFailed') + e)
+            toast.error(t('pages.profiles.fileImportFailed') + e)
           }
         } else {
-          alert(t('pages.profiles.unsupportedFileType'))
+          toast.error(t('pages.profiles.unsupportedFileType'))
         }
       }
       setFileOver(false)

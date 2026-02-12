@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { toast } from 'sonner'
 import SettingCard from '../base/base-setting-card'
 import SettingItem from '../base/base-setting-item'
 import { Button } from '@renderer/components/ui/button'
@@ -24,7 +25,7 @@ const EnvSetting: React.FC = () => {
       await patchAppConfig({ [key]: value })
       await restartCore()
     } catch (e) {
-      alert(e)
+      toast.error(`${e}`)
     } finally {
       PubSub.publish('mihomo-core-changed')
     }

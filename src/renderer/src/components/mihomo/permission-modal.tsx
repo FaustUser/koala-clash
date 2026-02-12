@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import { toast } from 'sonner'
 import {
   Dialog,
   DialogContent,
@@ -63,7 +64,7 @@ const PermissionModal: React.FC<Props> = (props) => {
         await checkPermissions()
         return
       }
-      alert(e)
+      toast.error(`${e}`)
     } finally {
       setLoading({})
     }
@@ -92,7 +93,7 @@ const PermissionModal: React.FC<Props> = (props) => {
         await checkPermissions()
         return
       }
-      alert(e)
+      toast.error(`${e}`)
     } finally {
       setLoading({ ...loading, [coreName]: false })
     }

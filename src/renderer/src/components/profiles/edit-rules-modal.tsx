@@ -1,3 +1,4 @@
+import { toast } from 'sonner'
 import {
   Dialog,
   DialogContent,
@@ -894,9 +895,9 @@ const EditRulesModal: React.FC<Props> = (props) => {
       await setRuleStr(id, ruleYaml)
       onClose()
     } catch (e) {
-      // toast.error(
-      //   t('profiles.editRules.saveError') + ': ' + (e instanceof Error ? e.message : String(e))
-      // )
+      toast.error(
+        t('profiles.editRules.saveError') + ': ' + (e instanceof Error ? e.message : String(e))
+      )
     }
   }, [prependRules, deletedRules, rules, appendRules, id, onClose, t])
 
@@ -999,7 +1000,7 @@ const EditRulesModal: React.FC<Props> = (props) => {
         newRule.payload.trim() !== '' &&
         !validateRulePayload(newRule.type, newRule.payload)
       ) {
-        // toast.error(t('profiles.editRules.invalidPayload') + ': ' + getRuleExample(newRule.type))
+        toast.error(t('profiles.editRules.invalidPayload') + ': ' + getRuleExample(newRule.type))
         return
       }
 

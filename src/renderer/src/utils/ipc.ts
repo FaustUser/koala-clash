@@ -495,9 +495,11 @@ export async function setMainLanguage(lang: string): Promise<void> {
   await window.electron.ipcRenderer.invoke('setLanguage', lang)
 }
 
+// Override window.alert to use toast notifications instead of system dialogs
 async function alert<T>(msg: T): Promise<void> {
+  const { toast } = await import('sonner')
   const msgStr = typeof msg === 'string' ? msg : JSON.stringify(msg)
-  return await window.electron.ipcRenderer.invoke('alert', msgStr)
+  toast.error(msgStr)
 }
 
 window.alert = alert

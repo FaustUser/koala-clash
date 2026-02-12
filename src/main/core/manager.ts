@@ -17,7 +17,7 @@ import {
   patchAppConfig,
   patchControledMihomoConfig
 } from '../config'
-import { app, dialog, ipcMain, net } from 'electron'
+import { app, ipcMain, net } from 'electron'
 import {
   startMihomoTraffic,
   startMihomoConnections,
@@ -32,7 +32,7 @@ import {
 } from './mihomoApi'
 import { readFile, rm, writeFile } from 'fs/promises'
 import { promisify } from 'util'
-import { mainWindow } from '..'
+import { mainWindow, showError } from '..'
 import path from 'path'
 import os from 'os'
 import { createWriteStream, existsSync } from 'fs'
@@ -187,7 +187,7 @@ export async function startCore(detached = false): Promise<Promise<void>[]> {
           const promises = await startCore()
           await Promise.all(promises)
         } catch (e) {
-          dialog.showErrorBox(t('tray.coreStartError'), `${e}`)
+          showError(t('tray.coreStartError'), `${e}`)
         }
       }
 
@@ -388,7 +388,7 @@ export async function restartCore(): Promise<void> {
     const promises = await startCore()
     await Promise.all(promises)
   } catch (e) {
-    dialog.showErrorBox(t('tray.coreStartError'), `${e}`)
+    showError(t('tray.coreStartError'), `${e}`)
   }
 }
 
@@ -399,7 +399,7 @@ export async function keepCoreAlive(): Promise<void> {
       await writeFile(path.join(dataDir(), 'core.pid'), child.pid.toString())
     }
   } catch (e) {
-    dialog.showErrorBox(t('tray.coreStartError'), `${e}`)
+    showError(t('tray.coreStartError'), `${e}`)
   }
 }
 

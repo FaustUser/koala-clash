@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react'
+import { toast } from 'sonner'
 import SettingCard from '../base/base-setting-card'
 import SettingItem from '../base/base-setting-item'
 import { Button } from '@renderer/components/ui/button'
@@ -218,7 +219,7 @@ const AppearanceConfig: React.FC = () => {
                     await fetchThemes()
                     setCustomThemes(await resolveThemes())
                   } catch (e) {
-                    alert(e)
+                    toast.error(`${e}`)
                   } finally {
                     setFetching(false)
                   }
@@ -241,7 +242,7 @@ const AppearanceConfig: React.FC = () => {
                     await importThemes(files)
                     setCustomThemes(await resolveThemes())
                   } catch (e) {
-                    alert(e)
+                    toast.error(`${e}`)
                   }
                 }}
               >
@@ -267,7 +268,7 @@ const AppearanceConfig: React.FC = () => {
                 try {
                   await patchAppConfig({ customTheme: value })
                 } catch (e) {
-                  alert(e)
+                  toast.error(`${e}`)
                 }
               }}
             >

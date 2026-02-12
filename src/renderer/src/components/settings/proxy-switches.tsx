@@ -1,4 +1,5 @@
 import React from 'react'
+import { toast } from 'sonner'
 import SettingCard from '../base/base-setting-card'
 import SettingItem from '../base/base-setting-item'
 import { Button } from '@renderer/components/ui/button'
@@ -89,7 +90,7 @@ const ProxySwitches: React.FC = () => {
               window.electron.ipcRenderer.send('updateFloatingWindow')
               window.electron.ipcRenderer.send('updateTrayMenu')
             } catch (e) {
-              alert(e)
+              toast.error(`${e}`)
             }
           }}
         />

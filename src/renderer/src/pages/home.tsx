@@ -1,3 +1,4 @@
+import { toast } from 'sonner'
 import BasePage from '@renderer/components/base/base-page'
 import { useAppConfig } from '@renderer/hooks/use-app-config'
 import { useControledMihomoConfig } from '@renderer/hooks/use-controled-mihomo-config'
@@ -126,7 +127,7 @@ const Home: React.FC = () => {
         window.electron.ipcRenderer.send('updateTrayMenu')
       }
     } catch (e) {
-      alert(e)
+      toast.error(`${e}`)
     } finally {
       setLoading(false)
     }

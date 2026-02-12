@@ -1,4 +1,4 @@
-import { app, dialog, ipcMain } from 'electron'
+import { app, ipcMain } from 'electron'
 import {
   mihomoChangeProxy,
   mihomoCloseAllConnections,
@@ -90,6 +90,7 @@ import {
   mainWindow,
   needsFirstRunAdmin,
   setNotQuitDialog,
+  showError,
   showMainWindow,
   triggerMainWindow
 } from '..'
@@ -279,7 +280,7 @@ export function registerIpcMainHandlers(): void {
   ipcMain.handle('applyTheme', (_e, theme) => ipcErrorWrapper(applyTheme)(theme))
   ipcMain.handle('copyEnv', (_e, type) => ipcErrorWrapper(copyEnv)(type))
   ipcMain.handle('alert', (_e, msg) => {
-    dialog.showErrorBox('Sparkle', msg)
+    showError('Sparkle', msg)
   })
   ipcMain.handle('resetAppConfig', resetAppConfig)
   ipcMain.handle('relaunchApp', () => {

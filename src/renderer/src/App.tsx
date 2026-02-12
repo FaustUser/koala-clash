@@ -1,3 +1,4 @@
+import { toast } from 'sonner'
 import { useTheme } from 'next-themes'
 import React, { useEffect, useState } from 'react'
 import { NavigateFunction, useLocation, useNavigate, useRoutes } from 'react-router-dom'
@@ -98,6 +99,11 @@ const App: React.FC = () => {
     window.electron.ipcRenderer.on('show-quit-confirm', handleShowQuitConfirm)
     window.electron.ipcRenderer.on('show-profile-install-confirm', handleShowProfileInstallConfirm)
 
+    const handleShowError = (_event: unknown, title: string, message: string): void => {
+      toast.error(title, { description: message })
+    }
+    window.electron.ipcRenderer.on('showError', handleShowError)
+
     const handleNeedsAdminSetup = (): void => {
       setShowAdminRequired(true)
     }
@@ -113,6 +119,7 @@ const App: React.FC = () => {
       window.electron.ipcRenderer.removeAllListeners('show-quit-confirm')
       window.electron.ipcRenderer.removeAllListeners('show-profile-install-confirm')
       window.electron.ipcRenderer.removeAllListeners('needs-admin-setup')
+      window.electron.ipcRenderer.removeAllListeners('showError')
     }
   }, [])
 

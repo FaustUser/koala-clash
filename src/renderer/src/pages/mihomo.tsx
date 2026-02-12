@@ -1,3 +1,4 @@
+import { toast } from 'sonner'
 import { Button } from '@renderer/components/ui/button'
 import { Input } from '@renderer/components/ui/input'
 import {
@@ -104,7 +105,7 @@ const Mihomo: React.FC = () => {
       await restartCore()
       PubSub.publish('mihomo-core-changed')
     } catch (e) {
-      alert(e)
+      toast.error(`${e}`)
     }
   }
 
@@ -117,7 +118,7 @@ const Mihomo: React.FC = () => {
       if (typeof e === 'string' && e.includes('already using latest version')) {
         new Notification(t('pages.mihomo.alreadyLatest'))
       } else {
-        alert(e)
+        toast.error(`${e}`)
       }
     } finally {
       setUpgrading(false)
@@ -176,7 +177,7 @@ const Mihomo: React.FC = () => {
                 })
                 await relaunchApp()
               } catch (e) {
-                alert(e)
+                toast.error(`${e}`)
               }
             }
           }
@@ -212,7 +213,7 @@ const Mihomo: React.FC = () => {
 
           await restartCore()
         } catch (e) {
-          alert(e)
+          toast.error(`${e}`)
         }
       }
     },

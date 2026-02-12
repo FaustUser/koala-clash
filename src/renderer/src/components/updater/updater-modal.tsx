@@ -1,3 +1,4 @@
+import { toast } from 'sonner'
 import {
   Dialog,
   DialogContent,
@@ -35,7 +36,7 @@ const UpdaterModal: React.FC<Props> = (props) => {
       setDownloading(true)
       await downloadAndInstallUpdate(version)
     } catch (e) {
-      alert(e)
+      toast.error(`${e}`)
       setDownloading(false)
     }
   }

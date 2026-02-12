@@ -1,3 +1,4 @@
+import { toast } from 'sonner'
 import { Button } from '@renderer/components/ui/button'
 import { Input } from '@renderer/components/ui/input'
 import { Spinner } from '@renderer/components/ui/spinner'
@@ -101,7 +102,7 @@ const Tun: React.FC = () => {
                     new Notification(t('pages.tun.firewallResetSuccess'))
                     await restartCore()
                   } catch (e) {
-                    alert(e)
+                    toast.error(`${e}`)
                   } finally {
                     setLoading(false)
                   }

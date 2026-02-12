@@ -1,3 +1,4 @@
+import { toast } from 'sonner'
 import SettingCard from '@renderer/components/base/base-setting-card'
 import SettingItem from '@renderer/components/base/base-setting-item'
 import { Button } from '@renderer/components/ui/button'
@@ -149,7 +150,7 @@ const GeoData: React.FC = () => {
                 await mihomoUpgradeGeo()
                 new Notification(t('resources.geoUpdateSuccess'))
               } catch (e) {
-                alert(e)
+                toast.error(`${e}`)
               } finally {
                 setUpdating(false)
               }
