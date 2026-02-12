@@ -12,6 +12,7 @@ import { defaultProfile } from '../utils/template'
 import { dirname, join } from 'path'
 import { deepMerge } from '../utils/merge'
 import { getUserAgent } from '../utils/userAgent'
+import { getHWID, getDeviceOS, getOSVersion, getDeviceModel } from '../utils/deviceInfo'
 import { t } from '../utils/i18n'
 
 let profileConfig: ProfileConfig // profile.yaml
@@ -136,7 +137,13 @@ export async function createProfile(item: Partial<ProfileItem>): Promise<Profile
             mixedPort && {
               proxy: { protocol: 'http', host: '127.0.0.1', port: mixedPort }
             }),
-          headers: { 'User-Agent': newItem.ua || (await getUserAgent()) },
+          headers: {
+            'User-Agent': newItem.ua || (await getUserAgent()),
+            'x-hwid': getHWID(),
+            'x-device-os': getDeviceOS(),
+            'x-ver-os': getOSVersion(),
+            'x-device-model': getDeviceModel()
+          },
           responseType: 'text'
         })
       } catch (error) {

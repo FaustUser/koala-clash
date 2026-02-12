@@ -19,6 +19,7 @@ import { exePath, taskDir } from './utils/dirs'
 import { showFloatingWindow } from './resolve/floatingWindow'
 import { getAppConfigSync } from './config/app'
 import { getUserAgent } from './utils/userAgent'
+import { getHWID, getDeviceOS, getOSVersion, getDeviceModel } from './utils/deviceInfo'
 import { t } from './utils/i18n'
 
 
@@ -370,7 +371,11 @@ async function showProfileInstallConfirm(url: string, name?: string | null): Pro
       const axios = (await import('axios')).default
       const response = await axios.head(url, {
         headers: {
-          'User-Agent': await getUserAgent()
+          'User-Agent': await getUserAgent(),
+          'x-hwid': getHWID(),
+          'x-device-os': getDeviceOS(),
+          'x-ver-os': getOSVersion(),
+          'x-device-model': getDeviceModel()
         },
         timeout: 5000
       })
