@@ -45,8 +45,8 @@ const BasePage = forwardRef<HTMLDivElement, Props>((props, ref) => {
 
   return (
     <div ref={contentRef} className="w-full h-full">
-      <div className="sticky top-0 z-40 h-[49px] w-full">
-        <div className="app-drag p-2 flex justify-between h-12">
+      <div className="sticky top-0 z-40 h-[57px] w-full">
+        <div className="app-drag px-2 pt-3 pb-2 flex justify-between h-[57px]">
           <div className="title h-full text-lg leading-8">{props.title}</div>
           <div style={{ marginRight: overlayWidth }} className="header flex gap-1 h-full">
             {props.header}
@@ -69,7 +69,7 @@ const BasePage = forwardRef<HTMLDivElement, Props>((props, ref) => {
           </div>
         </div>
       </div>
-      <div className="content h-[calc(100vh-49px)] overflow-y-auto custom-scrollbar">
+      <div className="content h-[calc(100vh-57px)] overflow-y-auto custom-scrollbar">
         {props.children}
       </div>
     </div>

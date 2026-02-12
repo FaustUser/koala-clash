@@ -373,7 +373,7 @@ const ConnectionTable: React.FC<Props> = ({
   const visibleColumnsFiltered = columnsWithLabels.filter((col) => col.visible)
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col border-1 rounded-2xl overflow-hidden mx-2">
       <div ref={tableRef} className="flex-1 overflow-auto">
         <table className="w-full border-collapse">
           <thead className="sticky top-0 z-10 bg-muted">
@@ -386,7 +386,7 @@ const ConnectionTable: React.FC<Props> = ({
                 >
                   <div className="flex items-center justify-between gap-1">
                     <button
-                      className="flex-1 text-left hover:text-foreground"
+                      className="flex-1 text-left hover:text-foreground transition-colors"
                       onClick={() => handleSort(col.key)}
                     >
                       {col.label}
@@ -399,7 +399,7 @@ const ConnectionTable: React.FC<Props> = ({
                       onMouseDown={(e) => handleMouseDown(e, col.key)}
                     >
                       <div
-                        className="w-px h-full bg-border group-hover:bg-primary transition-colors"
+                        className="w-px h-4 bg-border group-hover:bg-primary transition-colors"
                         style={{
                           backgroundColor: resizingColumn === col.key ? 'var(--primary)' : undefined
                         }}
@@ -408,7 +408,7 @@ const ConnectionTable: React.FC<Props> = ({
                   </div>
                 </th>
               ))}
-              <th className="sticky right-0 border-b border-border w-12 bg-muted" />
+              <th className="right-0 border-b border-border w-12 bg-muted" />
             </tr>
           </thead>
           <tbody>
@@ -448,14 +448,14 @@ const ConnectionTable: React.FC<Props> = ({
                     </td>
                   )
                 })}
-                <td className="sticky right-0 bg-inherit" onClick={(e) => e.stopPropagation()}>
+                <td className="sticky right-1.5 bg-inherit" onClick={(e) => e.stopPropagation()}>
                   <Button
-                    variant="ghost"
+                    variant="default"
                     size="icon-sm"
                     className={
                       connection.isActive
-                        ? 'text-amber-500 hover:text-amber-600 hover:bg-amber-500/10'
-                        : 'text-destructive hover:text-destructive hover:bg-destructive/10'
+                        ? 'text-amber-500 hover:text-amber-600 hover:bg-amber-500/10 bg-zinc-900'
+                        : 'text-destructive hover:text-destructive hover:bg-destructive/10 bg-zinc-900'
                     }
                     onClick={() => {
                       close(connection.id)

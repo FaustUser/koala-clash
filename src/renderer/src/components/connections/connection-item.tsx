@@ -20,7 +20,6 @@ interface Props {
 }
 
 const ConnectionItemComponent: React.FC<Props> = ({
-  index,
   info,
   displayIcon,
   iconUrl,
@@ -88,7 +87,7 @@ const ConnectionItemComponent: React.FC<Props> = ({
   }, [close, info.id])
 
   return (
-    <div className={`px-2 pb-2 ${index === 0 ? 'pt-2' : ''}`} style={{ minHeight: 80 }}>
+    <div className="px-2 pb-2" style={{ minHeight: 80 }}>
       <Card
         className="w-full cursor-pointer py-0 gap-0 hover:bg-accent/50 transition-colors"
         onClick={handleCardPress}
@@ -96,7 +95,7 @@ const ConnectionItemComponent: React.FC<Props> = ({
         <div className="w-full flex justify-between items-center">
           {displayIcon && (
             <div>
-              <Avatar size="lg" className="bg-transparent ml-2 w-14 h-14 rounded-sm">
+              <Avatar className="bg-transparent ml-2 w-14 h-14 rounded-sm">
                 <AvatarImage src={iconUrl} />
               </Avatar>
             </div>
@@ -104,8 +103,8 @@ const ConnectionItemComponent: React.FC<Props> = ({
           <div
             className={`w-full flex flex-col justify-start truncate relative ${displayIcon ? '-ml-2' : ''}`}
           >
-            <CardHeader className="pb-0 gap-1 flex items-center pr-12 relative px-4 py-2">
-              <div className="ml-2 flex-1 text-ellipsis whitespace-nowrap overflow-hidden text-left">
+            <CardHeader className="pb-0 gap-1 flex items-center pl-4 pr-1 pt-2">
+              <div className="flex-1 text-ellipsis whitespace-nowrap overflow-hidden text-left">
                 <span style={{ textAlign: 'left' }}>
                   {processName} → {destination}
                 </span>
@@ -114,7 +113,7 @@ const ConnectionItemComponent: React.FC<Props> = ({
               <Button
                 variant="ghost"
                 size="icon-sm"
-                className={`absolute right-2 ${info.isActive ? 'text-amber-500 hover:text-amber-600 hover:bg-amber-500/10' : 'text-destructive hover:text-destructive hover:bg-destructive/10'}`}
+                className={`shrink-0 ml-1 ${info.isActive ? 'text-amber-500 hover:text-amber-600 hover:bg-amber-500/10' : 'text-destructive hover:text-destructive hover:bg-destructive/10'}`}
                 onClick={(e) => {
                   e.stopPropagation()
                   handleClose()
@@ -123,7 +122,7 @@ const ConnectionItemComponent: React.FC<Props> = ({
                 {info.isActive ? <CgClose className="text-lg" /> : <CgTrash className="text-lg" />}
               </Button>
             </CardHeader>
-            <CardFooter className="pt-2 px-4 pb-2">
+            <CardFooter className="pt-0.5 px-4 pb-2">
               <div className="flex gap-1 overflow-x-auto no-scrollbar">
                 <Badge variant="outline" className="rounded-sm gap-1.5">
                   <span

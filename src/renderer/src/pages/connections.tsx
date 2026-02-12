@@ -22,7 +22,6 @@ import {
   SelectTrigger,
   SelectValue
 } from '@renderer/components/ui/select'
-import { Separator } from '@renderer/components/ui/separator'
 import { Tabs, TabsList, TabsTrigger } from '@renderer/components/ui/tabs'
 import { calcTraffic } from '@renderer/utils/calc'
 import ConnectionItem from '@renderer/components/connections/connection-item'
@@ -600,7 +599,7 @@ const Connections: React.FC = () => {
             >
               {isPaused ? <IoMdPlay className="text-lg" /> : <IoMdPause className="text-lg" />}
             </Button>
-            <div className="relative mt-2">
+            <div className="relative flex items-center">
               <Button
                 className="app-nodrag ml-1"
                 title={
@@ -626,7 +625,7 @@ const Connections: React.FC = () => {
                   <CgTrash className="text-lg" />
                 )}
               </Button>
-              <Badge className="absolute -top-2 -right-2 min-w-5 justify-center px-1">
+              <Badge className="absolute -top-0.5 -right-0.5 min-w-3 h-3 justify-center px-0.5 text-[8px] leading-none">
                 {filteredConnections.length}
               </Badge>
             </div>
@@ -650,13 +649,13 @@ const Connections: React.FC = () => {
         <ConnectionSettingModal onClose={() => setIsSettingModalOpen(false)} />
       )}
       <div className="overflow-x-auto sticky top-0 z-40">
-        <div className="flex p-2 gap-2">
+        <div className="flex px-2 pb-2 gap-2">
           <Tabs value={tab} onValueChange={handleTabChange} className="w-fit">
-            <TabsList variant="line" className="h-8">
+            <TabsList className="h-8">
               <TabsTrigger value="active" className="gap-2">
                 <Badge
-                  variant={tab === 'active' ? 'default' : 'secondary'}
-                  className="min-w-5 justify-center px-1"
+                  variant='default'
+                  className="min-w-5 justify-center px-1 leading-none"
                 >
                   {activeConnections.length}
                 </Badge>
@@ -664,8 +663,8 @@ const Connections: React.FC = () => {
               </TabsTrigger>
               <TabsTrigger value="closed" className="gap-2">
                 <Badge
-                  variant={tab === 'closed' ? 'destructive' : 'secondary'}
-                  className="min-w-5 justify-center px-1"
+                  variant='destructive'
+                  className="min-w-5 justify-center px-1 leading-none"
                 >
                   {closedConnections.length}
                 </Badge>
@@ -707,9 +706,7 @@ const Connections: React.FC = () => {
                   <DropdownMenuCheckboxItem
                     key={option.key}
                     checked={visibleColumns.has(option.key)}
-                    onCheckedChange={(checked) =>
-                      handleVisibleColumnToggle(option.key, checked)
-                    }
+                    onCheckedChange={(checked) => handleVisibleColumnToggle(option.key, checked)}
                   >
                     {option.label}
                   </DropdownMenuCheckboxItem>
@@ -721,19 +718,21 @@ const Connections: React.FC = () => {
           {viewMode === 'list' && (
             <>
               <Select value={connectionOrderBy} onValueChange={handleOrderByChange}>
-                <SelectTrigger size="sm" className="w-[180px] min-w-[120px]">
+                <SelectTrigger size="sm" className="min-w-[200px]">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent position="popper">
                   <SelectItem value="upload">{t('pages.connections.uploadAmount')}</SelectItem>
                   <SelectItem value="download">{t('pages.connections.downloadAmount')}</SelectItem>
                   <SelectItem value="uploadSpeed">{t('pages.connections.uploadSpeed')}</SelectItem>
-                  <SelectItem value="downloadSpeed">{t('pages.connections.downloadSpeed')}</SelectItem>
+                  <SelectItem value="downloadSpeed">
+                    {t('pages.connections.downloadSpeed')}
+                  </SelectItem>
                   <SelectItem value="time">{t('pages.connections.time')}</SelectItem>
                   <SelectItem value="process">{t('pages.connections.processName')}</SelectItem>
                 </SelectContent>
               </Select>
-              <Button size="icon-sm" variant="secondary" onClick={handleDirectionToggle}>
+              <Button className='border-1 flex items-center justify-center' size="icon-sm" variant="secondary" onClick={handleDirectionToggle}>
                 {connectionDirection === 'asc' ? (
                   <HiSortAscending className="text-lg" />
                 ) : (
@@ -743,9 +742,8 @@ const Connections: React.FC = () => {
             </>
           )}
         </div>
-        <Separator />
       </div>
-      <div className="h-[calc(100vh-100px)] mt-px">
+      <div className="h-[calc(100vh-119px)] mt-px mb-2">
         {viewMode === 'list' ? (
           <Virtuoso data={filteredConnections} itemContent={renderConnectionItem} />
         ) : (
