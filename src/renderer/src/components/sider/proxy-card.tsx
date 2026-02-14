@@ -1,10 +1,10 @@
-import { LuGroup } from 'react-icons/lu'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useAppConfig } from '@renderer/hooks/use-app-config'
 import React from 'react'
 import { useTranslation } from 'react-i18next'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
 import { Button } from '@renderer/components/ui/button'
+import { Group } from 'lucide-react'
 
 const ProxyCard: React.FC = () => {
   const { t } = useTranslation()
@@ -24,7 +24,7 @@ const ProxyCard: React.FC = () => {
               navigate('/proxies')
             }}
           >
-            <LuGroup className="text-[20px]" />
+            <Group className="text-[20px]" />
           </Button>
         </TooltipTrigger>
         <TooltipContent side="right">{t('sider.proxyGroup')}</TooltipContent>

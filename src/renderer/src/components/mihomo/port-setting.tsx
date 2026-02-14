@@ -10,9 +10,9 @@ import { platform } from '@renderer/utils/init'
 import { Button } from '@renderer/components/ui/button'
 import { Input } from '@renderer/components/ui/input'
 import { Switch } from '@renderer/components/ui/switch'
-import { FaNetworkWired } from 'react-icons/fa'
 import InterfaceModal from '@renderer/components/mihomo/interface-modal'
 import { useTranslation } from 'react-i18next'
+import { Network } from 'lucide-react'
 
 const PortSetting: React.FC = () => {
   const { t } = useTranslation()
@@ -219,7 +219,7 @@ const PortSetting: React.FC = () => {
                 setLanOpen(true)
               }}
             >
-              <FaNetworkWired className="text-lg" />
+              <Network className="text-lg" />
             </Button>
           }
           divider

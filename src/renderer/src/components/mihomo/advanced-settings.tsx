@@ -16,8 +16,8 @@ import { Switch } from '@renderer/components/ui/switch'
 import { Tabs, TabsList, TabsTrigger } from '@renderer/components/ui/tabs'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
 import { useState } from 'react'
-import { IoIosHelpCircle } from 'react-icons/io'
 import { t } from 'i18next'
+import { MessageCircleQuestionMark } from 'lucide-react'
 
 const AdvancedSetting: React.FC = () => {
   const { controledMihomoConfig, patchControledMihomoConfig } = useControledMihomoConfig()
@@ -86,7 +86,7 @@ const AdvancedSetting: React.FC = () => {
           <Tooltip>
             <TooltipTrigger asChild>
               <Button size="icon-sm" variant="ghost">
-                <IoIosHelpCircle className="text-lg" />
+                <MessageCircleQuestionMark className="text-lg" />
               </Button>
             </TooltipTrigger>
             <TooltipContent>{t('mihomo.advancedSettings.unifiedDelayTip')}</TooltipContent>
@@ -108,7 +108,7 @@ const AdvancedSetting: React.FC = () => {
           <Tooltip>
             <TooltipTrigger asChild>
               <Button size="icon-sm" variant="ghost">
-                <IoIosHelpCircle className="text-lg" />
+                <MessageCircleQuestionMark className="text-lg" />
               </Button>
             </TooltipTrigger>
             <TooltipContent>{t('mihomo.advancedSettings.tcpConcurrentTip')}</TooltipContent>

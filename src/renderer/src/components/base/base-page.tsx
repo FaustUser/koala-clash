@@ -4,8 +4,8 @@ import { useAppConfig } from '@renderer/hooks/use-app-config'
 import { platform } from '@renderer/utils/init'
 import { isAlwaysOnTop, setAlwaysOnTop } from '@renderer/utils/ipc'
 import React, { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react'
-import { RiPushpin2Fill, RiPushpin2Line } from 'react-icons/ri'
 import { useTranslation } from 'react-i18next'
+import { Pin, PinOff } from 'lucide-react'
 interface Props {
   title?: React.ReactNode
   header?: React.ReactNode
@@ -61,9 +61,9 @@ const BasePage = forwardRef<HTMLDivElement, Props>((props, ref) => {
               }}
             >
               {onTop ? (
-                <RiPushpin2Fill className={cn('text-lg', onTop && 'text-primary')} />
+                <PinOff className={cn('text-lg', onTop && 'text-primary')} />
               ) : (
-                <RiPushpin2Line className="text-lg" />
+                <Pin className="text-lg" />
               )}
             </Button>
           </div>

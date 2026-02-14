@@ -16,8 +16,8 @@ import SettingItem from '../base/base-setting-item'
 import { useAppConfig } from '@renderer/hooks/use-app-config'
 import { getUserAgent } from '@renderer/utils/ipc'
 import debounce from '@renderer/utils/debounce'
-import { IoIosHelpCircle } from 'react-icons/io'
 import { t } from 'i18next'
+import { MessageCircleQuestionMark } from 'lucide-react'
 
 interface Props {
   onClose: () => void
@@ -87,7 +87,7 @@ const ProfileSettingModal: React.FC<Props> = (props) => {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button size="icon-sm" variant="ghost">
-                    <IoIosHelpCircle className="text-lg" />
+                    <MessageCircleQuestionMark className="text-lg" />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>{t('profile.separateWorkDirHelp')}</TooltipContent>

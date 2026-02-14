@@ -1,10 +1,10 @@
-import { MdOutlineAltRoute } from 'react-icons/md'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useAppConfig } from '@renderer/hooks/use-app-config'
 import React from 'react'
 import { useTranslation } from 'react-i18next'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
 import { Button } from '@renderer/components/ui/button'
+import { Route } from 'lucide-react'
 
 const RuleCard: React.FC = () => {
   const { t } = useTranslation()
@@ -25,7 +25,7 @@ const RuleCard: React.FC = () => {
               navigate('/rules')
             }}
           >
-            <MdOutlineAltRoute className="text-[20px]" />
+            <Route className="text-[20px]" />
           </Button>
         </TooltipTrigger>
         <TooltipContent side="right">{t('sider.rules')}</TooltipContent>

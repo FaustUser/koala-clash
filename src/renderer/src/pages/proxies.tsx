@@ -11,18 +11,24 @@ import {
   mihomoCloseAllConnections,
   mihomoProxyDelay
 } from '@renderer/utils/ipc'
-import { FaLocationCrosshairs } from 'react-icons/fa6'
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react'
 import { GroupedVirtuoso, GroupedVirtuosoHandle } from 'react-virtuoso'
 import ProxyItem from '@renderer/components/proxies/proxy-item'
 import ProxySettingModal from '@renderer/components/proxies/proxy-setting-modal'
-import { MdDoubleArrow, MdOutlineSpeed, MdTune } from 'react-icons/md'
-import { LuChevronsDownUp, LuChevronsUpDown, LuChevronDown } from 'react-icons/lu'
 import { useGroups } from '@renderer/hooks/use-groups'
 import CollapseInput from '@renderer/components/base/collapse-input'
 import { includesIgnoreCase } from '@renderer/utils/includes'
 import { useControledMihomoConfig } from '@renderer/hooks/use-controled-mihomo-config'
 import { useTranslation } from 'react-i18next'
+import {
+  ChevronDown,
+  ChevronsDownUp,
+  ChevronsRight,
+  ChevronsUpDown,
+  Gauge,
+  LocateFixed,
+  SlidersHorizontal
+} from 'lucide-react'
 
 const groupTypeColor: Record<string, string> = {
   Selector: 'bg-blue-500/15 text-blue-600 dark:text-blue-400',
@@ -306,7 +312,7 @@ const Proxies: React.FC = () => {
                       size="icon-sm"
                       onClick={() => scrollToCurrentProxy(index)}
                     >
-                      <FaLocationCrosshairs className="text-base text-muted-foreground" />
+                      <LocateFixed className="text-base" />
                     </Button>
                     <Button
                       title={t('sider.delayTest')}
@@ -317,14 +323,14 @@ const Proxies: React.FC = () => {
                       onClick={() => onGroupDelay(index)}
                     >
                       {delaying[index] ? (
-                        <Spinner className="size-4 text-muted-foreground" />
+                        <Spinner className="size-4" />
                       ) : (
-                        <MdOutlineSpeed className="text-lg text-muted-foreground" />
+                        <Gauge className="text-base" />
                       )}
                     </Button>
                   </div>
-                  <LuChevronDown
-                    className={`transition-transform duration-200 ml-1 text-base text-muted-foreground ${isOpen[index] ? 'rotate-180' : ''}`}
+                  <ChevronDown
+                    className={`transition-transform duration-200 ml-1 size-5 ${isOpen[index] ? 'rotate-180' : ''}`}
                   />
                 </div>
               </div>
@@ -412,9 +418,9 @@ const Proxies: React.FC = () => {
             onClick={toggleAll}
           >
             {allExpanded ? (
-              <LuChevronsDownUp className="text-lg" />
+              <ChevronsDownUp className="text-lg" />
             ) : (
-              <LuChevronsUpDown className="text-lg" />
+              <ChevronsUpDown className="text-lg" />
             )}
           </Button>
           <Button
@@ -424,7 +430,7 @@ const Proxies: React.FC = () => {
             title={t('pages.proxies.proxyGroupSettings')}
             onClick={() => setIsSettingModalOpen(true)}
           >
-            <MdTune className="text-lg" />
+            <SlidersHorizontal className="text-lg" />
           </Button>
         </>
       }
@@ -434,7 +440,7 @@ const Proxies: React.FC = () => {
         <div className="h-full w-full flex justify-center items-center">
           <div className="flex flex-col items-center gap-3">
             <div className="rounded-full bg-muted p-6">
-              <MdDoubleArrow className="text-muted-foreground text-5xl" />
+              <ChevronsRight className="text-muted-foreground text-5xl" />
             </div>
             <h2 className="text-muted-foreground text-lg font-medium">{t('sider.directMode')}</h2>
           </div>

@@ -9,8 +9,8 @@ import { useControledMihomoConfig } from '@renderer/hooks/use-controled-mihomo-c
 import { useAppConfig } from '@renderer/hooks/use-app-config'
 import { restartCore, triggerSysProxy } from '@renderer/utils/ipc'
 import { useNavigate } from 'react-router-dom'
-import { IoSettings } from 'react-icons/io5'
 import { useTranslation } from 'react-i18next'
+import { Settings } from 'lucide-react'
 
 const ProxySwitches: React.FC = () => {
   const { t } = useTranslation()
@@ -46,7 +46,7 @@ const ProxySwitches: React.FC = () => {
             variant="ghost"
             onClick={() => navigate('/tun')}
           >
-            <IoSettings className="text-lg" />
+            <Settings className="text-lg" />
           </Button>
         }
         divider
@@ -74,7 +74,7 @@ const ProxySwitches: React.FC = () => {
             variant="ghost"
             onClick={() => navigate('/sysproxy')}
           >
-            <IoSettings className="text-lg" />
+            <Settings className="text-lg" />
           </Button>
         }
       >

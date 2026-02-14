@@ -12,8 +12,8 @@ import { Spinner } from '@renderer/components/ui/spinner'
 import ReactMarkdown from 'react-markdown'
 import React, { useState } from 'react'
 import { downloadAndInstallUpdate } from '@renderer/utils/ipc'
-import { FiX, FiDownload } from 'react-icons/fi'
 import { useTranslation } from 'react-i18next'
+import { Download, X } from 'lucide-react'
 
 interface Props {
   version: string
@@ -64,7 +64,7 @@ const UpdaterModal: React.FC<Props> = (props) => {
       >
         <DialogHeader className="app-drag flex-row items-center justify-between">
           <DialogTitle className="flex items-center gap-2">
-            <FiDownload className="text-lg" />
+            <Download className="text-lg" />
             {t('updater.versionReady', { version })}
           </DialogTitle>
           {!isDownloading && (
@@ -136,12 +136,12 @@ const UpdaterModal: React.FC<Props> = (props) => {
         </div>
         <DialogFooter className="gap-2">
           <Button size="sm" variant="ghost" onClick={handleCancel}>
-            {updateStatus?.downloading ? <FiX className="mr-2" /> : null}
+            {updateStatus?.downloading ? <X className="mr-2" /> : null}
             {updateStatus?.downloading ? t('updater.cancelDownload') : t('common.cancel')}
           </Button>
           {!updateStatus?.downloading && (
             <Button size="sm" onClick={onUpdate} disabled={downloading}>
-              {downloading ? <Spinner className="mr-2 size-4" /> : <FiDownload className="mr-2" />}
+              {downloading ? <Spinner className="mr-2 size-4" /> : <Download className="mr-2" />}
               {t('updater.updateNow')}
             </Button>
           )}

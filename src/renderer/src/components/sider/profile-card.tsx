@@ -3,9 +3,9 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import React, { useState } from 'react'
 import ConfigViewer from './config-viewer'
 import { useAppConfig } from '@renderer/hooks/use-app-config'
-import { TiFolder } from 'react-icons/ti'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
 import { Button } from '@renderer/components/ui/button'
+import { Folder } from 'lucide-react'
 
 const ProfileCard: React.FC = () => {
   const { t } = useTranslation()
@@ -31,7 +31,7 @@ const ProfileCard: React.FC = () => {
               setShowRuntimeConfig(true)
             }}
           >
-            <TiFolder className="text-[20px]" />
+            <Folder className="text-[20px]" />
           </Button>
         </TooltipTrigger>
         <TooltipContent side="right">{t('sider.profileManagement')}</TooltipContent>

@@ -7,7 +7,7 @@ import relativeTime from 'dayjs/plugin/relativeTime'
 
 dayjs.extend(relativeTime)
 import { useTranslation } from 'react-i18next'
-import { CgClose, CgTrash } from 'react-icons/cg'
+import { Trash2, X } from 'lucide-react'
 
 interface Props {
   connections: ControllerConnectionDetail[]
@@ -462,9 +462,9 @@ const ConnectionTable: React.FC<Props> = ({
                     }}
                   >
                     {connection.isActive ? (
-                      <CgClose className="text-lg" />
+                      <X className="text-lg" />
                     ) : (
-                      <CgTrash className="text-lg" />
+                      <Trash2 className="text-lg" />
                     )}
                   </Button>
                 </td>

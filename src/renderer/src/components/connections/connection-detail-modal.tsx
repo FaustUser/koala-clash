@@ -17,9 +17,8 @@ import {
 import { Badge } from '@renderer/components/ui/badge'
 import { calcTraffic } from '@renderer/utils/calc'
 import dayjs from 'dayjs'
-import { BiCopy } from 'react-icons/bi'
-import { LuCheck } from 'react-icons/lu'
 import { t } from 'i18next'
+import { Check, Copy } from 'lucide-react'
 
 interface Props {
   connection: ControllerConnectionDetail
@@ -98,7 +97,7 @@ const CopyableValue: React.FC<CopyableValueProps> = ({ label, value, displayName
                 variant="ghost"
                 className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity size-5"
               >
-                <BiCopy className="text-xs text-muted-foreground" />
+                <Copy className="text-xs text-muted-foreground" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
@@ -124,9 +123,9 @@ const CopyableValue: React.FC<CopyableValueProps> = ({ label, value, displayName
             onClick={handleSimpleCopy}
           >
             {copied ? (
-              <LuCheck className="text-xs text-green-500" />
+              <Check className="text-xs text-green-500" />
             ) : (
-              <BiCopy className="text-xs text-muted-foreground" />
+              <Copy className="text-xs text-muted-foreground" />
             )}
           </Button>
         )}

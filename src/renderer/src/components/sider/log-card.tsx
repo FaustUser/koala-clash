@@ -1,10 +1,10 @@
 import { Button } from '@renderer/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
-import { IoJournalOutline } from 'react-icons/io5'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useAppConfig } from '@renderer/hooks/use-app-config'
 import React from 'react'
 import { useTranslation } from 'react-i18next'
+import { ScrollText } from 'lucide-react'
 
 const LogCard: React.FC = () => {
   const { t } = useTranslation()
@@ -25,7 +25,7 @@ const LogCard: React.FC = () => {
               navigate('/logs')
             }}
           >
-            <IoJournalOutline className="text-[20px]" />
+            <ScrollText className="text-[20px]" />
           </Button>
         </TooltipTrigger>
         <TooltipContent side="right">{t('sider.logs')}</TooltipContent>

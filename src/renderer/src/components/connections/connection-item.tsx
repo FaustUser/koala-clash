@@ -5,7 +5,7 @@ import { Card, CardFooter, CardHeader } from '@renderer/components/ui/card'
 import { calcTraffic } from '@renderer/utils/calc'
 import dayjs from 'dayjs'
 import React, { memo, useCallback, useEffect, useMemo, useState } from 'react'
-import { CgClose, CgTrash } from 'react-icons/cg'
+import { Trash2, X } from 'lucide-react'
 
 interface Props {
   index: number
@@ -119,7 +119,7 @@ const ConnectionItemComponent: React.FC<Props> = ({
                   handleClose()
                 }}
               >
-                {info.isActive ? <CgClose className="text-lg" /> : <CgTrash className="text-lg" />}
+                {info.isActive ? <X className="text-lg" /> : <Trash2 className="text-lg" />}
               </Button>
             </CardHeader>
             <CardFooter className="pt-0.5 px-4 pb-2">

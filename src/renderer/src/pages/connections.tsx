@@ -30,19 +30,24 @@ import { Virtuoso } from 'react-virtuoso'
 import dayjs from 'dayjs'
 import ConnectionDetailModal from '@renderer/components/connections/connection-detail-modal'
 import ConnectionSettingModal from '@renderer/components/connections/connection-setting-modal'
-import { CgClose, CgTrash } from 'react-icons/cg'
 import { useAppConfig } from '@renderer/hooks/use-app-config'
 import { includesIgnoreCase } from '@renderer/utils/includes'
 import { getIconDataURL, getAppName } from '@renderer/utils/ipc'
-import { HiSortAscending, HiSortDescending } from 'react-icons/hi'
-import { MdViewList, MdTableChart } from 'react-icons/md'
-import { HiOutlineAdjustmentsHorizontal } from 'react-icons/hi2'
 import { cropAndPadTransparent } from '@renderer/utils/image'
 import { platform } from '@renderer/utils/init'
 import { useControledMihomoConfig } from '@renderer/hooks/use-controled-mihomo-config'
-import { MdTune } from 'react-icons/md'
 import { useTranslation } from 'react-i18next'
-import { IoMdPause, IoMdPlay } from 'react-icons/io'
+import {
+  ArrowDownNarrowWide,
+  ArrowDownWideNarrow,
+  Pause,
+  Play,
+  SlidersHorizontal,
+  Table2,
+  TableOfContents,
+  Trash2,
+  X
+} from 'lucide-react'
 
 let cachedConnections: ControllerConnectionDetail[] = []
 
@@ -585,9 +590,9 @@ const Connections: React.FC = () => {
               }}
             >
               {viewMode === 'list' ? (
-                <MdTableChart className="text-lg" />
+                <Table2 className="text-lg" />
               ) : (
-                <MdViewList className="text-lg" />
+                <TableOfContents className="text-lg" />
               )}
             </Button>
             <Button
@@ -597,7 +602,7 @@ const Connections: React.FC = () => {
               variant="ghost"
               onClick={togglePause}
             >
-              {isPaused ? <IoMdPlay className="text-lg" /> : <IoMdPause className="text-lg" />}
+              {isPaused ? <Play className="text-lg" /> : <Pause className="text-lg" />}
             </Button>
             <div className="relative flex items-center">
               <Button
@@ -620,9 +625,9 @@ const Connections: React.FC = () => {
                 }}
               >
                 {tab === 'active' ? (
-                  <CgClose className="text-lg" />
+                  <X className="text-lg" />
                 ) : (
-                  <CgTrash className="text-lg" />
+                  <Trash2 className="text-lg" />
                 )}
               </Button>
               <Badge className="absolute -top-0.5 -right-0.5 min-w-3 h-3 justify-center px-0.5 text-[8px] leading-none">
@@ -637,7 +642,7 @@ const Connections: React.FC = () => {
             title={t('pages.connections.connectionSettings')}
             onClick={() => setIsSettingModalOpen(true)}
           >
-            <MdTune className="text-lg" />
+            <SlidersHorizontal className="text-lg" />
           </Button>
         </>
       }
@@ -688,7 +693,7 @@ const Connections: React.FC = () => {
                 aria-label="Clear filter"
                 onClick={() => setFilter('')}
               >
-                <CgClose className="text-base" />
+                <X className="text-base" />
               </InputGroupButton>
             </InputGroupAddon>
           </InputGroup>
@@ -697,7 +702,7 @@ const Connections: React.FC = () => {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button size="sm" variant="secondary" className="gap-1.5">
-                  <HiOutlineAdjustmentsHorizontal className="text-2xl" />
+                  <SlidersHorizontal className="text-2xl" />
                   {t('pages.connections.tableColumns')}
                 </Button>
               </DropdownMenuTrigger>
@@ -734,9 +739,9 @@ const Connections: React.FC = () => {
               </Select>
               <Button className='border-1 flex items-center justify-center' size="icon-sm" variant="secondary" onClick={handleDirectionToggle}>
                 {connectionDirection === 'asc' ? (
-                  <HiSortAscending className="text-lg" />
+                  <ArrowDownNarrowWide className="text-lg" />
                 ) : (
-                  <HiSortDescending className="text-lg" />
+                  <ArrowDownWideNarrow className="text-lg" />
                 )}
               </Button>
             </>

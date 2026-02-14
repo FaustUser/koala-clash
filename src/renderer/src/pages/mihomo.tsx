@@ -21,7 +21,6 @@ import { useAppConfig } from '@renderer/hooks/use-app-config'
 import { useControledMihomoConfig } from '@renderer/hooks/use-controled-mihomo-config'
 import PortSetting from '@renderer/components/mihomo/port-setting'
 import { platform } from '@renderer/utils/init'
-import { IoMdCloudDownload } from 'react-icons/io'
 import PubSub from 'pubsub-js'
 import {
   manualGrantCorePermition,
@@ -45,6 +44,7 @@ import ControllerSetting from '@renderer/components/mihomo/controller-setting'
 import EnvSetting from '@renderer/components/mihomo/env-setting'
 import AdvancedSetting from '@renderer/components/mihomo/advanced-settings'
 import { useTranslation } from 'react-i18next'
+import { CloudDownload } from 'lucide-react'
 
 let systemCorePathsCache: string[] | null = null
 let cachePromise: Promise<string[]> | null = null
@@ -308,7 +308,7 @@ const Mihomo: React.FC = () => {
                 {upgrading ? (
                   <Spinner className="size-4" />
                 ) : (
-                  <IoMdCloudDownload className="text-lg" />
+                  <CloudDownload className="text-lg" />
                 )}
               </Button>
             ) : null

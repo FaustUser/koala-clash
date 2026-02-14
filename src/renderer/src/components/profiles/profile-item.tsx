@@ -11,7 +11,6 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui
 import { cn } from '@renderer/lib/utils'
 import { useTranslation } from 'react-i18next'
 import { calcPercent, calcTraffic } from '@renderer/utils/calc'
-import { IoMdMore, IoMdRefresh } from 'react-icons/io'
 import dayjs from 'dayjs'
 import React, { useEffect, useMemo, useState } from 'react'
 import EditFileModal from './edit-file-modal'
@@ -21,7 +20,7 @@ import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { openFile } from '@renderer/utils/ipc'
 import ConfirmModal from '../base/base-confirm'
-import { Check } from 'lucide-react'
+import { Check, EllipsisVertical, RefreshCcw } from 'lucide-react'
 
 interface Props {
   info: ProfileItem
@@ -480,7 +479,7 @@ const ProfileItem: React.FC<Props> = (props) => {
                         setUpdating(false)
                       }}
                     >
-                      <IoMdRefresh
+                      <RefreshCcw
                         className={cn(
                           'text-base text-muted-foreground',
                           updating && 'animate-spin'
@@ -495,7 +494,7 @@ const ProfileItem: React.FC<Props> = (props) => {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button size="icon-sm" variant="ghost" className="rounded-xl">
-                    <IoMdMore className="text-base text-muted-foreground" />
+                    <EllipsisVertical className="text-base text-muted-foreground" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>

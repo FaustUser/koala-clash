@@ -14,8 +14,8 @@ import { platform } from '@renderer/utils/init'
 import { openUWPTool, triggerSysProxy } from '@renderer/utils/ipc'
 import React, { useEffect, useState } from 'react'
 import ByPassEditorModal from '@renderer/components/sysproxy/bypass-editor-modal'
-import { IoIosHelpCircle } from 'react-icons/io'
 import { useTranslation } from 'react-i18next'
+import { MessageCircleQuestionMark } from 'lucide-react'
 
 const defaultPacScript = `
 function FindProxyForURL(url, host) {
@@ -199,7 +199,7 @@ const Sysproxy: React.FC = () => {
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button size="icon-sm" variant="ghost">
-                      <IoIosHelpCircle className="text-lg" />
+                      <MessageCircleQuestionMark className="text-lg" />
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>

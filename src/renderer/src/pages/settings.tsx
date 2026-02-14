@@ -1,7 +1,5 @@
 import { Button } from '@renderer/components/ui/button'
 import BasePage from '@renderer/components/base/base-page'
-// import { CgWebsite } from 'react-icons/cg'
-import { IoLogoGithub } from 'react-icons/io5'
 import GeneralConfig from '@renderer/components/settings/general-config'
 import AdvancedSettings from '@renderer/components/settings/advanced-settings'
 import Actions from '@renderer/components/settings/actions'
@@ -10,6 +8,7 @@ import AppearanceConfig from '@renderer/components/settings/appearance-confis'
 import LanguageConfig from '@renderer/components/settings/language-config'
 import ProxySwitches from '@renderer/components/settings/proxy-switches'
 import { useTranslation } from 'react-i18next'
+import { Github } from 'lucide-react'
 
 const Settings: React.FC = () => {
   const { t } = useTranslation()
@@ -28,7 +27,7 @@ const Settings: React.FC = () => {
               window.open('https://github.com/xishang0128/sparkle')
             }}
           >
-            <IoLogoGithub className="text-lg" />
+            <Github className="text-lg" />
           </Button>
         </>
       }

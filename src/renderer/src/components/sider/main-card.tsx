@@ -4,7 +4,7 @@ import React from 'react'
 import { useTranslation } from 'react-i18next'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useAppConfig } from '@renderer/hooks/use-app-config'
-import { IoHomeOutline } from 'react-icons/io5'
+import { House } from 'lucide-react'
 
 
 interface Props {
@@ -30,7 +30,7 @@ const HomeCard: React.FC<Props> = () => {
               navigate('/home')
             }}
           >
-            <IoHomeOutline className="text-[20px]" />
+            <House className="text-[20px]" />
           </Button>
         </TooltipTrigger>
         <TooltipContent side="right">{t('sider.home')}</TooltipContent>

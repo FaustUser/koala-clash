@@ -3,9 +3,9 @@ import { Button } from '@renderer/components/ui/button'
 import { Input } from '@renderer/components/ui/input'
 import { Separator } from '@renderer/components/ui/separator'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
-import { MdDeleteForever } from 'react-icons/md'
 import type { ValidationResult } from '@renderer/utils/validate'
 import { useTranslation } from 'react-i18next'
+import { Trash2 } from 'lucide-react'
 
 interface EditableListProps {
   title?: string
@@ -227,7 +227,7 @@ const EditableList: React.FC<EditableListProps> = ({
                   className="text-amber-500 hover:text-amber-600"
                   onClick={() => handleUpdate(idx, '', '')}
                 >
-                  <MdDeleteForever className="text-lg" />
+                  <Trash2 className="text-lg" />
                 </Button>
               )}
             </div>

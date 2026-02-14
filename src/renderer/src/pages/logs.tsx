@@ -6,11 +6,10 @@ import { Separator } from '@renderer/components/ui/separator'
 import { Input } from '@renderer/components/ui/input'
 import { cn } from '@renderer/lib/utils'
 import { Virtuoso, VirtuosoHandle } from 'react-virtuoso'
-import { IoLocationSharp } from 'react-icons/io5'
-import { CgTrash } from 'react-icons/cg'
 import { useTranslation } from 'react-i18next'
 
 import { includesIgnoreCase } from '@renderer/utils/includes'
+import { MapPin, Trash2 } from 'lucide-react'
 
 const cachedLogs: {
   log: ControllerLog[]
@@ -91,7 +90,7 @@ const Logs: React.FC = () => {
               setTrace((prev) => !prev)
             }}
           >
-            <IoLocationSharp className="text-lg" />
+            <MapPin className="text-lg" />
           </Button>
           <Button
             size="icon-sm"
@@ -102,7 +101,7 @@ const Logs: React.FC = () => {
               cachedLogs.clean()
             }}
           >
-            <CgTrash className="text-lg text-destructive" />
+            <Trash2 className="text-lg text-destructive" />
           </Button>
         </div>
         <Separator className="mx-2" />

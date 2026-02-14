@@ -9,9 +9,9 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui
 import useSWR from 'swr'
 import { checkAutoRun, disableAutoRun, enableAutoRun, relaunchApp } from '@renderer/utils/ipc'
 import { useAppConfig } from '@renderer/hooks/use-app-config'
-import { IoIosHelpCircle } from 'react-icons/io'
 import ConfirmModal from '../base/base-confirm'
 import { useTranslation } from 'react-i18next'
+import { MessageCircleQuestionMark } from 'lucide-react'
 
 const GeneralConfig: React.FC = () => {
   const { t } = useTranslation()
@@ -114,7 +114,7 @@ const GeneralConfig: React.FC = () => {
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button size="icon-sm" variant="ghost">
-                  <IoIosHelpCircle className="text-lg" />
+                  <MessageCircleQuestionMark className="text-lg" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent>{t('settings.general.disableGPUHelp')}</TooltipContent>
@@ -137,7 +137,7 @@ const GeneralConfig: React.FC = () => {
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button size="icon-sm" variant="ghost">
-                  <IoIosHelpCircle className="text-lg" />
+                  <MessageCircleQuestionMark className="text-lg" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent>{t('settings.general.disableAnimationHelp')}</TooltipContent>

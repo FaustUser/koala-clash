@@ -12,8 +12,7 @@ import { restartCore } from '@renderer/utils/ipc'
 import { includesIgnoreCase } from '@renderer/utils/includes'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
-import { RiDatabase2Line } from 'react-icons/ri'
-import { Pencil } from 'lucide-react'
+import { Database, Pencil } from 'lucide-react'
 
 const Rules: React.FC = () => {
   const { t } = useTranslation()
@@ -58,7 +57,7 @@ const Rules: React.FC = () => {
             title={t('pages.resources.title')}
             onClick={() => navigate('/resources')}
           >
-            <RiDatabase2Line className="text-lg" />
+            <Database className="text-lg" />
           </Button>
         </>
       }

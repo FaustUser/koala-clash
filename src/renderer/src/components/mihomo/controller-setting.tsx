@@ -25,9 +25,7 @@ import { useControledMihomoConfig } from '@renderer/hooks/use-controled-mihomo-c
 import { mihomoUpgradeUI, restartCore } from '@renderer/utils/ipc'
 import { isValidListenAddress } from '@renderer/utils/validate'
 import { useTranslation } from 'react-i18next'
-import { AiOutlineEye, AiOutlineEyeInvisible } from 'react-icons/ai'
-import { HiExternalLink } from 'react-icons/hi'
-import { IoMdCloudDownload, IoMdRefresh } from 'react-icons/io'
+import { CloudDownload, ExternalLink, Eye, EyeClosed, RefreshCcw } from 'lucide-react'
 
 const ControllerSetting: React.FC = () => {
   const { t } = useTranslation()
@@ -142,7 +140,7 @@ const ControllerSetting: React.FC = () => {
                 variant="ghost"
                 onClick={() => setSecretInput(generateRandomString(32))}
               >
-                <IoMdRefresh className="text-lg" />
+                <RefreshCcw className="text-lg" />
               </Button>
             }
             divider
@@ -167,9 +165,9 @@ const ControllerSetting: React.FC = () => {
                     onClick={() => setShowPassword((prev) => !prev)}
                   >
                     {showPassword ? (
-                      <AiOutlineEyeInvisible className="w-4 h-4" />
+                      <EyeClosed className="w-4 h-4" />
                     ) : (
-                      <AiOutlineEye className="w-4 h-4" />
+                      <Eye className="w-4 h-4" />
                     )}
                   </InputGroupButton>
                 </InputGroupAddon>
@@ -209,7 +207,7 @@ const ControllerSetting: React.FC = () => {
                     {upgrading ? (
                       <Spinner className="size-4" />
                     ) : (
-                      <IoMdCloudDownload className="text-lg" />
+                      <CloudDownload className="text-lg" />
                     )}
                   </Button>
                   <Button
@@ -246,7 +244,7 @@ const ControllerSetting: React.FC = () => {
                       }
                     }}
                   >
-                    <HiExternalLink className="text-lg" />
+                    <ExternalLink className="text-lg" />
                   </Button>
                 </>
               }

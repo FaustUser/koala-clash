@@ -16,12 +16,11 @@ import { useState, useEffect } from 'react'
 import useSWR from 'swr'
 import UpdaterModal from '../updater/updater-modal'
 import { version } from '@renderer/utils/init'
-import { IoIosHelpCircle } from 'react-icons/io'
-import { IoSettings } from 'react-icons/io5'
 import { startTour } from '@renderer/utils/driver'
 import { useNavigate } from 'react-router-dom'
 import ConfirmModal from '../base/base-confirm'
 import { useTranslation } from 'react-i18next'
+import { MessageCircleQuestionMark, Settings } from 'lucide-react'
 
 const Actions: React.FC = () => {
   const { t } = useTranslation()
@@ -130,7 +129,7 @@ const Actions: React.FC = () => {
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button size="icon-sm" variant="ghost">
-                  <IoIosHelpCircle className="text-lg" />
+                  <MessageCircleQuestionMark className="text-lg" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent>{t('settings.actions.resetAppHelp')}</TooltipContent>
@@ -148,7 +147,7 @@ const Actions: React.FC = () => {
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button size="icon-sm" variant="ghost">
-                  <IoIosHelpCircle className="text-lg" />
+                  <MessageCircleQuestionMark className="text-lg" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent>{t('settings.actions.clearCacheHelp')}</TooltipContent>
@@ -166,7 +165,7 @@ const Actions: React.FC = () => {
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button size="icon-sm" variant="ghost">
-                  <IoIosHelpCircle className="text-lg" />
+                  <MessageCircleQuestionMark className="text-lg" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent>{t('settings.actions.createHeapSnapshotHelp')}</TooltipContent>
@@ -184,7 +183,7 @@ const Actions: React.FC = () => {
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button size="icon-sm" variant="ghost">
-                  <IoIosHelpCircle className="text-lg" />
+                  <MessageCircleQuestionMark className="text-lg" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent>{t('settings.actions.quitKeepCoreHelp')}</TooltipContent>
@@ -207,7 +206,7 @@ const Actions: React.FC = () => {
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button size="icon-sm" variant="ghost" onClick={() => navigate('/mihomo')}>
-                  <IoSettings className="text-lg" />
+                  <Settings className="text-lg" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent>{t('settings.actions.mihomoSettings')}</TooltipContent>

@@ -2,8 +2,8 @@ import { Button } from '@renderer/components/ui/button'
 import React, { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import UpdaterModal from './updater-modal'
-import { GrUpgrade } from 'react-icons/gr'
 import { cancelUpdate } from '@renderer/utils/ipc'
+import { CircleFadingArrowUp } from 'lucide-react'
 
 interface Props {
   iconOnly?: boolean
@@ -74,7 +74,7 @@ const UpdaterButton: React.FC<Props> = (props) => {
             setOpenModal(true)
           }}
         >
-          <GrUpgrade />
+          <CircleFadingArrowUp />
         </Button>
       ) : (
         <Button
@@ -85,7 +85,7 @@ const UpdaterButton: React.FC<Props> = (props) => {
             setOpenModal(true)
           }}
         >
-          <GrUpgrade />
+          <CircleFadingArrowUp />
           <span className="truncate">{t('common.updateAvailable')}</span>
         </Button>
       )}

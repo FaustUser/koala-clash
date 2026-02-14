@@ -1,7 +1,5 @@
 import { toast } from 'sonner'
 import { Button } from '@renderer/components/ui/button'
-
-
 import BasePage from '@renderer/components/base/base-page'
 import ProfileItem from '@renderer/components/profiles/profile-item'
 import EditInfoModal from '@renderer/components/profiles/edit-info-modal'
@@ -17,11 +15,9 @@ import {
   DragEndEvent
 } from '@dnd-kit/core'
 import { SortableContext } from '@dnd-kit/sortable'
-import { IoMdRefresh } from 'react-icons/io'
-import { MdTune } from 'react-icons/md'
 import ProfileSettingModal from '@renderer/components/profiles/profile-setting-modal'
 import { useTranslation } from 'react-i18next'
-import { Plus, FileDown } from 'lucide-react'
+import { Plus, FileDown, RefreshCcw, SlidersHorizontal } from 'lucide-react'
 
 const emptyItems: ProfileItem[] = []
 
@@ -164,7 +160,7 @@ const Profiles: React.FC = () => {
               setUpdating(false)
             }}
           >
-            <IoMdRefresh className={`text-lg ${updating ? 'animate-spin' : ''}`} />
+            <RefreshCcw className={`text-lg ${updating ? 'animate-spin' : ''}`} />
           </Button>
           <Button
             size="icon-sm"
@@ -174,7 +170,7 @@ const Profiles: React.FC = () => {
             aria-label={t('pages.profiles.profileSettings')}
             onClick={() => setIsSettingModalOpen(true)}
           >
-            <MdTune className="text-lg" />
+            <SlidersHorizontal className="text-lg" />
           </Button>
         </>
       }

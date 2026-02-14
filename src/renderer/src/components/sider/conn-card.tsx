@@ -2,9 +2,9 @@ import { Button } from '@renderer/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
 import { useLocation, useNavigate } from 'react-router-dom'
 import React from 'react'
-import { IoLink } from 'react-icons/io5'
 import { useAppConfig } from '@renderer/hooks/use-app-config'
 import { useTranslation } from 'react-i18next'
+import { Link2 } from 'lucide-react'
 
 const ConnCard: React.FC = () => {
   const { t } = useTranslation()
@@ -26,7 +26,7 @@ const ConnCard: React.FC = () => {
               navigate('/connections')
             }}
           >
-            <IoLink className="text-[20px]" />
+            <Link2 className="text-[20px]" />
           </Button>
         </TooltipTrigger>
         <TooltipContent side="right">{t('sider.connection')}</TooltipContent>

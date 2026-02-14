@@ -34,10 +34,7 @@ import {
   stopNetworkDetection
 } from '@renderer/utils/ipc'
 import { platform } from '@renderer/utils/init'
-import { IoIosHelpCircle } from 'react-icons/io'
-import { IoSettings } from 'react-icons/io5'
-import { BiCopy } from 'react-icons/bi'
-import { ChevronDownIcon } from 'lucide-react'
+import { ChevronDownIcon, Copy, MessageCircleQuestionMark, Settings } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import EditableList from '../base/base-list-editor'
 import { useTranslation } from 'react-i18next'
@@ -108,7 +105,7 @@ const AdvancedSettings: React.FC = () => {
           <Tooltip>
             <TooltipTrigger asChild>
               <Button size="icon-sm" variant="ghost">
-                <IoIosHelpCircle className="text-lg" />
+                <MessageCircleQuestionMark className="text-lg" />
               </Button>
             </TooltipTrigger>
             <TooltipContent>{t('settings.advanced.autoEnterLightModeHelp')}</TooltipContent>
@@ -172,7 +169,7 @@ const AdvancedSettings: React.FC = () => {
             variant="ghost"
             onClick={() => copyEnv(type)}
           >
-            <BiCopy className="text-lg" />
+            <Copy className="text-lg" />
           </Button>
         ))}
         divider
@@ -234,7 +231,7 @@ const AdvancedSettings: React.FC = () => {
         title={t('settings.advanced.takeOverDNS')}
         actions={
           <Button size="icon-sm" variant="ghost" onClick={() => navigate('/dns')}>
-            <IoSettings className="text-lg" />
+            <Settings className="text-lg" />
           </Button>
         }
         divider
@@ -257,7 +254,7 @@ const AdvancedSettings: React.FC = () => {
         title={t('settings.advanced.takeOverSniffer')}
         actions={
           <Button size="icon-sm" variant="ghost" onClick={() => navigate('/sniffer')}>
-            <IoSettings className="text-lg" />
+            <Settings className="text-lg" />
           </Button>
         }
         divider
@@ -282,7 +279,7 @@ const AdvancedSettings: React.FC = () => {
           <Tooltip>
             <TooltipTrigger asChild>
               <Button size="icon-sm" variant="ghost">
-                <IoIosHelpCircle className="text-lg" />
+                <MessageCircleQuestionMark className="text-lg" />
               </Button>
             </TooltipTrigger>
             <TooltipContent>{t('settings.advanced.stopCoreOnDisconnectHelp')}</TooltipContent>

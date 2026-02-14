@@ -11,11 +11,9 @@ import SettingCard from '../base/base-setting-card'
 import SettingItem from '../base/base-setting-item'
 import { Button } from '@renderer/components/ui/button'
 import { Badge } from '@renderer/components/ui/badge'
-import { IoMdRefresh } from 'react-icons/io'
-import { CgLoadbarDoc } from 'react-icons/cg'
-import { MdEditDocument } from 'react-icons/md'
 import dayjs from 'dayjs'
 import { useTranslation } from 'react-i18next'
+import { FilePenLine, FileText, RefreshCcw } from 'lucide-react'
 
 const RuleProvider: React.FC = () => {
   const { t } = useTranslation()
@@ -162,9 +160,9 @@ const RuleProvider: React.FC = () => {
                 }}
               >
                 {provider.vehicleType == 'File' ? (
-                  <MdEditDocument className={`text-lg`} />
+                  <FilePenLine className={`text-lg`} />
                 ) : (
-                  <CgLoadbarDoc className={`text-lg`} />
+                  <FileText className={`text-lg`} />
                 )}
               </Button>
               <Button
@@ -176,7 +174,7 @@ const RuleProvider: React.FC = () => {
                   onUpdate(provider.name, index)
                 }}
               >
-                <IoMdRefresh className={`text-lg ${updating[index] ? 'animate-spin' : ''}`} />
+                <RefreshCcw className={`text-lg ${updating[index] ? 'animate-spin' : ''}`} />
               </Button>
             </div>
           </SettingItem>

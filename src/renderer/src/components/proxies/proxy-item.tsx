@@ -3,9 +3,9 @@ import { Card, CardContent } from '@renderer/components/ui/card'
 import { cn } from '@renderer/lib/utils'
 import { mihomoUnfixedProxy } from '@renderer/utils/ipc'
 import React, { useMemo, useState } from 'react'
-import { FaMapPin } from 'react-icons/fa6'
 import { useTranslation } from 'react-i18next'
 import { Spinner } from '@renderer/components/ui/spinner'
+import { MapPin } from 'lucide-react'
 
 interface Props {
   mutateProxies: () => void
@@ -94,7 +94,7 @@ const ProxyItem: React.FC<Props> = (props) => {
                     }}
                     className="h-6 w-6 min-w-6 p-0 text-amber-500 hover:text-amber-600 opacity-60 hover:opacity-100"
                   >
-                    <FaMapPin className="text-xs" />
+                    <MapPin className="text-xs" />
                   </Button>
                 )}
                 <Button
@@ -141,7 +141,7 @@ const ProxyItem: React.FC<Props> = (props) => {
                     }}
                     className="h-6 w-6 min-w-6 p-0 text-amber-500 hover:text-amber-600 opacity-60 hover:opacity-100"
                   >
-                    <FaMapPin className="text-xs" />
+                    <MapPin className="text-xs" />
                   </Button>
                 )}
                 <Button

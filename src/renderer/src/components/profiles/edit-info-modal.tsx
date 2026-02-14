@@ -15,9 +15,15 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui
 import { cn } from '@renderer/lib/utils'
 import SettingItem from '../base/base-setting-item'
 import { getFilePath, readTextFile, restartCore } from '@renderer/utils/ipc'
-import { IoIosHelpCircle } from 'react-icons/io'
 import { useTranslation } from 'react-i18next'
-import { ClipboardPaste, ChevronDown, FileUp, FilePlus2, Check } from 'lucide-react'
+import {
+  ClipboardPaste,
+  ChevronDown,
+  FileUp,
+  FilePlus2,
+  Check,
+  MessageCircleQuestionMark
+} from 'lucide-react'
 
 interface Props {
   item: ProfileItem
@@ -299,7 +305,7 @@ const EditInfoModal: React.FC<Props> = (props) => {
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <Button size="icon-sm" variant="ghost">
-                                  <IoIosHelpCircle className="text-lg" />
+                                  <MessageCircleQuestionMark className="text-lg" />
                                 </Button>
                               </TooltipTrigger>
                               <TooltipContent>
@@ -382,7 +388,7 @@ const EditInfoModal: React.FC<Props> = (props) => {
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <Button size="icon-sm" variant="ghost">
-                              <IoIosHelpCircle className="text-lg" />
+                              <MessageCircleQuestionMark className="text-lg" />
                             </Button>
                           </TooltipTrigger>
                           <TooltipContent>

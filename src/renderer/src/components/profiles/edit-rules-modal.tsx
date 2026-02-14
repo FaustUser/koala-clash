@@ -35,7 +35,16 @@ import {
   CommandList
 } from '@renderer/components/ui/command'
 import { cn } from '@renderer/lib/utils'
-import { CheckIcon, ChevronsUpDownIcon } from 'lucide-react'
+import {
+  ArrowDown,
+  ArrowDownToLine,
+  ArrowUp,
+  ArrowUpToLine,
+  CheckIcon,
+  ChevronsUpDownIcon,
+  Trash2,
+  Undo2
+} from 'lucide-react'
 import React, {
   useEffect,
   useState,
@@ -48,8 +57,6 @@ import React, {
 import { getProfileStr, setRuleStr, getRuleStr } from '@renderer/utils/ipc'
 import { useTranslation } from 'react-i18next'
 import yaml from 'js-yaml'
-import { IoMdTrash, IoMdArrowUp, IoMdArrowDown, IoMdUndo } from 'react-icons/io'
-import { MdVerticalAlignTop, MdVerticalAlignBottom } from 'react-icons/md'
 import { platform } from '@renderer/utils/init'
 
 interface Props {
@@ -487,7 +494,7 @@ const RuleListItemBase: React.FC<RuleListItemProps> = ({
           onClick={() => originalIndex !== -1 && onMoveUp(originalIndex)}
           disabled={originalIndex === -1 || originalIndex === 0 || isDeleted}
         >
-          <IoMdArrowUp className="text-lg" />
+          <ArrowUp className="text-lg" />
         </Button>
         <Button
           size="icon-xs"
@@ -495,7 +502,7 @@ const RuleListItemBase: React.FC<RuleListItemProps> = ({
           onClick={() => originalIndex !== -1 && onMoveDown(originalIndex)}
           disabled={originalIndex === -1 || originalIndex === rulesLength - 1 || isDeleted}
         >
-          <IoMdArrowDown className="text-lg" />
+          <ArrowDown className="text-lg" />
         </Button>
         <Button
           size="icon-xs"
@@ -504,9 +511,9 @@ const RuleListItemBase: React.FC<RuleListItemProps> = ({
           onClick={() => originalIndex !== -1 && onRemove(originalIndex)}
         >
           {originalIndex !== -1 && isDeleted ? (
-            <IoMdUndo className="text-lg" />
+            <Undo2 className="text-lg" />
           ) : (
-            <IoMdTrash className="text-lg" />
+            <Trash2 className="text-lg" />
           )}
         </Button>
       </div>
@@ -1331,7 +1338,7 @@ const EditRulesModal: React.FC<Props> = (props) => {
                     onClick={() => handleAddRule('prepend')}
                     disabled={isAddRuleDisabled(newRule, validateRulePayload)}
                   >
-                    <MdVerticalAlignTop className="text-lg" />
+                    <ArrowUpToLine className="text-lg" />
                     {t('profile.editRules.addRulePrepend')}
                   </Button>
                   <Button
@@ -1339,7 +1346,7 @@ const EditRulesModal: React.FC<Props> = (props) => {
                     onClick={() => handleAddRule('append')}
                     disabled={isAddRuleDisabled(newRule, validateRulePayload)}
                   >
-                    <MdVerticalAlignBottom className="text-lg" />
+                    <ArrowDownToLine className="text-lg" />
                     {t('profile.editRules.addRuleAppend')}
                   </Button>
                 </div>

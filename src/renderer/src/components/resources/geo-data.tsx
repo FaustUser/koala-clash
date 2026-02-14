@@ -8,8 +8,8 @@ import { Tabs, TabsList, TabsTrigger } from '@renderer/components/ui/tabs'
 import { useControledMihomoConfig } from '@renderer/hooks/use-controled-mihomo-config'
 import { mihomoUpgradeGeo } from '@renderer/utils/ipc'
 import { useState, useEffect, useMemo } from 'react'
-import { IoMdRefresh } from 'react-icons/io'
 import { useTranslation } from 'react-i18next'
+import { RefreshCcw } from 'lucide-react'
 
 const defaultGeoxUrl = {
   geoip: 'https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip-lite.dat',
@@ -156,7 +156,7 @@ const GeoData: React.FC = () => {
               }
             }}
           >
-            <IoMdRefresh className={`text-lg ${updating ? 'animate-spin' : ''}`} />
+            <RefreshCcw className={`text-lg ${updating ? 'animate-spin' : ''}`} />
           </Button>
         }
         divider={geoAutoUpdate}

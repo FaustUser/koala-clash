@@ -14,7 +14,6 @@ import { Spinner } from '@renderer/components/ui/spinner'
 import { Switch } from '@renderer/components/ui/switch'
 import { Tabs, TabsList, TabsTrigger } from '@renderer/components/ui/tabs'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
-import { BiSolidFileImport } from 'react-icons/bi'
 import {
   applyTheme,
   closeFloatingWindow,
@@ -32,10 +31,9 @@ import {
 import { useAppConfig } from '@renderer/hooks/use-app-config'
 import { platform } from '@renderer/utils/init'
 import { useTheme } from 'next-themes'
-import { IoIosHelpCircle, IoMdCloudDownload } from 'react-icons/io'
-import { MdEditDocument } from 'react-icons/md'
 import CSSEditorModal from './css-editor-modal'
 import { useTranslation } from 'react-i18next'
+import { CloudDownload, FilePenLine, Import, MessageCircleQuestionMark } from 'lucide-react'
 
 const AppearanceConfig: React.FC = () => {
   const { t } = useTranslation()
@@ -91,7 +89,7 @@ const AppearanceConfig: React.FC = () => {
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button size="icon-sm" variant="ghost">
-                  <IoIosHelpCircle className="text-lg" />
+                  <MessageCircleQuestionMark className="text-lg" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent>{t('settings.appearance.showFloatingWindowHelp')}</TooltipContent>
@@ -228,7 +226,7 @@ const AppearanceConfig: React.FC = () => {
                 {fetching ? (
                   <Spinner className="text-lg" />
                 ) : (
-                  <IoMdCloudDownload className="text-lg" />
+                  <CloudDownload className="text-lg" />
                 )}
               </Button>
               <Button
@@ -246,7 +244,7 @@ const AppearanceConfig: React.FC = () => {
                   }
                 }}
               >
-                <BiSolidFileImport className="text-lg" />
+                <Import className="text-lg" />
               </Button>
               <Button
                 size="icon-sm"
@@ -256,7 +254,7 @@ const AppearanceConfig: React.FC = () => {
                   setOpenCSSEditor(true)
                 }}
               >
-                <MdEditDocument className="text-lg" />
+                <FilePenLine className="text-lg" />
               </Button>
             </>
           }
