@@ -38,7 +38,7 @@ export default {
     noData: 'Нет данных',
     disabled: 'Отключено',
     settings: 'Настройки',
-    toggleSidebar: 'Свернуть/развернуть',
+    hideSidebar: 'Скрыть',
     updateAvailable: 'Обновление'
   },
 

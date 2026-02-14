@@ -38,7 +38,7 @@ export default {
     noData: '暂无数据',
     disabled: '禁用',
     settings: '设置',
-    toggleSidebar: '展开/收起侧栏',
+    hideSidebar: '隐藏',
     updateAvailable: '更新'
   },
 

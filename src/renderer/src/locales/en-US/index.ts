@@ -38,7 +38,7 @@ export default {
     noData: 'No data',
     disabled: 'Disabled',
     settings: 'Settings',
-    toggleSidebar: 'Toggle Sidebar',
+    hideSidebar: 'Hide',
     updateAvailable: 'Update'
   },
 
