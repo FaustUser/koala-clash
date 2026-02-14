@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react'
 import { toast } from 'sonner'
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogFooter,
   DialogHeader,
@@ -232,15 +233,16 @@ const ServiceModal: React.FC<Props> = (props) => {
           </div>
         </div>
         <DialogFooter className="flex-row flex-wrap justify-end gap-2">
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => onChange(false)}
-            disabled={loading}
-            className="sm:mr-auto"
-          >
-            {t('common.close')}
-          </Button>
+          <DialogClose asChild>
+            <Button
+              size="sm"
+              variant="ghost"
+              disabled={loading}
+              className="sm:mr-auto"
+            >
+              {t('common.close')}
+            </Button>
+          </DialogClose>
 
           {status === 'unknown' ? null : status === 'not-installed' ? (
             <Button

@@ -1,6 +1,7 @@
 import { toast } from 'sonner'
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogFooter,
   DialogHeader,
@@ -1408,16 +1409,17 @@ const EditRulesModal: React.FC<Props> = (props) => {
           </div>
         </div>
         <DialogFooter className="pt-0">
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => {
-              setDeletedRules(new Set()) // 清除删除状态
-              onClose()
-            }}
-          >
-            {t('common.cancel')}
-          </Button>
+          <DialogClose asChild>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => {
+                setDeletedRules(new Set())
+              }}
+            >
+              {t('common.cancel')}
+            </Button>
+          </DialogClose>
           <Button size="sm" onClick={handleSave}>
             {t('common.save')}
           </Button>

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogFooter,
   DialogHeader,
@@ -279,14 +280,15 @@ const PermissionModal: React.FC<Props> = (props) => {
           </div>
         </div>
         <DialogFooter className="flex-row justify-end gap-2">
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => onChange(false)}
-            disabled={Object.values(loading).some((v) => v)}
-          >
-            {t('common.close')}
-          </Button>
+          <DialogClose asChild>
+            <Button
+              size="sm"
+              variant="ghost"
+              disabled={Object.values(loading).some((v) => v)}
+            >
+              {t('common.close')}
+            </Button>
+          </DialogClose>
           {isWindows &&
             (() => {
               const hasAnyPermission = typeof hasPermission === 'boolean' ? hasPermission : false

@@ -1,5 +1,6 @@
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogFooter,
   DialogHeader,
@@ -178,9 +179,11 @@ const ProxySettingModal: React.FC<Props> = (props) => {
           </SettingItem>
         </div>
         <DialogFooter>
-          <Button size="sm" variant="ghost" onClick={onClose}>
-            {t('common.close')}
-          </Button>
+          <DialogClose asChild>
+            <Button size="sm" variant="ghost">
+              {t('common.close')}
+            </Button>
+          </DialogClose>
         </DialogFooter>
       </DialogContent>
     </Dialog>

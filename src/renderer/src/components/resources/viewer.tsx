@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react'
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogFooter,
   DialogHeader,
@@ -131,9 +132,11 @@ const Viewer: React.FC<Props> = (props) => {
           )}
         </div>
         <DialogFooter className="pt-0">
-          <Button size="sm" variant="ghost" onClick={onClose}>
-            {t('common.close')}
-          </Button>
+          <DialogClose asChild>
+            <Button size="sm" variant="ghost">
+              {t('common.close')}
+            </Button>
+          </DialogClose>
           {type === 'File' && format !== 'MrsRule' && (
             <Button
               size="sm"

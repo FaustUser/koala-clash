@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { toast } from 'sonner'
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogFooter,
   DialogHeader,
@@ -408,9 +409,11 @@ const EditInfoModal: React.FC<Props> = (props) => {
         )}
 
         <DialogFooter>
-          <Button size="sm" variant="ghost" onClick={onClose}>
-            {t('common.cancel')}
-          </Button>
+          <DialogClose asChild>
+            <Button size="sm" variant="ghost">
+              {t('common.cancel')}
+            </Button>
+          </DialogClose>
           <Button size="sm" onClick={onSave} disabled={!canImport}>
             {isNew ? t('common.import') : t('common.save')}
           </Button>

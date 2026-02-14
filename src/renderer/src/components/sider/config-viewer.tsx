@@ -1,4 +1,4 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@renderer/components/ui/dialog'
+import { Dialog, DialogClose, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@renderer/components/ui/dialog'
 import { Button } from '@renderer/components/ui/button'
 import { Switch } from '@renderer/components/ui/switch'
 import React, { useEffect, useState, useCallback } from 'react'
@@ -67,9 +67,11 @@ const ConfigViewer: React.FC<Props> = ({ onClose }) => {
               <span>{t('sider.showRawText')}</span>
             </label>
           </div>
-          <Button size="sm" variant="ghost" onClick={onClose}>
-            {t('common.close')}
-          </Button>
+          <DialogClose asChild>
+            <Button size="sm" variant="ghost">
+              {t('common.close')}
+            </Button>
+          </DialogClose>
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -1,5 +1,5 @@
 import React from 'react'
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@renderer/components/ui/dialog'
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@renderer/components/ui/dialog'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@renderer/components/ui/button'
 
@@ -59,9 +59,11 @@ const ConfirmModal: React.FC<Props> = (props) => {
 
     return (
       <>
-        <Button size="sm" variant="ghost" onClick={() => onChange(false)}>
-          {modalCancelText}
-        </Button>
+        <DialogClose asChild>
+          <Button size="sm" variant="ghost">
+            {modalCancelText}
+          </Button>
+        </DialogClose>
         <Button
           size="sm"
           variant="destructive"
