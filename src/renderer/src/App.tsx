@@ -143,7 +143,7 @@ const App: React.FC = () => {
         src={mapBg}
         alt=""
         className={`pointer-events-none absolute inset-0 w-full h-full object-cover z-0 transition-[filter] duration-500 ${
-          isHome ? '' : 'blur-xl'
+          isHome ? '' : 'blur-3xl'
         }`}
       />
       {showQuitConfirm && (
