@@ -1,5 +1,11 @@
 import i18n from 'i18next'
 import { initReactI18next } from 'react-i18next'
+import dayjs from 'dayjs'
+import relativeTime from 'dayjs/plugin/relativeTime'
+import localizedFormat from 'dayjs/plugin/localizedFormat'
+import 'dayjs/locale/zh-cn'
+import 'dayjs/locale/ru'
+import 'dayjs/locale/en'
 
 // Import translation files
 import zhCN from './locales/zh-CN'
@@ -29,6 +35,16 @@ const getSavedLanguage = (): string => {
 }
 
 const savedLanguage = getSavedLanguage()
+
+// Configure dayjs globally
+dayjs.extend(relativeTime)
+dayjs.extend(localizedFormat)
+const dayjsLocaleMap: Record<string, string> = {
+  'zh-CN': 'zh-cn',
+  'en-US': 'en',
+  'ru-RU': 'ru'
+}
+dayjs.locale(dayjsLocaleMap[savedLanguage] || 'en')
 
 i18n
   .use(initReactI18next)

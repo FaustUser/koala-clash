@@ -78,7 +78,7 @@ const ProfileItem: React.FC<Props> = (props) => {
   const [confirmOpen, setConfirmOpen] = useState(false)
   const updatedFromNow = dayjs(info.updated).fromNow()
   const expireLabel = extra?.expire
-    ? dayjs.unix(extra.expire).format('YYYY-MM-DD')
+    ? dayjs.unix(extra.expire).format('L')
     : t('profile.longTermValid')
 
   const menuItems: MenuItem[] = useMemo(() => {
@@ -168,6 +168,7 @@ const ProfileItem: React.FC<Props> = (props) => {
 
   const trafficPercent = total > 0 ? Math.min(100, Math.round((usage / total) * 100)) : 0
   const hasLimit = total > 0
+  const expired = extra?.expire ? dayjs.unix(extra.expire).isBefore(dayjs()) : false
   const percentLabel = hasLimit ? `${percent}%` : t('pages.home.unlimited')
   const handleSelect = (): void => {
     if (disableSelect || switching) return
