@@ -36,8 +36,16 @@ const ConfigViewer: React.FC<Props> = ({ onClose }) => {
   }, [fetchConfigs])
 
   return (
-    <Dialog open={true} onOpenChange={(open) => { if (!open) onClose() }}>
-      <DialogContent className="max-w-5xl h-[80vh] flex flex-col" showCloseButton={false}>
+    <Dialog
+      open={true}
+      onOpenChange={(open) => {
+        if (!open) onClose()
+      }}
+    >
+      <DialogContent
+        className="h-[calc(100%-111px)] w-[calc(100%-100px)] max-w-none sm:max-w-none flex flex-col"
+        showCloseButton={false}
+      >
         <DialogHeader className="app-drag">
           <DialogTitle>{t('sider.runtimeConfigTitle')}</DialogTitle>
         </DialogHeader>
@@ -45,9 +53,7 @@ const ConfigViewer: React.FC<Props> = ({ onClose }) => {
           <BaseEditor
             language="yaml"
             value={runtimeConfig}
-            originalValue={
-              isDiff ? isRaw ? rawProfile : profileConfig : undefined
-            }
+            originalValue={isDiff ? (isRaw ? rawProfile : profileConfig) : undefined}
             readOnly
             diffRenderSideBySide={sideBySide}
           />

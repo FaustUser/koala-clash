@@ -51,7 +51,7 @@ const ByPassEditorModal: React.FC<Props> = (props) => {
       }}
     >
       <DialogContent
-        className="h-full w-[calc(100%-100px)] max-w-none sm:max-w-none flex flex-col"
+        className="h-[calc(100%-111px)] w-[calc(100%-100px)] max-w-none sm:max-w-none flex flex-col"
         showCloseButton={false}
       >
         <DialogHeader className="app-drag pb-0">

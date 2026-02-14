@@ -59,7 +59,7 @@ const UpdaterModal: React.FC<Props> = (props) => {
       }}
     >
       <DialogContent
-        className="h-full w-[calc(100%-100px)] max-w-none sm:max-w-none flex flex-col"
+        className="h-[calc(100%-111px)] w-[calc(100%-100px)] max-w-none sm:max-w-none flex flex-col"
         showCloseButton={false}
       >
         <DialogHeader className="app-drag flex-row items-center justify-between">
@@ -106,12 +106,9 @@ const UpdaterModal: React.FC<Props> = (props) => {
                   a: ({ ...props }) => <a target="_blank" className="text-primary" {...props} />,
                   code: ({ className, children, ...props }) => (
                     <code
-                      className={[
-                        "rounded bg-muted px-1.5 py-0.5 font-mono text-xs",
-                        className
-                      ]
+                      className={['rounded bg-muted px-1.5 py-0.5 font-mono text-xs', className]
                         .filter(Boolean)
-                        .join(" ")}
+                        .join(' ')}
                       {...props}
                     >
                       {children}
