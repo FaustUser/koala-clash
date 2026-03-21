@@ -43,6 +43,7 @@ interface AppConfig {
   connectionTableSortDirection?: 'asc' | 'desc'
   connectionInterval?: number
   spinFloatingIcon?: boolean
+  floatingWindowSize?: 'small' | 'default' | 'large'
   disableTray?: boolean
   showFloatingWindow?: boolean
   connectionCardStatus?: CardStatus
