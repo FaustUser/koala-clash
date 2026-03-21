@@ -512,7 +512,7 @@ export default {
       useCustomFloatingWindowSize: '使用自定义悬浮窗大小',
       customFloatingWindowSize: '自定义悬浮窗大小',
       customFloatingWindowSizeHelp:
-        '宽度控制悬浮窗总宽度，高度控制悬浮窗总高度。最小值：宽度 {{minWidth}}，高度 {{minHeight}}。如果输入更小的值，会自动重置到最小值。',
+        '第一个输入框是宽度，第二个是高度。最小值：宽度 {{minWidth}}，高度 {{minHeight}}。如果输入更小的值，会自动重置到最小值。',
       width: '宽度',
       height: '高度',
       rotateFloatingIcon: '根据网速旋转悬浮窗图标',
