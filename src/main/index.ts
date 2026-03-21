@@ -1,7 +1,16 @@
 import { electronApp, is, optimizer } from '@electron-toolkit/utils'
 import { registerIpcMainHandlers } from './utils/ipc'
 import windowStateKeeper from 'electron-window-state'
-import { app, BrowserWindow, dialog, ipcMain, Menu, Notification, powerMonitor, shell } from 'electron'
+import {
+  app,
+  BrowserWindow,
+  dialog,
+  ipcMain,
+  Menu,
+  Notification,
+  powerMonitor,
+  shell
+} from 'electron'
 import { addProfileItem, getAppConfig, patchControledMihomoConfig } from './config'
 import { quitWithoutCore, startCore, stopCore } from './core/manager'
 import { triggerSysProxy } from './sys/sysproxy'
@@ -20,10 +29,16 @@ import { showFloatingWindow } from './resolve/floatingWindow'
 import { getAppConfigSync } from './config/app'
 import { t } from './utils/i18n'
 
-
 let quitTimeout: NodeJS.Timeout | null = null
 export let mainWindow: BrowserWindow | null = null
 export let needsFirstRunAdmin = false
+
+function configureDevInstanceIsolation(): void {
+  if (!is.dev) return
+
+  const devUserDataPath = path.join(app.getPath('appData'), 'io.github.koala-clash-dev')
+  app.setPath('userData', devUserDataPath)
+}
 
 /**
  * Show error to the user via renderer toast notification.
@@ -41,6 +56,8 @@ let isCreatingWindow = false
 let windowShown = false
 let createWindowPromiseResolve: (() => void) | null = null
 let createWindowPromise: Promise<void> | null = null
+
+configureDevInstanceIsolation()
 
 async function scheduleLightweightMode(): Promise<void> {
   const {
@@ -105,7 +122,7 @@ if (process.platform === 'win32' && is.dev) {
   patchControledMihomoConfig({ tun: { enable: false } })
 }
 
-const gotTheLock = app.requestSingleInstanceLock()
+const gotTheLock = is.dev ? true : app.requestSingleInstanceLock()
 
 if (!gotTheLock) {
   app.quit()
@@ -277,7 +294,7 @@ powerMonitor.on('shutdown', async () => {
 // Some APIs can only be used after this event occurs.
 app.whenReady().then(async () => {
   // Set app user model id for windows
-  electronApp.setAppUserModelId('koala-clash.app')
+  electronApp.setAppUserModelId(is.dev ? 'koala-clash.app.dev' : 'koala-clash.app')
   try {
     await initPromise
   } catch (e) {
