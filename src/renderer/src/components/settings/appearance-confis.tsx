@@ -10,6 +10,7 @@ import {
   SelectTrigger,
   SelectValue
 } from '@renderer/components/ui/select'
+import { Input } from '@renderer/components/ui/input'
 import { Spinner } from '@renderer/components/ui/spinner'
 import { Switch } from '@renderer/components/ui/switch'
 import { Tabs, TabsList, TabsTrigger } from '@renderer/components/ui/tabs'
@@ -56,17 +57,27 @@ const AppearanceConfig: React.FC<AppearanceConfigProps> = (props) => {
     showFloatingWindow: showFloating = false,
     spinFloatingIcon = true,
     floatingWindowSize = 'default',
+    floatingWindowUseCustomSize = false,
+    floatingWindowWidth = 120,
+    floatingWindowHeight = 42,
     useWindowFrame = false,
     customTheme = 'default.css',
     appTheme = 'system'
   } = appConfig || {}
   const [localShowFloating, setLocalShowFloating] = useState(showFloating)
+  const [customWidth, setCustomWidth] = useState(floatingWindowWidth.toString())
+  const [customHeight, setCustomHeight] = useState(floatingWindowHeight.toString())
   const [onTop, setOnTop] = useState(false)
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
     setLocalShowFloating(showFloating)
   }, [showFloating])
+
+  useEffect(() => {
+    setCustomWidth(floatingWindowWidth.toString())
+    setCustomHeight(floatingWindowHeight.toString())
+  }, [floatingWindowHeight, floatingWindowWidth])
 
   useEffect(() => {
     resolveThemes().then((themes) => {
@@ -159,6 +170,63 @@ const AppearanceConfig: React.FC<AppearanceConfigProps> = (props) => {
                 </SelectItem>
               </SelectContent>
             </Select>
+          </SettingItem>
+        )}
+        {localShowFloating && (
+          <SettingItem title={t('settings.appearance.useCustomFloatingWindowSize')} divider>
+            <Switch
+              checked={floatingWindowUseCustomSize}
+              onCheckedChange={async (value) => {
+                await patchAppConfig({ floatingWindowUseCustomSize: value })
+                window.electron.ipcRenderer.send('updateFloatingWindow')
+              }}
+            />
+          </SettingItem>
+        )}
+        {localShowFloating && floatingWindowUseCustomSize && (
+          <SettingItem title={t('settings.appearance.customFloatingWindowSize')} divider>
+            <div className="flex items-center gap-2">
+              <Input
+                type="number"
+                min="88"
+                max="400"
+                className="w-[110px] h-8"
+                value={customWidth}
+                placeholder={t('settings.appearance.width')}
+                onChange={(event) => {
+                  setCustomWidth(event.target.value)
+                }}
+                onBlur={async () => {
+                  const nextWidth = Number.parseInt(customWidth, 10)
+                  if (Number.isFinite(nextWidth)) {
+                    await patchAppConfig({ floatingWindowWidth: nextWidth })
+                    window.electron.ipcRenderer.send('updateFloatingWindow')
+                  } else {
+                    setCustomWidth(floatingWindowWidth.toString())
+                  }
+                }}
+              />
+              <Input
+                type="number"
+                min="32"
+                max="160"
+                className="w-[110px] h-8"
+                value={customHeight}
+                placeholder={t('settings.appearance.height')}
+                onChange={(event) => {
+                  setCustomHeight(event.target.value)
+                }}
+                onBlur={async () => {
+                  const nextHeight = Number.parseInt(customHeight, 10)
+                  if (Number.isFinite(nextHeight)) {
+                    await patchAppConfig({ floatingWindowHeight: nextHeight })
+                    window.electron.ipcRenderer.send('updateFloatingWindow')
+                  } else {
+                    setCustomHeight(floatingWindowHeight.toString())
+                  }
+                }}
+              />
+            </div>
           </SettingItem>
         )}
         {localShowFloating && (
