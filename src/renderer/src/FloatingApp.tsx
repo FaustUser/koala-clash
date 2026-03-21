@@ -5,13 +5,47 @@ import { showContextMenu, triggerMainWindow } from './utils/ipc'
 import { useAppConfig } from './hooks/use-app-config'
 import { useControledMihomoConfig } from './hooks/use-controled-mihomo-config'
 
+const floatingWindowSizeClasses: Record<
+  NonNullable<AppConfig['floatingWindowSize']>,
+  {
+    iconBox: string
+    icon: string
+    text: string
+    gap: string
+    margin: string
+  }
+> = {
+  small: {
+    iconBox: 'h-[calc(100%-4px)] text-[18px]',
+    icon: 'text-[18px]',
+    text: 'text-[10px]',
+    gap: 'gap-[1px]',
+    margin: 'mr-1.5'
+  },
+  default: {
+    iconBox: 'h-[calc(100%-4px)] text-[22px]',
+    icon: 'text-[22px]',
+    text: 'text-[12px]',
+    gap: 'gap-0',
+    margin: 'mr-2'
+  },
+  large: {
+    iconBox: 'h-[calc(100%-4px)] text-[26px]',
+    icon: 'text-[26px]',
+    text: 'text-[13px]',
+    gap: 'gap-0.5',
+    margin: 'mr-2.5'
+  }
+}
+
 const FloatingApp: React.FC = () => {
   const { appConfig } = useAppConfig()
   const { controledMihomoConfig } = useControledMihomoConfig()
-  const { sysProxy, spinFloatingIcon = true } = appConfig || {}
+  const { sysProxy, spinFloatingIcon = true, floatingWindowSize = 'default' } = appConfig || {}
   const { tun } = controledMihomoConfig || {}
   const sysProxyEnabled = sysProxy?.enable
   const tunEnabled = tun?.enable
+  const sizeClasses = floatingWindowSizeClasses[floatingWindowSize]
 
   const [upload, setUpload] = useState(0)
   const [download, setDownload] = useState(0)
@@ -78,17 +112,23 @@ const FloatingApp: React.FC = () => {
                   }
                 : {}
             }
-            className={`app-nodrag cursor-pointer floating-thumb ${tunEnabled ? 'bg-gradient-end-power-on' : sysProxyEnabled ? 'bg-primary' : 'bg-muted'} hover:opacity-80 rounded-full h-[calc(100%-4px)] aspect-square`}
+            className={`app-nodrag cursor-pointer floating-thumb ${tunEnabled ? 'bg-gradient-end-power-on' : sysProxyEnabled ? 'bg-primary' : 'bg-muted'} hover:opacity-80 rounded-full aspect-square ${sizeClasses.iconBox}`}
           >
-            <MihomoIcon className="floating-icon text-primary-foreground h-full leading-full text-[22px] mx-auto" />
+            <MihomoIcon
+              className={`floating-icon text-primary-foreground h-full leading-full mx-auto ${sizeClasses.icon}`}
+            />
           </div>
         </div>
         <div className="w-full overflow-hidden">
-          <div className="flex flex-col justify-center h-full w-full">
-            <h2 className="text-end floating-text whitespace-nowrap text-[12px] mr-2 font-bold">
+          <div className={`flex flex-col justify-center h-full w-full ${sizeClasses.gap}`}>
+            <h2
+              className={`text-end floating-text whitespace-nowrap font-bold ${sizeClasses.text} ${sizeClasses.margin}`}
+            >
               {calcTraffic(upload)}/s
             </h2>
-            <h2 className="text-end floating-text whitespace-nowrap text-[12px] mr-2 font-bold">
+            <h2
+              className={`text-end floating-text whitespace-nowrap font-bold ${sizeClasses.text} ${sizeClasses.margin}`}
+            >
               {calcTraffic(download)}/s
             </h2>
           </div>

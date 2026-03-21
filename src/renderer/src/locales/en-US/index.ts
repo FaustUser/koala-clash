@@ -440,6 +440,10 @@ export default {
       showFloatingWindow: 'Show Floating Window',
       showFloatingWindowHelp:
         'Floating window may cause app crash when GPU acceleration is not disabled',
+      floatingWindowSize: 'Floating Window Size',
+      floatingWindowSizeSmall: 'Small',
+      floatingWindowSizeDefault: 'Default',
+      floatingWindowSizeLarge: 'Large',
       rotateFloatingIcon: 'Rotate floating icon based on network speed',
       disableTrayIcon: 'Disable tray icon',
       trayShowNodeInfo: 'Show node info in tray menu',

@@ -55,6 +55,7 @@ const AppearanceConfig: React.FC<AppearanceConfigProps> = (props) => {
     disableTray = false,
     showFloatingWindow: showFloating = false,
     spinFloatingIcon = true,
+    floatingWindowSize = 'default',
     useWindowFrame = false,
     customTheme = 'default.css',
     appTheme = 'system'
@@ -132,6 +133,34 @@ const AppearanceConfig: React.FC<AppearanceConfigProps> = (props) => {
             }}
           />
         </SettingItem>
+        {localShowFloating && (
+          <SettingItem title={t('settings.appearance.floatingWindowSize')} divider>
+            <Select
+              value={floatingWindowSize}
+              onValueChange={async (value) => {
+                await patchAppConfig({
+                  floatingWindowSize: value as NonNullable<AppConfig['floatingWindowSize']>
+                })
+                window.electron.ipcRenderer.send('updateFloatingWindow')
+              }}
+            >
+              <SelectTrigger size="sm" className="w-[150px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="small">
+                  {t('settings.appearance.floatingWindowSizeSmall')}
+                </SelectItem>
+                <SelectItem value="default">
+                  {t('settings.appearance.floatingWindowSizeDefault')}
+                </SelectItem>
+                <SelectItem value="large">
+                  {t('settings.appearance.floatingWindowSizeLarge')}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </SettingItem>
+        )}
         {localShowFloating && (
           <SettingItem title={t('settings.appearance.rotateFloatingIcon')} divider>
             <Switch
