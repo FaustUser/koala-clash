@@ -42,6 +42,15 @@ interface AppearanceConfigProps {
   showHiddenSettings: boolean
 }
 
+const MIN_FLOATING_WINDOW_WIDTH = 88
+const MAX_FLOATING_WINDOW_WIDTH = 400
+const MIN_FLOATING_WINDOW_HEIGHT = 32
+const MAX_FLOATING_WINDOW_HEIGHT = 160
+
+function clampDimension(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, Math.round(value)))
+}
+
 const AppearanceConfig: React.FC<AppearanceConfigProps> = (props) => {
   const { showHiddenSettings } = props
   const { t } = useTranslation()
@@ -93,6 +102,24 @@ const AppearanceConfig: React.FC<AppearanceConfigProps> = (props) => {
       }
     }
   }, [])
+
+  const updateCustomDimension = async (
+    rawValue: string,
+    fallbackValue: number,
+    min: number,
+    max: number,
+    configKey: 'floatingWindowWidth' | 'floatingWindowHeight',
+    setValue: (value: string) => void
+  ): Promise<void> => {
+    const parsedValue = Number.parseInt(rawValue, 10)
+    const nextValue = Number.isFinite(parsedValue)
+      ? clampDimension(parsedValue, min, max)
+      : fallbackValue
+
+    setValue(nextValue.toString())
+    await patchAppConfig({ [configKey]: nextValue })
+    window.electron.ipcRenderer.send('updateFloatingWindow')
+  }
 
   return (
     <>
@@ -184,12 +211,30 @@ const AppearanceConfig: React.FC<AppearanceConfigProps> = (props) => {
           </SettingItem>
         )}
         {localShowFloating && floatingWindowUseCustomSize && (
-          <SettingItem title={t('settings.appearance.customFloatingWindowSize')} divider>
+          <SettingItem
+            title={t('settings.appearance.customFloatingWindowSize')}
+            actions={
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button size="icon-sm" variant="ghost">
+                    <MessageCircleQuestionMark className="text-lg" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent className="max-w-72 leading-relaxed">
+                  {t('settings.appearance.customFloatingWindowSizeHelp', {
+                    minWidth: MIN_FLOATING_WINDOW_WIDTH,
+                    minHeight: MIN_FLOATING_WINDOW_HEIGHT
+                  })}
+                </TooltipContent>
+              </Tooltip>
+            }
+            divider
+          >
             <div className="flex items-center gap-2">
               <Input
                 type="number"
-                min="88"
-                max="400"
+                min={MIN_FLOATING_WINDOW_WIDTH.toString()}
+                max={MAX_FLOATING_WINDOW_WIDTH.toString()}
                 className="w-[110px] h-8"
                 value={customWidth}
                 placeholder={t('settings.appearance.width')}
@@ -197,19 +242,20 @@ const AppearanceConfig: React.FC<AppearanceConfigProps> = (props) => {
                   setCustomWidth(event.target.value)
                 }}
                 onBlur={async () => {
-                  const nextWidth = Number.parseInt(customWidth, 10)
-                  if (Number.isFinite(nextWidth)) {
-                    await patchAppConfig({ floatingWindowWidth: nextWidth })
-                    window.electron.ipcRenderer.send('updateFloatingWindow')
-                  } else {
-                    setCustomWidth(floatingWindowWidth.toString())
-                  }
+                  await updateCustomDimension(
+                    customWidth,
+                    floatingWindowWidth,
+                    MIN_FLOATING_WINDOW_WIDTH,
+                    MAX_FLOATING_WINDOW_WIDTH,
+                    'floatingWindowWidth',
+                    setCustomWidth
+                  )
                 }}
               />
               <Input
                 type="number"
-                min="32"
-                max="160"
+                min={MIN_FLOATING_WINDOW_HEIGHT.toString()}
+                max={MAX_FLOATING_WINDOW_HEIGHT.toString()}
                 className="w-[110px] h-8"
                 value={customHeight}
                 placeholder={t('settings.appearance.height')}
@@ -217,13 +263,14 @@ const AppearanceConfig: React.FC<AppearanceConfigProps> = (props) => {
                   setCustomHeight(event.target.value)
                 }}
                 onBlur={async () => {
-                  const nextHeight = Number.parseInt(customHeight, 10)
-                  if (Number.isFinite(nextHeight)) {
-                    await patchAppConfig({ floatingWindowHeight: nextHeight })
-                    window.electron.ipcRenderer.send('updateFloatingWindow')
-                  } else {
-                    setCustomHeight(floatingWindowHeight.toString())
-                  }
+                  await updateCustomDimension(
+                    customHeight,
+                    floatingWindowHeight,
+                    MIN_FLOATING_WINDOW_HEIGHT,
+                    MAX_FLOATING_WINDOW_HEIGHT,
+                    'floatingWindowHeight',
+                    setCustomHeight
+                  )
                 }}
               />
             </div>

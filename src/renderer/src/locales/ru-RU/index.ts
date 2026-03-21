@@ -445,6 +445,8 @@ export default {
       floatingWindowSizeLarge: 'Большой',
       useCustomFloatingWindowSize: 'Использовать пользовательский размер плавающего окна',
       customFloatingWindowSize: 'Пользовательский размер плавающего окна',
+      customFloatingWindowSizeHelp:
+        'Ширина управляет общей шириной виджета, высота — его общей высотой. Минимальные значения: ширина {{minWidth}}, высота {{minHeight}}. Если ввести меньше, значение будет автоматически сброшено к минимуму.',
       width: 'Ширина',
       height: 'Высота',
       rotateFloatingIcon: 'Вращать иконку плавающего окна в зависимости от скорости сети',
