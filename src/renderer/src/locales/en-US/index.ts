@@ -447,7 +447,7 @@ export default {
       useCustomFloatingWindowSize: 'Use custom floating window size',
       customFloatingWindowSize: 'Custom floating window size',
       customFloatingWindowSizeHelp:
-        'Width controls the total widget width. Height controls the total widget height. Minimum values: width {{minWidth}}, height {{minHeight}}. Lower values are reset automatically.',
+        'The first field is width, the second is height. Minimum values: width {{minWidth}}, height {{minHeight}}. Lower values are reset automatically.',
       width: 'Width',
       height: 'Height',
       rotateFloatingIcon: 'Rotate floating icon based on network speed',
