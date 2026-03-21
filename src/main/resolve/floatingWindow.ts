@@ -18,8 +18,27 @@ const floatingWindowSizes: Record<
   large: { width: 144, height: 50 }
 }
 
+function clampFloatingDimension(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, Math.round(value)))
+}
+
 async function getFloatingWindowBounds(): Promise<{ width: number; height: number }> {
-  const { floatingWindowSize = 'default' } = await getAppConfig()
+  const {
+    floatingWindowSize = 'default',
+    floatingWindowUseCustomSize = false,
+    floatingWindowWidth,
+    floatingWindowHeight
+  } = await getAppConfig()
+  if (
+    floatingWindowUseCustomSize &&
+    Number.isFinite(floatingWindowWidth) &&
+    Number.isFinite(floatingWindowHeight)
+  ) {
+    return {
+      width: clampFloatingDimension(floatingWindowWidth!, 88, 400),
+      height: clampFloatingDimension(floatingWindowHeight!, 32, 160)
+    }
+  }
   return floatingWindowSizes[floatingWindowSize] ?? floatingWindowSizes.default
 }
 

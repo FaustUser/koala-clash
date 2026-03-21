@@ -44,6 +44,9 @@ interface AppConfig {
   connectionInterval?: number
   spinFloatingIcon?: boolean
   floatingWindowSize?: 'small' | 'default' | 'large'
+  floatingWindowUseCustomSize?: boolean
+  floatingWindowWidth?: number
+  floatingWindowHeight?: number
   disableTray?: boolean
   showFloatingWindow?: boolean
   connectionCardStatus?: CardStatus
