@@ -56,6 +56,7 @@ import {
   ArrowUpToLine,
   CheckIcon,
   ChevronsUpDownIcon,
+  CircleHelp,
   GripVertical,
   Trash2,
   Undo2,
@@ -256,6 +257,7 @@ const ruleDefinitionsMap = new Map<
   string,
   {
     name: string
+    description?: string
     required?: boolean
     example?: string
     noResolve?: boolean
@@ -267,6 +269,7 @@ const ruleDefinitionsMap = new Map<
     'DOMAIN',
     {
       name: 'DOMAIN',
+      description: 'Matches an exact domain name.',
       example: 'example.com',
       validator: (value) => domainValidator(value)
     }
@@ -275,6 +278,7 @@ const ruleDefinitionsMap = new Map<
     'DOMAIN-SUFFIX',
     {
       name: 'DOMAIN-SUFFIX',
+      description: 'Matches domains by suffix, including subdomains.',
       example: 'example.com',
       validator: (value) => domainSuffixValidator(value)
     }
@@ -283,6 +287,7 @@ const ruleDefinitionsMap = new Map<
     'DOMAIN-KEYWORD',
     {
       name: 'DOMAIN-KEYWORD',
+      description: 'Matches domains containing the specified keyword.',
       example: 'example',
       validator: (value) => domainKeywordValidator(value)
     }
@@ -291,6 +296,7 @@ const ruleDefinitionsMap = new Map<
     'DOMAIN-REGEX',
     {
       name: 'DOMAIN-REGEX',
+      description: 'Matches domains using a regular expression.',
       example: 'example.*',
       validator: (value) => domainRegexValidator(value)
     }
@@ -299,6 +305,7 @@ const ruleDefinitionsMap = new Map<
     'GEOSITE',
     {
       name: 'GEOSITE',
+      description: 'Matches domains included in a geosite category.',
       example: 'youtube'
     }
   ],
@@ -306,6 +313,7 @@ const ruleDefinitionsMap = new Map<
     'GEOIP',
     {
       name: 'GEOIP',
+      description: 'Matches destination IP addresses by country or region.',
       example: 'CN',
       noResolve: true,
       src: true
@@ -315,6 +323,7 @@ const ruleDefinitionsMap = new Map<
     'SRC-GEOIP',
     {
       name: 'SRC-GEOIP',
+      description: 'Matches source IP addresses by country or region.',
       example: 'CN'
     }
   ],
@@ -322,6 +331,7 @@ const ruleDefinitionsMap = new Map<
     'IP-ASN',
     {
       name: 'IP-ASN',
+      description: 'Matches destination IP addresses by ASN.',
       example: '13335',
       noResolve: true,
       src: true,
@@ -332,6 +342,7 @@ const ruleDefinitionsMap = new Map<
     'SRC-IP-ASN',
     {
       name: 'SRC-IP-ASN',
+      description: 'Matches source IP addresses by ASN.',
       example: '9808',
       validator: (value) => !!+value
     }
@@ -340,6 +351,7 @@ const ruleDefinitionsMap = new Map<
     'IP-CIDR',
     {
       name: 'IP-CIDR',
+      description: 'Matches destination IP addresses by CIDR range.',
       example: '127.0.0.0/8',
       noResolve: true,
       src: true,
@@ -350,6 +362,7 @@ const ruleDefinitionsMap = new Map<
     'IP-CIDR6',
     {
       name: 'IP-CIDR6',
+      description: 'Matches destination IPv6 addresses by CIDR range.',
       example: '2620:0:2d0:200::7/32',
       noResolve: true,
       src: true,
@@ -360,6 +373,7 @@ const ruleDefinitionsMap = new Map<
     'SRC-IP-CIDR',
     {
       name: 'SRC-IP-CIDR',
+      description: 'Matches source IP addresses by CIDR range.',
       example: '192.168.1.201/32',
       validator: (value) => ipv4CIDRValidator(value) || ipv6CIDRValidator(value)
     }
@@ -368,6 +382,7 @@ const ruleDefinitionsMap = new Map<
     'IP-SUFFIX',
     {
       name: 'IP-SUFFIX',
+      description: 'Matches destination IP addresses by suffix range.',
       example: '8.8.8.8/24',
       noResolve: true,
       src: true,
@@ -378,6 +393,7 @@ const ruleDefinitionsMap = new Map<
     'SRC-IP-SUFFIX',
     {
       name: 'SRC-IP-SUFFIX',
+      description: 'Matches source IP addresses by suffix range.',
       example: '192.168.1.201/8',
       validator: (value) => ipv4CIDRValidator(value) || ipv6CIDRValidator(value)
     }
@@ -386,6 +402,7 @@ const ruleDefinitionsMap = new Map<
     'SRC-PORT',
     {
       name: 'SRC-PORT',
+      description: 'Matches connections by source port.',
       example: '7777',
       validator: (value) => portValidator(value)
     }
@@ -394,6 +411,7 @@ const ruleDefinitionsMap = new Map<
     'DST-PORT',
     {
       name: 'DST-PORT',
+      description: 'Matches connections by destination port.',
       example: '80',
       validator: (value) => portValidator(value)
     }
@@ -402,6 +420,7 @@ const ruleDefinitionsMap = new Map<
     'IN-PORT',
     {
       name: 'IN-PORT',
+      description: 'Matches the inbound listening port.',
       example: '7897',
       validator: (value) => portValidator(value)
     }
@@ -410,6 +429,7 @@ const ruleDefinitionsMap = new Map<
     'DSCP',
     {
       name: 'DSCP',
+      description: 'Matches packets by DSCP value.',
       example: '4'
     }
   ],
@@ -417,6 +437,7 @@ const ruleDefinitionsMap = new Map<
     'PROCESS-NAME',
     {
       name: 'PROCESS-NAME',
+      description: 'Matches an exact process name.',
       example: platform === 'win32' ? 'chrome.exe' : 'curl'
     }
   ],
@@ -424,6 +445,7 @@ const ruleDefinitionsMap = new Map<
     'PROCESS-PATH',
     {
       name: 'PROCESS-PATH',
+      description: 'Matches an exact process executable path.',
       example:
         platform === 'win32'
           ? 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe'
@@ -434,6 +456,7 @@ const ruleDefinitionsMap = new Map<
     'PROCESS-NAME-REGEX',
     {
       name: 'PROCESS-NAME-REGEX',
+      description: 'Matches process names using a regular expression.',
       example: '.*telegram.*'
     }
   ],
@@ -441,6 +464,7 @@ const ruleDefinitionsMap = new Map<
     'PROCESS-PATH-REGEX',
     {
       name: 'PROCESS-PATH-REGEX',
+      description: 'Matches process paths using a regular expression.',
       example: platform === 'win32' ? '(?i).*Application\\chrome.*' : '.*bin/wget'
     }
   ],
@@ -448,6 +472,7 @@ const ruleDefinitionsMap = new Map<
     'NETWORK',
     {
       name: 'NETWORK',
+      description: 'Matches the transport protocol.',
       example: 'udp',
       validator: (value) => ['tcp', 'udp'].includes(value)
     }
@@ -456,6 +481,7 @@ const ruleDefinitionsMap = new Map<
     'UID',
     {
       name: 'UID',
+      description: 'Matches by operating system user ID.',
       example: '1001',
       validator: (value) => !!+value
     }
@@ -464,6 +490,7 @@ const ruleDefinitionsMap = new Map<
     'IN-TYPE',
     {
       name: 'IN-TYPE',
+      description: 'Matches the inbound type.',
       example: 'SOCKS/HTTP'
     }
   ],
@@ -471,6 +498,7 @@ const ruleDefinitionsMap = new Map<
     'IN-USER',
     {
       name: 'IN-USER',
+      description: 'Matches the authenticated inbound user.',
       example: 'mihomo'
     }
   ],
@@ -478,6 +506,7 @@ const ruleDefinitionsMap = new Map<
     'IN-NAME',
     {
       name: 'IN-NAME',
+      description: 'Matches the inbound name.',
       example: 'ss'
     }
   ],
@@ -485,6 +514,7 @@ const ruleDefinitionsMap = new Map<
     'SUB-RULE',
     {
       name: 'SUB-RULE',
+      description: 'Applies a referenced sub-rule expression.',
       example: '(NETWORK,tcp)'
     }
   ],
@@ -492,6 +522,7 @@ const ruleDefinitionsMap = new Map<
     'RULE-SET',
     {
       name: 'RULE-SET',
+      description: 'Matches entries from an external rule-set provider.',
       example: 'providername',
       noResolve: true,
       src: true
@@ -501,6 +532,7 @@ const ruleDefinitionsMap = new Map<
     'AND',
     {
       name: 'AND',
+      description: 'Matches only when all nested rules match.',
       example: '((DOMAIN,baidu.com),(NETWORK,UDP))',
       validator: (value) => getLogicalRuleClauses(value).length >= 2
     }
@@ -509,6 +541,7 @@ const ruleDefinitionsMap = new Map<
     'OR',
     {
       name: 'OR',
+      description: 'Matches when any nested rule matches.',
       example: '((NETWORK,UDP),(DOMAIN,baidu.com))',
       validator: (value) => getLogicalRuleClauses(value).length >= 2
     }
@@ -517,6 +550,7 @@ const ruleDefinitionsMap = new Map<
     'NOT',
     {
       name: 'NOT',
+      description: 'Inverts the result of the nested rule.',
       example: '((DOMAIN,baidu.com))',
       validator: (value) => getLogicalRuleClauses(value).length >= 1
     }
@@ -525,12 +559,16 @@ const ruleDefinitionsMap = new Map<
     'MATCH',
     {
       name: 'MATCH',
+      description: 'Fallback rule that matches everything.',
       required: false
     }
   ]
 ])
 
 const ruleTypes = Array.from(ruleDefinitionsMap.keys())
+
+const getRuleTypeDescription = (ruleType: string): string =>
+  ruleDefinitionsMap.get(ruleType)?.description || 'No description available.'
 
 interface RuleTypeComboboxProps {
   value: string
@@ -575,7 +613,31 @@ const RuleTypeCombobox: React.FC<RuleTypeComboboxProps> = ({
                     setOpen(false)
                   }}
                 >
-                  {type}
+                  <span className="min-w-0 flex-1 truncate">{type}</span>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        className="text-muted-foreground hover:text-foreground inline-flex size-4 items-center justify-center"
+                        onClick={(event) => event.stopPropagation()}
+                        onPointerDown={(event) => event.stopPropagation()}
+                        aria-label={`About ${type}`}
+                      >
+                        <CircleHelp className="size-3.5" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="right" align="start" className="max-w-64 text-left">
+                      <div className="space-y-1">
+                        <div className="font-medium">{type}</div>
+                        <div>{getRuleTypeDescription(type)}</div>
+                        {ruleDefinitionsMap.get(type)?.example && (
+                          <div className="text-background/80">
+                            Example: {ruleDefinitionsMap.get(type)?.example}
+                          </div>
+                        )}
+                      </div>
+                    </TooltipContent>
+                  </Tooltip>
                   <CheckIcon
                     className={cn('ml-auto size-3', value === type ? 'opacity-100' : 'opacity-0')}
                   />
