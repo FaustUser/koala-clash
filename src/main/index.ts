@@ -56,6 +56,41 @@ let isCreatingWindow = false
 let windowShown = false
 let createWindowPromiseResolve: (() => void) | null = null
 let createWindowPromise: Promise<void> | null = null
+let mainWindowRecoveryTimeout: NodeJS.Timeout | null = null
+
+function scheduleMainWindowRecovery(reason: string): void {
+  if (!mainWindow || mainWindow.isDestroyed() || mainWindowRecoveryTimeout) {
+    return
+  }
+
+  mainWindowRecoveryTimeout = setTimeout(() => {
+    const currentWindow = mainWindow
+
+    if (!currentWindow || currentWindow.isDestroyed()) {
+      mainWindowRecoveryTimeout = null
+      return
+    }
+
+    console.error(`[main-window] Recovering renderer after ${reason}`)
+
+    if (currentWindow.webContents.isDestroyed()) {
+      currentWindow.destroy()
+      mainWindow = null
+      void createWindow().then(() => {
+        if (windowShown) {
+          void showMainWindow()
+        }
+      })
+    } else {
+      currentWindow.webContents.reloadIgnoringCache()
+      if (windowShown && !currentWindow.isVisible()) {
+        currentWindow.show()
+      }
+    }
+
+    mainWindowRecoveryTimeout = null
+  }, 300)
+}
 
 configureDevInstanceIsolation()
 
@@ -530,8 +565,22 @@ export async function createWindow(appConfig?: AppConfig): Promise<void> {
         await scheduleLightweightMode()
       }
     })
-    mainWindow.webContents.on('did-fail-load', () => {
-      mainWindow?.webContents.reload()
+    mainWindow.on('unresponsive', () => {
+      scheduleMainWindowRecovery('window-unresponsive')
+    })
+    mainWindow.webContents.on('did-fail-load', (_event, errorCode, errorDescription, _url, isMainFrame) => {
+      if (!isMainFrame) {
+        return
+      }
+
+      scheduleMainWindowRecovery(`did-fail-load (${errorCode}: ${errorDescription})`)
+    })
+    mainWindow.webContents.on('render-process-gone', (_event, details) => {
+      if (details.reason === 'clean-exit') {
+        return
+      }
+
+      scheduleMainWindowRecovery(`render-process-gone (${details.reason})`)
     })
 
     mainWindow.webContents.once('did-finish-load', () => {
@@ -543,7 +592,6 @@ export async function createWindow(appConfig?: AppConfig): Promise<void> {
         }, 500)
       }
     })
-
     mainWindow.on('close', async (event) => {
       event.preventDefault()
       mainWindow?.hide()
@@ -553,6 +601,10 @@ export async function createWindow(appConfig?: AppConfig): Promise<void> {
     })
 
     mainWindow.on('closed', () => {
+      if (mainWindowRecoveryTimeout) {
+        clearTimeout(mainWindowRecoveryTimeout)
+        mainWindowRecoveryTimeout = null
+      }
       mainWindow = null
     })
 
