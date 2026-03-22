@@ -301,6 +301,10 @@ export async function getRuntimeConfig(): Promise<MihomoConfig> {
   return ipcErrorWrapper(await window.electron.ipcRenderer.invoke('getRuntimeConfig'))
 }
 
+export async function getGeoDataEntries(kind: 'geoip' | 'geosite'): Promise<string[]> {
+  return ipcErrorWrapper(await window.electron.ipcRenderer.invoke('getGeoDataEntries', kind))
+}
+
 export async function checkUpdate(): Promise<AppVersion | undefined> {
   return ipcErrorWrapper(await window.electron.ipcRenderer.invoke('checkUpdate'))
 }
