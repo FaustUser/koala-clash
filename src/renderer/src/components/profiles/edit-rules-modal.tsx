@@ -557,13 +557,13 @@ const RuleTypeCombobox: React.FC<RuleTypeComboboxProps> = ({
         </Button>
       </PopoverTrigger>
       <PopoverContent
-        className={cn('min-w-56 p-0', contentClassName)}
+        className={cn('min-w-56 overflow-hidden p-0', contentClassName)}
         style={{ width: 'var(--radix-popover-trigger-width)' }}
         align="start"
       >
-        <Command>
+        <Command className="max-h-60">
           <CommandInput placeholder={t('common.search')} />
-          <CommandList>
+          <CommandList className="max-h-48">
             <CommandEmpty>{t('profile.editRules.noMatchingRules')}</CommandEmpty>
             <CommandGroup>
               {ruleTypes.map((type) => (
