@@ -67,6 +67,7 @@ import React, {
   useState,
   useMemo,
   useCallback,
+  useDeferredValue,
   startTransition,
   memo,
   useRef
@@ -542,6 +543,33 @@ const geoDataRuleKindMap: Partial<Record<string, GeoDataKind>> = {
 const getGeoDataKindForRuleType = (ruleType: string): GeoDataKind | null =>
   geoDataRuleKindMap[ruleType] ?? null
 
+const MAX_COMBOBOX_RESULTS = 200
+
+const normalizeSearchValue = (value: string): string => value.trim().toLowerCase()
+
+const filterComboboxValues = (values: string[], query: string): string[] => {
+  const normalizedQuery = normalizeSearchValue(query)
+  if (!normalizedQuery) {
+    return values.slice(0, MAX_COMBOBOX_RESULTS)
+  }
+
+  const startsWithMatches: string[] = []
+  const includesMatches: string[] = []
+
+  for (const value of values) {
+    const normalizedValue = value.toLowerCase()
+    if (normalizedValue.startsWith(normalizedQuery)) {
+      startsWithMatches.push(value)
+      continue
+    }
+    if (normalizedValue.includes(normalizedQuery)) {
+      includesMatches.push(value)
+    }
+  }
+
+  return [...startsWithMatches, ...includesMatches].slice(0, MAX_COMBOBOX_RESULTS)
+}
+
 interface RuleTypeComboboxProps {
   value: string
   onChange: (value: string) => void
@@ -567,10 +595,22 @@ const RuleTypeCombobox: React.FC<RuleTypeComboboxProps> = ({
 }) => {
   const { t } = useTranslation()
   const [open, setOpen] = useState(false)
+  const [query, setQuery] = useState('')
+  const deferredQuery = useDeferredValue(query)
   const getRuleTypeDescription = (ruleType: string): string =>
     t(`profile.editRules.ruleTypeDescriptions.${ruleType}`, {
       defaultValue: t('profile.editRules.noRuleTypeDescription')
     })
+  const filteredRuleTypes = useMemo(
+    () => filterComboboxValues(ruleTypes, deferredQuery),
+    [deferredQuery]
+  )
+
+  useEffect(() => {
+    if (!open) {
+      setQuery('')
+    }
+  }, [open])
 
   return (
     <Popover modal open={open} onOpenChange={setOpen}>
@@ -585,12 +625,12 @@ const RuleTypeCombobox: React.FC<RuleTypeComboboxProps> = ({
         style={{ width: 'var(--radix-popover-trigger-width)' }}
         align="start"
       >
-        <Command className="max-h-60">
-          <CommandInput placeholder={t('common.search')} />
+        <Command className="max-h-60" shouldFilter={false}>
+          <CommandInput placeholder={t('common.search')} value={query} onValueChange={setQuery} />
           <CommandList className="max-h-48">
             <CommandEmpty>{t('profile.editRules.noMatchingRules')}</CommandEmpty>
             <CommandGroup>
-              {ruleTypes.map((type) => (
+              {filteredRuleTypes.map((type) => (
                 <CommandItem
                   key={type}
                   value={type}
@@ -648,6 +688,15 @@ const RulePayloadCombobox: React.FC<RulePayloadComboboxProps> = ({
 }) => {
   const { t } = useTranslation()
   const [open, setOpen] = useState(false)
+  const [query, setQuery] = useState('')
+  const deferredQuery = useDeferredValue(query)
+  const filteredValues = useMemo(() => filterComboboxValues(values, deferredQuery), [values, deferredQuery])
+
+  useEffect(() => {
+    if (!open) {
+      setQuery('')
+    }
+  }, [open])
 
   return (
     <Popover modal open={open} onOpenChange={setOpen}>
@@ -672,8 +721,12 @@ const RulePayloadCombobox: React.FC<RulePayloadComboboxProps> = ({
         style={{ width: 'var(--radix-popover-trigger-width)' }}
         align="start"
       >
-        <Command className="max-h-60">
-          <CommandInput placeholder={t('profile.editRules.searchPayloadPlaceholder')} />
+        <Command className="max-h-60" shouldFilter={false}>
+          <CommandInput
+            placeholder={t('profile.editRules.searchPayloadPlaceholder')}
+            value={query}
+            onValueChange={setQuery}
+          />
           <CommandList className="max-h-48">
             <CommandEmpty>
               {loading
@@ -681,7 +734,7 @@ const RulePayloadCombobox: React.FC<RulePayloadComboboxProps> = ({
                 : t('profile.editRules.noMatchingPayloadOptions')}
             </CommandEmpty>
             <CommandGroup>
-              {values.map((item) => (
+              {filteredValues.map((item) => (
                 <CommandItem
                   key={item}
                   value={item}
