@@ -52,6 +52,11 @@ function processRulesWithOffset(ruleStrings: string[], currentRules: string[], i
   return { normalRules, insertRules: rules }
 }
 
+function getDefaultAppendInsertPosition(rules: string[]): number {
+  const matchIndex = rules.findLastIndex((rule) => rule.split(',')[0]?.trim() === 'MATCH')
+  return matchIndex === -1 ? rules.length : matchIndex
+}
+
 export async function generateProfile(): Promise<void> {
   const { current } = await getProfileConfig()
   const {
@@ -111,7 +116,11 @@ export async function generateProfile(): Promise<void> {
           rules,
           true
         )
-        rules = [...insertRules, ...appendRules]
+        rules = [...insertRules]
+        appendRules.forEach((rule) => {
+          const insertPosition = getDefaultAppendInsertPosition(rules)
+          rules.splice(insertPosition, 0, rule)
+        })
       }
 
       // 处理删除规则

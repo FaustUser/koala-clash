@@ -211,6 +211,11 @@ const parseRuleStringToItem = (ruleStr: string): RuleItem => {
   }
 }
 
+const getDefaultAppendInsertPosition = (rules: RuleItem[]): number => {
+  const matchIndex = rules.findLastIndex((rule) => rule.type === 'MATCH')
+  return matchIndex === -1 ? rules.length : matchIndex
+}
+
 const domainValidator = (value: string): boolean => {
   if (value.length > 253 || value.length < 2) return false
 
@@ -1223,7 +1228,7 @@ const EditRulesModal: React.FC<Props> = (props) => {
                   if (rule.offset !== undefined) {
                     return Math.max(0, currentRules.length - rule.offset)
                   }
-                  return currentRules.length
+                  return getDefaultAppendInsertPosition(currentRules)
                 }
               )
 
@@ -1357,10 +1362,12 @@ const EditRulesModal: React.FC<Props> = (props) => {
       // 保存规则到文件
       const prependRuleStrings = Array.from(prependRules)
         .filter((index) => !deletedRules.has(index) && index < rules.length)
+        .sort((left, right) => left - right)
         .map((index) => convertRuleToString(rules[index]))
 
       const appendRuleStrings = Array.from(appendRules)
         .filter((index) => !deletedRules.has(index) && index < rules.length)
+        .sort((left, right) => left - right)
         .map((index) => convertRuleToString(rules[index]))
 
       // 保存删除的规则
