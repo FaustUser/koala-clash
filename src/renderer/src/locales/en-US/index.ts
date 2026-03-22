@@ -698,6 +698,9 @@ export default {
       ruleType: 'Rule Type',
       payload: 'Rule Payload',
       payloadPlaceholder: 'Enter payload',
+      searchPayloadPlaceholder: 'Search payload...',
+      loadingPayloadOptions: 'Loading options...',
+      noMatchingPayloadOptions: 'No matching options',
       proxy: 'Proxy',
       proxyPlaceholder: 'Select or enter proxy',
       addRule: 'Add Rule',
@@ -718,6 +721,7 @@ export default {
       restore: 'Restore rule',
       invalidPayload: 'Invalid payload',
       expectedFormat: 'Expected format',
+      geoDataLoadError: 'Failed to load Geo database values',
       exampleLabel: 'Example',
       noRuleTypeDescription: 'No description available.',
       ruleTypeDescriptions: {

@@ -758,6 +758,9 @@ export default {
       ruleType: '规则类型',
       payload: '规则内容',
       payloadPlaceholder: '输入载荷',
+      searchPayloadPlaceholder: '搜索值...',
+      loadingPayloadOptions: '正在加载选项...',
+      noMatchingPayloadOptions: '没有匹配的选项',
       proxy: '代理',
       proxyPlaceholder: '选择或输入代理',
       addRule: '添加规则',
@@ -778,6 +781,7 @@ export default {
       restore: '恢复规则',
       invalidPayload: '无效的规则内容',
       expectedFormat: '期望格式',
+      geoDataLoadError: '加载 Geo 数据库值失败',
       exampleLabel: '示例',
       noRuleTypeDescription: '暂无描述。',
       ruleTypeDescriptions: {

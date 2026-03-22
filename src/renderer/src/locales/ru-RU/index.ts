@@ -698,6 +698,9 @@ export default {
       ruleType: 'Тип правила',
       payload: 'Параметр правила',
       payloadPlaceholder: 'Введите параметр правила',
+      searchPayloadPlaceholder: 'Поиск значения...',
+      loadingPayloadOptions: 'Загрузка значений...',
+      noMatchingPayloadOptions: 'Нет подходящих значений',
       proxy: 'Прокси',
       proxyPlaceholder: 'Выберите или введите прокси',
       addRule: 'Добавить правило',
@@ -718,6 +721,7 @@ export default {
       restore: 'Восстановить правило',
       invalidPayload: 'Неверное значение',
       expectedFormat: 'Ожидаемый формат',
+      geoDataLoadError: 'Не удалось загрузить значения из Geo-базы',
       exampleLabel: 'Пример',
       noRuleTypeDescription: 'Описание недоступно.',
       ruleTypeDescriptions: {
