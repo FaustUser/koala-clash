@@ -11,14 +11,19 @@ let defaultBypass: string[]
 let triggerSysProxyTimer: NodeJS.Timeout | null = null
 
 export async function triggerSysProxy(enable: boolean, onlyActiveDevice: boolean): Promise<void> {
+  if (triggerSysProxyTimer) {
+    clearTimeout(triggerSysProxyTimer)
+    triggerSysProxyTimer = null
+  }
+
+  if (!enable) {
+    await disableSysProxy(onlyActiveDevice)
+    return
+  }
+
   if (net.isOnline()) {
-    if (enable) {
-      await setSysProxy(onlyActiveDevice)
-    } else {
-      await disableSysProxy(onlyActiveDevice)
-    }
+    await setSysProxy(onlyActiveDevice)
   } else {
-    if (triggerSysProxyTimer) clearTimeout(triggerSysProxyTimer)
     triggerSysProxyTimer = setTimeout(() => triggerSysProxy(enable, onlyActiveDevice), 5000)
   }
 }
