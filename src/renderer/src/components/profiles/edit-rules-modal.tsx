@@ -12,13 +12,6 @@ import { Badge } from '@renderer/components/ui/badge'
 import { Input } from '@renderer/components/ui/input'
 import { Label } from '@renderer/components/ui/label'
 import { Textarea } from '@renderer/components/ui/textarea'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@renderer/components/ui/select'
 import { Switch } from '@renderer/components/ui/switch'
 import { Separator } from '@renderer/components/ui/separator'
 import { Spinner } from '@renderer/components/ui/spinner'
@@ -539,6 +532,63 @@ const ruleDefinitionsMap = new Map<
 
 const ruleTypes = Array.from(ruleDefinitionsMap.keys())
 
+interface RuleTypeComboboxProps {
+  value: string
+  onChange: (value: string) => void
+  className?: string
+  contentClassName?: string
+}
+
+const RuleTypeCombobox: React.FC<RuleTypeComboboxProps> = ({
+  value,
+  onChange,
+  className,
+  contentClassName
+}) => {
+  const { t } = useTranslation()
+  const [open, setOpen] = useState(false)
+
+  return (
+    <Popover modal open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button variant="outline" className={cn('w-full justify-between font-normal', className)}>
+          <span className="truncate">{value}</span>
+          <ChevronsUpDownIcon className="ml-1 size-3 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent
+        className={cn('min-w-56 p-0', contentClassName)}
+        style={{ width: 'var(--radix-popover-trigger-width)' }}
+        align="start"
+      >
+        <Command>
+          <CommandInput placeholder={t('common.search')} />
+          <CommandList>
+            <CommandEmpty>{t('profile.editRules.noMatchingRules')}</CommandEmpty>
+            <CommandGroup>
+              {ruleTypes.map((type) => (
+                <CommandItem
+                  key={type}
+                  value={type}
+                  onSelect={() => {
+                    onChange(type)
+                    setOpen(false)
+                  }}
+                >
+                  {type}
+                  <CheckIcon
+                    className={cn('ml-auto size-3', value === type ? 'opacity-100' : 'opacity-0')}
+                  />
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  )
+}
+
 const isRuleSupportsNoResolve = (ruleType: string): boolean => {
   const rule = ruleDefinitionsMap.get(ruleType)
   return rule?.noResolve === true
@@ -744,9 +794,9 @@ const RuleListItemBase: React.FC<RuleListItemProps> = ({
     }
 
     const typeSelect = (
-      <Select
+      <RuleTypeCombobox
         value={editingRule.type}
-        onValueChange={(v) => {
+        onChange={(v) => {
           const noResolve = isRuleSupportsNoResolve(v)
           const src = isRuleSupportsSrc(v)
           let params = [...(editingRule.additionalParams || [])]
@@ -754,18 +804,9 @@ const RuleListItemBase: React.FC<RuleListItemProps> = ({
           if (!src) params = params.filter((p) => p !== 'src')
           onEditingRuleChange({ ...editingRule, type: v, additionalParams: params })
         }}
-      >
-        <SelectTrigger className="w-full h-8 text-xs">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent className="max-h-60" style={{ maxHeight: 240 }} position="popper">
-          {ruleTypes.map((type) => (
-            <SelectItem key={type} value={type}>
-              {type}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+        className="h-8 text-xs"
+        contentClassName="max-h-60"
+      />
     )
 
     const proxySelector = (
@@ -1762,25 +1803,12 @@ const EditRulesModal: React.FC<Props> = (props) => {
               <div className="flex flex-col gap-3">
                 <div className="flex flex-col gap-1.5">
                   <Label>{t('profile.editRules.ruleType')}</Label>
-                  <Select
+                  <RuleTypeCombobox
                     value={newRule.type}
-                    onValueChange={(value) => handleRuleTypeChange(value)}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent
-                      className="max-h-60"
-                      style={{ maxHeight: 240 }}
-                      position="popper"
-                    >
-                      {ruleTypes.map((type) => (
-                        <SelectItem key={type} value={type}>
-                          {type}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    onChange={handleRuleTypeChange}
+                    className="h-9"
+                    contentClassName="max-h-60"
+                  />
                 </div>
 
                 <div className="flex flex-col gap-1.5">
