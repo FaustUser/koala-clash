@@ -45,6 +45,7 @@ type FindProcessMode = 'off' | 'strict' | 'always'
 type DnsMode = 'normal' | 'fake-ip' | 'redir-host'
 type FilterMode = 'blacklist' | 'whitelist'
 type NetworkInterfaceInfo = os.NetworkInterfaceInfo
+type VpnServerFailoverTargetType = 'profile' | 'groupProxy'
 type Fingerprints =
   | ''
   | 'random'
@@ -62,3 +63,10 @@ type Fingerprints =
   | 'edge'
   | '360'
   | 'qq'
+
+interface VpnServerFailoverTarget {
+  type: VpnServerFailoverTargetType
+  profileId?: string
+  groupName?: string
+  proxyName?: string
+}

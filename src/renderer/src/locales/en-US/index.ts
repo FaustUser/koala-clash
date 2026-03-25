@@ -488,6 +488,24 @@ export default {
       bypassDetectInterfaces: 'Bypass detect interfaces',
       directOnSpecificWifi: 'Direct mode on specific WiFi SSID'
     },
+    vpnFailover: {
+      title: 'VPN Server Failover',
+      disconnectOnUnavailable: 'Disconnect if VPN server is unavailable',
+      disconnectOnUnavailableHelp:
+        'If enabled, the app will disable VPN and let traffic go directly when the active VPN server stops responding. Enabling this clears the failover list below.',
+      failoverOrder: 'Failover order',
+      failoverOrderHelp:
+        'Set the ordered list of fallback targets. You can mix whole profiles and specific proxy nodes from proxy groups. Adding targets disables automatic direct disconnect because these behaviors are mutually exclusive.',
+      selectTarget: 'Select a failover target',
+      profiles: 'Profiles',
+      groupProxies: 'Proxy group nodes',
+      empty: 'No fallback targets configured.',
+      profileTarget: 'Profile',
+      groupProxyTarget: 'Proxy group node',
+      unavailableTarget: 'Target is no longer available',
+      moveUp: 'Move up',
+      moveDown: 'Move down'
+    },
     shortcuts: {
       title: 'Shortcut Settings',
       toggleWindow: 'Toggle Window',

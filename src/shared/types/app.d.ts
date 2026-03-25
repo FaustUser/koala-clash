@@ -99,6 +99,8 @@ interface AppConfig {
   networkDetection?: boolean
   networkDetectionBypass?: string[]
   networkDetectionInterval?: number
+  disconnectOnVpnServerUnavailable?: boolean
+  vpnServerFailoverTargets?: VpnServerFailoverTarget[]
   displayIcon?: boolean
   displayAppName?: boolean
   disableGPU: boolean

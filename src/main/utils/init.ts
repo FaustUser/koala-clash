@@ -35,6 +35,7 @@ import {
 import { app } from 'electron'
 import { startSSIDCheck } from '../sys/ssid'
 import { startNetworkDetection } from '../core/manager'
+import { startVpnServerFailoverMonitor } from '../core/vpnFailover'
 import { initKeyManager } from '../service/manager'
 import { migrateFromOldApp } from './migration'
 
@@ -217,7 +218,8 @@ export async function init(): Promise<void> {
   const { sysProxy, onlyActiveDevice = false, networkDetection = false } = appConfig
 
   const initTasks: Promise<void>[] = [
-    startSSIDCheck()
+    startSSIDCheck(),
+    startVpnServerFailoverMonitor()
   ]
 
   if (networkDetection) {
