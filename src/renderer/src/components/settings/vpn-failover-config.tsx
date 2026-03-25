@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { Button } from '@renderer/components/ui/button'
 import SettingCard from '../base/base-setting-card'
 import SettingItem from '../base/base-setting-item'
@@ -15,44 +15,20 @@ import {
   SelectValue
 } from '@renderer/components/ui/select'
 import { useAppConfig } from '@renderer/hooks/use-app-config'
-import { useGroups } from '@renderer/hooks/use-groups'
 import { useProfileConfig } from '@renderer/hooks/use-profile-config'
-import {
-  ArrowDown,
-  ArrowUp,
-  MessageCircleQuestionMark,
-  Plus,
-  Trash2
-} from 'lucide-react'
+import { getVpnServerFailoverCatalog } from '@renderer/utils/ipc'
+import { ArrowDown, ArrowUp, MessageCircleQuestionMark, Plus, Trash2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-
-const BUILTIN_PROXY_TYPES = new Set<MihomoProxyType>([
-  'Direct',
-  'Reject',
-  'RejectDrop',
-  'Compatible',
-  'Pass',
-  'Dns'
-])
-
-interface TargetOption {
-  key: string
-  target: VpnServerFailoverTarget
-  label: string
-  group: 'profiles' | 'groupProxies'
-}
-
-function isLeafProxy(
-  proxy: ControllerProxiesDetail | ControllerGroupDetail
-): proxy is ControllerProxiesDetail {
-  return !('all' in proxy)
-}
+import useSWR from 'swr'
 
 const VpnFailoverConfig: React.FC = () => {
   const { t } = useTranslation()
   const { appConfig, patchAppConfig } = useAppConfig()
   const { profileConfig } = useProfileConfig()
-  const { groups } = useGroups()
+  const { data: targetOptions = [], mutate: mutateTargetOptions } = useSWR(
+    'getVpnServerFailoverCatalog',
+    getVpnServerFailoverCatalog
+  )
   const [selectedOptionKey, setSelectedOptionKey] = useState<string>()
 
   const {
@@ -60,36 +36,9 @@ const VpnFailoverConfig: React.FC = () => {
     vpnServerFailoverTargets = []
   } = appConfig || {}
 
-  const targetOptions = useMemo<TargetOption[]>(() => {
-    const profileOptions: TargetOption[] = (profileConfig?.items ?? []).map((profile) => ({
-      key: `profile:${profile.id}`,
-      target: { type: 'profile', profileId: profile.id },
-      label: profile.name,
-      group: 'profiles'
-    }))
-
-    const groupProxyOptions: TargetOption[] = []
-    for (const group of groups ?? []) {
-      for (const proxy of group.all) {
-        if (!isLeafProxy(proxy) || BUILTIN_PROXY_TYPES.has(proxy.type)) {
-          continue
-        }
-
-        groupProxyOptions.push({
-          key: `groupProxy:${group.name}:${proxy.name}`,
-          target: {
-            type: 'groupProxy',
-            groupName: group.name,
-            proxyName: proxy.name
-          },
-          label: `${group.name} -> ${proxy.name}`,
-          group: 'groupProxies'
-        })
-      }
-    }
-
-    return [...profileOptions, ...groupProxyOptions]
-  }, [groups, profileConfig?.items])
+  useEffect(() => {
+    void mutateTargetOptions()
+  }, [mutateTargetOptions, profileConfig])
 
   const targetOptionMap = useMemo(
     () => new Map(targetOptions.map((option) => [option.key, option])),
@@ -102,7 +51,7 @@ const VpnFailoverConfig: React.FC = () => {
         vpnServerFailoverTargets.map((target) =>
           target.type === 'profile'
             ? `profile:${target.profileId ?? ''}`
-            : `groupProxy:${target.groupName ?? ''}:${target.proxyName ?? ''}`
+            : `groupProxy:${target.profileId ?? ''}:${target.groupName ?? ''}:${target.proxyName ?? ''}`
         )
       ),
     [vpnServerFailoverTargets]
@@ -114,13 +63,17 @@ const VpnFailoverConfig: React.FC = () => {
         const key =
           target.type === 'profile'
             ? `profile:${target.profileId ?? ''}`
-            : `groupProxy:${target.groupName ?? ''}:${target.proxyName ?? ''}`
+            : `groupProxy:${target.profileId ?? ''}:${target.groupName ?? ''}:${target.proxyName ?? ''}`
 
         const option = targetOptionMap.get(key)
         return {
           key,
           target,
-          label: option?.label ?? t('settings.vpnFailover.unavailableTarget'),
+          label:
+            option?.label ??
+            (target.type === 'groupProxy' && target.groupName && target.proxyName
+              ? `${target.groupName} -> ${target.proxyName}`
+              : t('settings.vpnFailover.unavailableTarget')),
           typeLabel:
             target.type === 'profile'
               ? t('settings.vpnFailover.profileTarget')
@@ -176,7 +129,9 @@ const VpnFailoverConfig: React.FC = () => {
                 <MessageCircleQuestionMark className="text-lg" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>{t('settings.vpnFailover.disconnectOnUnavailableHelp')}</TooltipContent>
+            <TooltipContent className="max-w-80 whitespace-normal break-words">
+              {t('settings.vpnFailover.disconnectOnUnavailableHelp')}
+            </TooltipContent>
           </Tooltip>
         }
         divider
@@ -200,7 +155,7 @@ const VpnFailoverConfig: React.FC = () => {
                 <MessageCircleQuestionMark className="text-lg" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent className="max-w-80">
+            <TooltipContent className="max-w-80 whitespace-normal break-words">
               {t('settings.vpnFailover.failoverOrderHelp')}
             </TooltipContent>
           </Tooltip>

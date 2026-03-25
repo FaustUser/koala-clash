@@ -46,6 +46,7 @@ type DnsMode = 'normal' | 'fake-ip' | 'redir-host'
 type FilterMode = 'blacklist' | 'whitelist'
 type NetworkInterfaceInfo = os.NetworkInterfaceInfo
 type VpnServerFailoverTargetType = 'profile' | 'groupProxy'
+type VpnServerFailoverCatalogGroup = 'profiles' | 'groupProxies'
 type Fingerprints =
   | ''
   | 'random'
@@ -69,4 +70,11 @@ interface VpnServerFailoverTarget {
   profileId?: string
   groupName?: string
   proxyName?: string
+}
+
+interface VpnServerFailoverCatalogOption {
+  key: string
+  target: VpnServerFailoverTarget
+  label: string
+  group: VpnServerFailoverCatalogGroup
 }
