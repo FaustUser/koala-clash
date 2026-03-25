@@ -562,6 +562,24 @@ export default {
       bypassDetectInterfaces: '绕过检测的接口',
       directOnSpecificWifi: '在特定的 WiFi SSID 下直连'
     },
+    vpnFailover: {
+      title: 'VPN 服务器异常处理',
+      disconnectOnUnavailable: 'VPN 服务器不可用时断开',
+      disconnectOnUnavailableHelp:
+        '开启后，当当前 VPN 服务器停止响应时，应用会自动关闭 VPN，让流量直接连接。开启该选项时，下面的切换列表会被清空。',
+      failoverOrder: '自动切换顺序',
+      failoverOrderHelp:
+        '设置按顺序尝试的备用目标。可以混合使用整个配置和代理组中的具体节点。添加切换目标后，会自动关闭上面的直连断开模式，因为两种行为互斥。',
+      selectTarget: '选择切换目标',
+      profiles: '配置',
+      groupProxies: '代理组节点',
+      empty: '暂未配置自动切换目标。',
+      profileTarget: '配置',
+      groupProxyTarget: '代理组节点',
+      unavailableTarget: '目标已不可用',
+      moveUp: '上移',
+      moveDown: '下移'
+    },
     shortcuts: {
       title: '快捷键设置',
       toggleWindow: '打开/关闭窗口',

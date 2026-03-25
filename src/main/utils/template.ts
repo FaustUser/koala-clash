@@ -30,7 +30,9 @@ export const defaultConfig: AppConfig = {
   proxyDisplayLayout: 'double',
   groupDisplayLayout: 'double',
   autoLightweightMode: 'core',
-  mainSwitchMode: 'tun'
+  mainSwitchMode: 'tun',
+  disconnectOnVpnServerUnavailable: false,
+  vpnServerFailoverTargets: []
 }
 
 export const defaultControledMihomoConfig: Partial<MihomoConfig> = {
