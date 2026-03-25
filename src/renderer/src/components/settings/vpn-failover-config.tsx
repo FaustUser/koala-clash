@@ -4,6 +4,7 @@ import SettingCard from '../base/base-setting-card'
 import SettingItem from '../base/base-setting-item'
 import { Switch } from '@renderer/components/ui/switch'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
+import { cn } from '@renderer/lib/utils'
 import {
   Select,
   SelectContent,
@@ -17,9 +18,81 @@ import {
 import { useAppConfig } from '@renderer/hooks/use-app-config'
 import { useProfileConfig } from '@renderer/hooks/use-profile-config'
 import { getVpnServerFailoverCatalog } from '@renderer/utils/ipc'
-import { ArrowDown, ArrowUp, MessageCircleQuestionMark, Plus, Trash2 } from 'lucide-react'
+import {
+  DndContext,
+  closestCenter,
+  DragEndEvent,
+  PointerSensor,
+  useSensor,
+  useSensors
+} from '@dnd-kit/core'
+import { SortableContext, useSortable } from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
+import { GripVertical, MessageCircleQuestionMark, Plus, Trash2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import useSWR from 'swr'
+
+interface ResolvedTarget {
+  key: string
+  sortableId: string
+  target: VpnServerFailoverTarget
+  label: string
+  typeLabel: string
+}
+
+interface SortableTargetItemProps {
+  item: ResolvedTarget
+  disabled: boolean
+  onRemove: () => void
+  removeTitle: string
+}
+
+const SortableTargetItem: React.FC<SortableTargetItemProps> = ({
+  item,
+  disabled,
+  onRemove,
+  removeTitle
+}) => {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: item.sortableId,
+    disabled
+  })
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+        zIndex: isDragging ? 'calc(infinity)' : undefined
+      }}
+      className={cn(
+        'flex items-center justify-between gap-3 rounded-xl border border-stroke bg-card/40 px-3 py-2',
+        disabled && 'opacity-60'
+      )}
+    >
+      <div className="flex min-w-0 items-center gap-2">
+        <Button
+          size="icon-sm"
+          variant="ghost"
+          className={cn('cursor-grab active:cursor-grabbing', disabled && 'cursor-not-allowed')}
+          disabled={disabled}
+          {...attributes}
+          {...listeners}
+        >
+          <GripVertical className="size-4" />
+        </Button>
+        <div className="min-w-0">
+          <div className="truncate text-sm font-medium">{item.label}</div>
+          <div className="text-xs text-muted-foreground">{item.typeLabel}</div>
+        </div>
+      </div>
+      <Button size="icon-sm" variant="ghost" title={removeTitle} disabled={disabled} onClick={onRemove}>
+        <Trash2 className="size-4" />
+      </Button>
+    </div>
+  )
+}
 
 const VpnFailoverConfig: React.FC = () => {
   const { t } = useTranslation()
@@ -30,6 +103,13 @@ const VpnFailoverConfig: React.FC = () => {
     getVpnServerFailoverCatalog
   )
   const [selectedOptionKey, setSelectedOptionKey] = useState<string>()
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 2
+      }
+    })
+  )
 
   const {
     disconnectOnVpnServerUnavailable = false,
@@ -57,9 +137,9 @@ const VpnFailoverConfig: React.FC = () => {
     [vpnServerFailoverTargets]
   )
 
-  const resolvedTargets = useMemo(
+  const resolvedTargets = useMemo<ResolvedTarget[]>(
     () =>
-      vpnServerFailoverTargets.map((target) => {
+      vpnServerFailoverTargets.map((target, index) => {
         const key =
           target.type === 'profile'
             ? `profile:${target.profileId ?? ''}`
@@ -68,6 +148,7 @@ const VpnFailoverConfig: React.FC = () => {
         const option = targetOptionMap.get(key)
         return {
           key,
+          sortableId: `${key}-${index}`,
           target,
           label:
             option?.label ??
@@ -86,18 +167,15 @@ const VpnFailoverConfig: React.FC = () => {
   const availableToAdd = selectedOptionKey && !targetKeys.has(selectedOptionKey)
 
   const updateTargets = async (targets: VpnServerFailoverTarget[]): Promise<void> => {
-    await patchAppConfig({
-      disconnectOnVpnServerUnavailable: targets.length > 0 ? false : disconnectOnVpnServerUnavailable,
-      vpnServerFailoverTargets: targets
-    })
+    await patchAppConfig({ vpnServerFailoverTargets: targets })
   }
 
-  const moveTarget = async (index: number, direction: -1 | 1): Promise<void> => {
-    const nextIndex = index + direction
-    if (nextIndex < 0 || nextIndex >= vpnServerFailoverTargets.length) return
-
+  const moveTarget = async (fromIndex: number, toIndex: number): Promise<void> => {
+    if (fromIndex === toIndex || fromIndex < 0 || toIndex < 0) return
     const nextTargets = [...vpnServerFailoverTargets]
-    ;[nextTargets[index], nextTargets[nextIndex]] = [nextTargets[nextIndex], nextTargets[index]]
+    const [movedTarget] = nextTargets.splice(fromIndex, 1)
+    if (!movedTarget) return
+    nextTargets.splice(toIndex, 0, movedTarget)
     await updateTargets(nextTargets)
   }
 
@@ -116,6 +194,21 @@ const VpnFailoverConfig: React.FC = () => {
       vpnServerFailoverTargets: [...vpnServerFailoverTargets, option.target]
     })
     setSelectedOptionKey(undefined)
+  }
+
+  const onDragEnd = async (event: DragEndEvent): Promise<void> => {
+    if (disconnectOnVpnServerUnavailable) {
+      return
+    }
+
+    const { active, over } = event
+    if (!over || active.id === over.id) {
+      return
+    }
+
+    const fromIndex = resolvedTargets.findIndex((item) => item.sortableId === active.id)
+    const toIndex = resolvedTargets.findIndex((item) => item.sortableId === over.id)
+    await moveTarget(fromIndex, toIndex)
   }
 
   return (
@@ -139,10 +232,7 @@ const VpnFailoverConfig: React.FC = () => {
         <Switch
           checked={disconnectOnVpnServerUnavailable}
           onCheckedChange={(value) => {
-            patchAppConfig({
-              disconnectOnVpnServerUnavailable: value,
-              vpnServerFailoverTargets: value ? [] : vpnServerFailoverTargets
-            })
+            patchAppConfig({ disconnectOnVpnServerUnavailable: value })
           }}
         />
       </SettingItem>
@@ -161,7 +251,12 @@ const VpnFailoverConfig: React.FC = () => {
           </Tooltip>
         }
       >
-        <div className="flex items-center gap-2">
+        <div
+          className={cn(
+            'flex items-center gap-2',
+            disconnectOnVpnServerUnavailable && 'pointer-events-none opacity-60'
+          )}
+        >
           <Select value={selectedOptionKey} onValueChange={setSelectedOptionKey}>
             <SelectTrigger size="sm" className="w-56">
               <SelectValue placeholder={t('settings.vpnFailover.selectTarget')} />
@@ -190,7 +285,7 @@ const VpnFailoverConfig: React.FC = () => {
               </SelectGroup>
             </SelectContent>
           </Select>
-          <Button size="sm" onClick={addTarget} disabled={!availableToAdd}>
+          <Button size="sm" onClick={addTarget} disabled={!availableToAdd || disconnectOnVpnServerUnavailable}>
             <Plus className="size-4" />
             {t('common.add')}
           </Button>
@@ -202,51 +297,29 @@ const VpnFailoverConfig: React.FC = () => {
             {t('settings.vpnFailover.empty')}
           </div>
         ) : (
-          resolvedTargets.map((item, index) => (
-            <div
-              key={`${item.key}-${index}`}
-              className="flex items-center justify-between gap-3 rounded-xl border border-stroke bg-card/40 px-3 py-2"
-            >
-              <div className="min-w-0">
-                <div className="truncate text-sm font-medium">{item.label}</div>
-                <div className="text-xs text-muted-foreground">{item.typeLabel}</div>
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={(event) => {
+              void onDragEnd(event)
+            }}
+          >
+            <SortableContext items={resolvedTargets.map((item) => item.sortableId)}>
+              <div className="space-y-2">
+                {resolvedTargets.map((item, index) => (
+                  <SortableTargetItem
+                    key={item.sortableId}
+                    item={item}
+                    disabled={disconnectOnVpnServerUnavailable}
+                    removeTitle={t('common.remove')}
+                    onRemove={() => {
+                      void removeTarget(index)
+                    }}
+                  />
+                ))}
               </div>
-              <div className="flex items-center gap-1">
-                <Button
-                  size="icon-sm"
-                  variant="ghost"
-                  title={t('settings.vpnFailover.moveUp')}
-                  disabled={index === 0}
-                  onClick={() => {
-                    void moveTarget(index, -1)
-                  }}
-                >
-                  <ArrowUp className="size-4" />
-                </Button>
-                <Button
-                  size="icon-sm"
-                  variant="ghost"
-                  title={t('settings.vpnFailover.moveDown')}
-                  disabled={index === resolvedTargets.length - 1}
-                  onClick={() => {
-                    void moveTarget(index, 1)
-                  }}
-                >
-                  <ArrowDown className="size-4" />
-                </Button>
-                <Button
-                  size="icon-sm"
-                  variant="ghost"
-                  title={t('common.remove')}
-                  onClick={() => {
-                    void removeTarget(index)
-                  }}
-                >
-                  <Trash2 className="size-4" />
-                </Button>
-              </div>
-            </div>
-          ))
+            </SortableContext>
+          </DndContext>
         )}
       </div>
     </SettingCard>
