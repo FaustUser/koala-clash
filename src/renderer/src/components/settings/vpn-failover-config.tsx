@@ -12,8 +12,7 @@ import {
   SelectItem,
   SelectLabel,
   SelectSeparator,
-  SelectTrigger,
-  SelectValue
+  SelectTrigger
 } from '@renderer/components/ui/select'
 import { useAppConfig } from '@renderer/hooks/use-app-config'
 import { useProfileConfig } from '@renderer/hooks/use-profile-config'
@@ -287,7 +286,9 @@ const VpnFailoverConfig: React.FC = () => {
             }}
           >
             <SelectTrigger size="sm" className="w-56">
-              <SelectValue placeholder={t('settings.vpnFailover.selectTarget')} />
+              <span className="line-clamp-1 text-muted-foreground">
+                {t('settings.vpnFailover.selectTarget')}
+              </span>
             </SelectTrigger>
             <SelectContent position="popper">
               <SelectGroup>
