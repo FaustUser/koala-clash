@@ -102,7 +102,7 @@ const VpnFailoverConfig: React.FC = () => {
     'getVpnServerFailoverCatalog',
     getVpnServerFailoverCatalog
   )
-  const [selectedOptionKey, setSelectedOptionKey] = useState<string>()
+  const [selectResetKey, setSelectResetKey] = useState(0)
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
@@ -195,7 +195,7 @@ const VpnFailoverConfig: React.FC = () => {
       disconnectOnVpnServerUnavailable: false,
       vpnServerFailoverTargets: [...vpnServerFailoverTargets, option.target]
     })
-    setSelectedOptionKey(undefined)
+    setSelectResetKey((current) => current + 1)
   }
 
   const onDragEnd = async (event: DragEndEvent): Promise<void> => {
@@ -260,10 +260,9 @@ const VpnFailoverConfig: React.FC = () => {
           )}
         >
           <Select
+            key={selectResetKey}
             disabled={disconnectOnVpnServerUnavailable || selectableTargetOptions.length === 0}
-            value={selectedOptionKey}
             onValueChange={(value) => {
-              setSelectedOptionKey(undefined)
               void addTarget(value)
             }}
           >
