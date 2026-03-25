@@ -21,6 +21,7 @@ import {
   patchMihomoConfig,
   restartMihomoConnections
 } from '../core/mihomoApi'
+import { getVpnServerFailoverCatalog } from '../core/vpnFailover'
 import { checkAutoRun, disableAutoRun, enableAutoRun } from '../sys/autoRun'
 import {
   getAppConfig,
@@ -172,6 +173,7 @@ export function registerIpcMainHandlers(): void {
   ipcMain.handle('disableAutoRun', ipcErrorWrapper(disableAutoRun))
   ipcMain.handle('getAppConfig', (_e, force) => ipcErrorWrapper(getAppConfig)(force))
   ipcMain.handle('patchAppConfig', (_e, config) => ipcErrorWrapper(patchAppConfig)(config))
+  ipcMain.handle('getVpnServerFailoverCatalog', ipcErrorWrapper(getVpnServerFailoverCatalog))
   ipcMain.handle('getControledMihomoConfig', (_e, force) =>
     ipcErrorWrapper(getControledMihomoConfig)(force)
   )

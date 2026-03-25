@@ -4,6 +4,8 @@ import {
   changeCurrentProfile,
   getAppConfig,
   getControledMihomoConfig,
+  getProfile,
+  getProfileConfig,
   patchAppConfig,
   patchControledMihomoConfig
 } from '../config'
@@ -40,6 +42,16 @@ interface MonitoredTarget {
   testUrl?: string
 }
 
+interface MihomoNamedProxy {
+  name?: string
+  type?: MihomoProxyType
+}
+
+interface MihomoNamedGroup {
+  name?: string
+  proxies?: string[]
+}
+
 function isLeafProxy(
   proxy: ControllerProxiesDetail | ControllerGroupDetail
 ): proxy is ControllerProxiesDetail {
@@ -70,6 +82,90 @@ async function updateTrayState(): Promise<void> {
   } catch {
     // ignore
   }
+}
+
+function isConfigLeafProxy(proxy: unknown): proxy is MihomoNamedProxy {
+  return (
+    !!proxy &&
+    typeof proxy === 'object' &&
+    'name' in proxy &&
+    typeof proxy.name === 'string' &&
+    'type' in proxy &&
+    typeof proxy.type === 'string' &&
+    !BUILTIN_PROXY_TYPES.has(proxy.type as MihomoProxyType)
+  )
+}
+
+function isConfigGroup(group: unknown): group is MihomoNamedGroup {
+  return (
+    !!group &&
+    typeof group === 'object' &&
+    'name' in group &&
+    typeof group.name === 'string' &&
+    'proxies' in group &&
+    Array.isArray(group.proxies)
+  )
+}
+
+export async function getVpnServerFailoverCatalog(): Promise<VpnServerFailoverCatalogOption[]> {
+  const profileConfig = await getProfileConfig()
+  const profileOptions: VpnServerFailoverCatalogOption[] = (profileConfig.items ?? []).map(
+    (profile) => ({
+      key: `profile:${profile.id}`,
+      target: { type: 'profile', profileId: profile.id },
+      label: profile.name,
+      group: 'profiles'
+    })
+  )
+
+  const groupProxyOptions: VpnServerFailoverCatalogOption[] = []
+  const seenGroupProxyKeys = new Set<string>()
+
+  for (const profile of profileConfig.items ?? []) {
+    let config: MihomoConfig
+    try {
+      config = await getProfile(profile.id)
+    } catch {
+      continue
+    }
+
+    const proxies = Array.isArray(config.proxies) ? (config.proxies as unknown[]) : []
+    const proxyGroups = Array.isArray(config['proxy-groups'])
+      ? (config['proxy-groups'] as unknown[])
+      : []
+
+    const leafProxyNames = new Set(
+      proxies.filter(isConfigLeafProxy).map((proxy) => proxy.name)
+    )
+
+    for (const group of proxyGroups.filter(isConfigGroup)) {
+      for (const proxyName of group.proxies ?? []) {
+        if (typeof proxyName !== 'string' || !leafProxyNames.has(proxyName)) {
+          continue
+        }
+
+        const key = `groupProxy:${profile.id}:${group.name}:${proxyName}`
+        if (seenGroupProxyKeys.has(key)) {
+          continue
+        }
+
+        seenGroupProxyKeys.add(key)
+        groupProxyOptions.push({
+          key,
+          target: {
+            type: 'groupProxy',
+            profileId: profile.id,
+            groupName: group.name,
+            proxyName
+          },
+          label: `${profile.name}: ${group.name} -> ${proxyName}`,
+          group: 'groupProxies'
+        })
+      }
+    }
+  }
+
+  return [...profileOptions, ...groupProxyOptions]
 }
 
 async function isVpnEnabled(): Promise<boolean> {
@@ -174,7 +270,7 @@ async function disconnectVpnDirect(): Promise<void> {
 async function tryProfileTarget(target: VpnServerFailoverTarget): Promise<boolean> {
   if (!target.profileId) return false
 
-  const profileConfig = await import('../config/profile').then((module) => module.getProfileConfig())
+  const profileConfig = await getProfileConfig()
   if (profileConfig.current === target.profileId) {
     return false
   }
@@ -192,31 +288,35 @@ async function tryProfileTarget(target: VpnServerFailoverTarget): Promise<boolea
   return false
 }
 
-async function tryGroupProxyTarget(
-  target: VpnServerFailoverTarget,
-  failedGroupNames: string[]
-): Promise<boolean> {
+async function tryGroupProxyTarget(target: VpnServerFailoverTarget): Promise<boolean> {
   if (!target.groupName || !target.proxyName) return false
-  if (!failedGroupNames.includes(target.groupName)) return false
+
+  const profileConfig = await getProfileConfig()
+  if (target.profileId && profileConfig.current !== target.profileId) {
+    await changeCurrentProfile(target.profileId)
+    notifyConfigChanged('profileConfigUpdated')
+    await waitForGroupsReady()
+  }
 
   const groups = await mihomoGroups()
   const targetGroup = groups.find((group) => group.name === target.groupName)
   if (!targetGroup) return false
-  if (targetGroup.now === target.proxyName) return false
 
   const proxy = targetGroup.all.find(
     (candidate) => candidate.name === target.proxyName && isLeafProxy(candidate)
   )
   if (!isVpnCandidate(proxy)) return false
 
-  await mihomoChangeProxy(target.groupName, target.proxyName)
+  if (targetGroup.now !== target.proxyName) {
+    await mihomoChangeProxy(target.groupName, target.proxyName)
 
-  const { autoCloseConnection = false } = await getAppConfig()
-  if (autoCloseConnection) {
-    await mihomoCloseAllConnections()
+    const { autoCloseConnection = false } = await getAppConfig()
+    if (autoCloseConnection) {
+      await mihomoCloseAllConnections()
+    }
+
+    notifyConfigChanged('groupsUpdated')
   }
-
-  notifyConfigChanged('groupsUpdated')
 
   const healthy = await isTargetHealthy({
     groupName: target.groupName,
@@ -238,8 +338,7 @@ async function tryGroupProxyTarget(
 }
 
 async function tryFailoverTargets(
-  targets: VpnServerFailoverTarget[],
-  failedGroupNames: string[]
+  targets: VpnServerFailoverTarget[]
 ): Promise<boolean> {
   for (const target of targets) {
     try {
@@ -247,7 +346,7 @@ async function tryFailoverTargets(
         return true
       }
 
-      if (target.type === 'groupProxy' && (await tryGroupProxyTarget(target, failedGroupNames))) {
+      if (target.type === 'groupProxy' && (await tryGroupProxyTarget(target))) {
         return true
       }
     } catch {
@@ -289,7 +388,7 @@ async function runVpnServerFailoverCheck(): Promise<void> {
       let handled = false
 
       if (targets.length > 0) {
-        handled = await tryFailoverTargets(targets, evaluation.failedGroupNames)
+        handled = await tryFailoverTargets(targets)
       } else if (shouldDisconnect) {
         await disconnectVpnDirect()
         handled = true
@@ -302,6 +401,7 @@ async function runVpnServerFailoverCheck(): Promise<void> {
     } finally {
       actionInProgress = false
     }
+
   } catch {
     // ignore transient controller errors
   } finally {

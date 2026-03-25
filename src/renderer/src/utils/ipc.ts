@@ -119,6 +119,10 @@ export async function patchAppConfig(patch: Partial<AppConfig>): Promise<void> {
   return ipcErrorWrapper(await window.electron.ipcRenderer.invoke('patchAppConfig', patch))
 }
 
+export async function getVpnServerFailoverCatalog(): Promise<VpnServerFailoverCatalogOption[]> {
+  return ipcErrorWrapper(await window.electron.ipcRenderer.invoke('getVpnServerFailoverCatalog'))
+}
+
 export async function getControledMihomoConfig(force = false): Promise<Partial<MihomoConfig>> {
   return ipcErrorWrapper(
     await window.electron.ipcRenderer.invoke('getControledMihomoConfig', force)
