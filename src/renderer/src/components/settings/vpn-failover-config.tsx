@@ -205,8 +205,14 @@ const VpnFailoverConfig: React.FC = () => {
       return
     }
 
-    void addTarget(pendingOptionKey)
-    setPendingOptionKey(undefined)
+    const timeoutId = window.setTimeout(() => {
+      void addTarget(pendingOptionKey)
+      setPendingOptionKey(undefined)
+    }, 180)
+
+    return () => {
+      window.clearTimeout(timeoutId)
+    }
   }, [addTarget, pendingOptionKey, selectOpen])
 
   const onDragEnd = async (event: DragEndEvent): Promise<void> => {
