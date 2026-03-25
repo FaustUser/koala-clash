@@ -154,8 +154,17 @@ export async function createProfile(item: Partial<ProfileItem>): Promise<Profile
   } as ProfileItem
   switch (newItem.type) {
     case 'remote': {
-      const { 'mixed-port': mixedPort = 7897 } = await getControledMihomoConfig()
       if (!item.url) throw new Error('Empty URL')
+      const directUriContent = convertUriSubscriptionToMihomoConfig(item.url, newItem.name)
+      if (directUriContent) {
+        if (newItem.name === 'Remote File') {
+          newItem.name = extractFirstVlessName(item.url) || 'VLESS Import'
+        }
+        await setProfileStr(id, directUriContent)
+        break
+      }
+
+      const { 'mixed-port': mixedPort = 7897 } = await getControledMihomoConfig()
       let res: AxiosResponse
       try {
         const httpsAgent = new https.Agent()
@@ -193,7 +202,7 @@ export async function createProfile(item: Partial<ProfileItem>): Promise<Profile
       }
 
 
-      const data = res.data
+      const data = normalizeImportedProfile(res.data, newItem.name)
       const headers = res.headers
       const contentType = (headers['content-type'] || '').toLowerCase()
       if (contentType.includes('text/html') || contentType.includes('text/xml')) {
@@ -306,7 +315,10 @@ export async function createProfile(item: Partial<ProfileItem>): Promise<Profile
       break
     }
     case 'local': {
-      const data = item.file || ''
+      const data = normalizeImportedProfile(item.file || '', newItem.name)
+      if (newItem.name === 'Local File') {
+        newItem.name = extractFirstVlessName(item.file || '') || newItem.name
+      }
       await setProfileStr(id, data)
       break
     }
@@ -364,6 +376,305 @@ function parseSubinfo(str: string): SubscriptionUserInfo {
     obj[key] = parseInt(value)
   })
   return obj
+}
+
+function normalizeImportedProfile(content: string, fallbackName: string): string {
+  return convertUriSubscriptionToMihomoConfig(content, fallbackName) || content
+}
+
+function convertUriSubscriptionToMihomoConfig(
+  content: string,
+  fallbackName: string
+): string | undefined {
+  const links = extractVlessLinks(content)
+  if (links.length > 0) {
+    return stringifyYaml(buildVlessProfile(links, fallbackName))
+  }
+
+  const decodedContent = decodeBase64Subscription(content)
+  if (!decodedContent) {
+    return undefined
+  }
+
+  const decodedLinks = extractVlessLinks(decodedContent)
+  if (decodedLinks.length === 0) {
+    return undefined
+  }
+
+  return stringifyYaml(buildVlessProfile(decodedLinks, fallbackName))
+}
+
+function extractVlessLinks(content: string): string[] {
+  return Array.from(content.match(/vless:\/\/[^\s]+/gi) || [])
+}
+
+function decodeBase64Subscription(content: string): string | undefined {
+  const normalized = content.replace(/\s+/g, '')
+  if (!normalized || normalized.includes('://') || /[^A-Za-z0-9+/_=-]/.test(normalized)) {
+    return undefined
+  }
+
+  const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, '=').replace(/-/g, '+').replace(/_/g, '/')
+
+  try {
+    const decoded = Buffer.from(padded, 'base64').toString('utf-8').trim()
+    return decoded.includes('vless://') ? decoded : undefined
+  } catch {
+    return undefined
+  }
+}
+
+function extractFirstVlessName(content: string): string | undefined {
+  const firstLink = extractVlessLinks(content)[0]
+  if (firstLink) {
+    return decodeURIComponent(new URL(firstLink).hash.replace(/^#/, '')) || undefined
+  }
+
+  const decodedContent = decodeBase64Subscription(content)
+  const firstDecodedLink = decodedContent ? extractVlessLinks(decodedContent)[0] : undefined
+  if (!firstDecodedLink) {
+    return undefined
+  }
+
+  return decodeURIComponent(new URL(firstDecodedLink).hash.replace(/^#/, '')) || undefined
+}
+
+function buildVlessProfile(links: string[], fallbackName: string): MihomoConfig {
+  const usedNames = new Set<string>()
+  const proxies = links.map((link, index) => parseVlessLink(link, fallbackName, index, usedNames))
+  const proxyNames = proxies.map((proxy) => proxy.name)
+
+  const config = {
+    proxies,
+    'proxy-groups': [
+      {
+        name: 'PROXY',
+        type: 'select',
+        proxies: [...proxyNames, 'DIRECT']
+      }
+    ],
+    rules: ['MATCH,PROXY']
+  }
+
+  return config as unknown as MihomoConfig
+}
+
+function parseVlessLink(
+  rawLink: string,
+  fallbackName: string,
+  index: number,
+  usedNames: Set<string>
+): Record<string, unknown> {
+  const link = new URL(rawLink)
+  const uuid = decodeURIComponent(link.username)
+  const port = parseInt(link.port, 10)
+
+  if (!uuid || !link.hostname || Number.isNaN(port)) {
+    throw new Error(t('error.subscriptionFormatError'))
+  }
+
+  const network = normalizeVlessNetwork(getSearchParam(link, 'type'))
+  const host = getFirstSearchParam(link, ['host'])
+  const path = getFirstSearchParam(link, ['path'])
+  const security = (getFirstSearchParam(link, ['security']) || '').toLowerCase()
+  const sni = getFirstSearchParam(link, ['sni', 'servername'])
+  const serviceName = getFirstSearchParam(link, ['serviceName', 'service-name'])
+  const proxyName = makeUniqueProxyName(
+    decodeURIComponent(link.hash.replace(/^#/, '')) || `${fallbackName || 'VLESS'} ${index + 1}`,
+    usedNames
+  )
+
+  const proxy: Record<string, unknown> = {
+    name: proxyName,
+    type: 'vless',
+    server: link.hostname,
+    port,
+    uuid,
+    udp: true,
+    encryption: normalizeVlessEncryption(getFirstSearchParam(link, ['encryption']))
+  }
+
+  const flow = getFirstSearchParam(link, ['flow'])
+  if (flow) proxy.flow = flow
+
+  const packetEncoding = getFirstSearchParam(link, ['packetEncoding', 'packet-encoding'])
+  if (packetEncoding) proxy['packet-encoding'] = packetEncoding
+
+  if (security === 'tls' || security === 'reality') {
+    proxy.tls = true
+  }
+  if (sni) {
+    proxy.servername = sni
+  }
+
+  const allowInsecure = parseBooleanParam(getFirstSearchParam(link, ['allowInsecure']))
+  if (allowInsecure !== undefined) {
+    proxy['skip-cert-verify'] = allowInsecure
+  }
+
+  const clientFingerprint = getFirstSearchParam(link, ['fp'])
+  if (clientFingerprint) {
+    proxy['client-fingerprint'] = clientFingerprint
+  }
+
+  const alpn = getFirstSearchParam(link, ['alpn'])
+  if (alpn) {
+    proxy.alpn = alpn
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean)
+  }
+
+  const publicKey = getFirstSearchParam(link, ['pbk'])
+  const shortId = getFirstSearchParam(link, ['sid'])
+  if (security === 'reality' && publicKey) {
+    proxy['reality-opts'] = {
+      'public-key': publicKey,
+      ...(shortId ? { 'short-id': shortId } : {})
+    }
+  }
+
+  if (network) {
+    proxy.network = network
+    applyVlessTransportOptions(proxy, network, {
+      host,
+      path,
+      serviceName,
+      mode: getFirstSearchParam(link, ['mode']),
+      earlyData: getFirstSearchParam(link, ['ed']),
+      earlyDataHeaderName: getFirstSearchParam(link, ['eh'])
+    })
+  }
+
+  return proxy
+}
+
+function applyVlessTransportOptions(
+  proxy: Record<string, unknown>,
+  network: string,
+  options: {
+    host?: string
+    path?: string
+    serviceName?: string
+    mode?: string
+    earlyData?: string
+    earlyDataHeaderName?: string
+  }
+): void {
+  const normalizedPath = options.path || '/'
+
+  if (network === 'ws') {
+    proxy['ws-opts'] = {
+      path: normalizedPath,
+      ...(options.host ? { headers: { Host: options.host } } : {}),
+      ...(parseNumberParam(options.earlyData) !== undefined
+        ? { 'max-early-data': parseNumberParam(options.earlyData) }
+        : {}),
+      ...(options.earlyDataHeaderName
+        ? { 'early-data-header-name': options.earlyDataHeaderName }
+        : {})
+    }
+    return
+  }
+
+  if (network === 'http-upgrade') {
+    proxy.network = 'ws'
+    proxy['ws-opts'] = {
+      path: normalizedPath,
+      ...(options.host ? { headers: { Host: options.host } } : {}),
+      'v2ray-http-upgrade': true,
+      ...(options.mode === 'fast-open' ? { 'v2ray-http-upgrade-fast-open': true } : {})
+    }
+    return
+  }
+
+  if (network === 'http') {
+    proxy['http-opts'] = {
+      method: 'GET',
+      path: [normalizedPath],
+      ...(options.host ? { headers: { Host: options.host.split(',').map((item) => item.trim()) } } : {})
+    }
+    return
+  }
+
+  if (network === 'h2') {
+    proxy['h2-opts'] = {
+      ...(options.host ? { host: options.host.split(',').map((item) => item.trim()) } : {}),
+      path: normalizedPath
+    }
+    return
+  }
+
+  if (network === 'grpc') {
+    const serviceName = options.serviceName || normalizedPath.replace(/^\//, '')
+    proxy['grpc-opts'] = {
+      ...(serviceName ? { 'grpc-service-name': serviceName } : {})
+    }
+  }
+}
+
+function getSearchParam(link: URL, key: string): string | undefined {
+  const value = link.searchParams.get(key)
+  return value ? value.trim() : undefined
+}
+
+function getFirstSearchParam(link: URL, keys: string[]): string | undefined {
+  for (const key of keys) {
+    const value = getSearchParam(link, key)
+    if (value) {
+      return value
+    }
+  }
+  return undefined
+}
+
+function normalizeVlessNetwork(type: string | undefined): string | undefined {
+  if (!type) return 'tcp'
+  switch (type.toLowerCase()) {
+    case 'tcp':
+    case 'ws':
+    case 'http':
+    case 'h2':
+    case 'grpc':
+      return type.toLowerCase()
+    case 'httpupgrade':
+      return 'http-upgrade'
+    default:
+      return undefined
+  }
+}
+
+function normalizeVlessEncryption(value: string | undefined): string {
+  if (!value || value.toLowerCase() === 'none') {
+    return ''
+  }
+  return value
+}
+
+function parseBooleanParam(value: string | undefined): boolean | undefined {
+  if (!value) return undefined
+  const normalized = value.toLowerCase()
+  if (normalized === '1' || normalized === 'true') return true
+  if (normalized === '0' || normalized === 'false') return false
+  return undefined
+}
+
+function parseNumberParam(value: string | undefined): number | undefined {
+  if (!value) return undefined
+  const parsed = parseInt(value, 10)
+  return Number.isNaN(parsed) ? undefined : parsed
+}
+
+function makeUniqueProxyName(name: string, usedNames: Set<string>): string {
+  const baseName = name.trim() || 'VLESS'
+  let candidate = baseName
+  let counter = 2
+  while (usedNames.has(candidate)) {
+    candidate = `${baseName} ${counter}`
+    counter += 1
+  }
+  usedNames.add(candidate)
+  return candidate
 }
 
 function isAbsolutePath(path: string): boolean {
