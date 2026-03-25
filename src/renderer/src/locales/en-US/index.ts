@@ -502,11 +502,11 @@ export default {
       title: 'VPN Server Failover',
       disconnectOnUnavailable: 'Disconnect if VPN server is unavailable',
       disconnectOnUnavailableHelp:
-        'If enabled, the app will disable VPN and let traffic go directly when the active VPN server stops responding. Enabling this clears the failover list below.',
+        'If enabled, the app will disable VPN and let traffic go directly when the active VPN server stops responding. The failover order below is preserved, but temporarily inactive.',
       failoverOrder: 'Failover order',
       failoverOrderHelp:
-        'Set the ordered list of fallback targets. You can mix whole profiles and specific proxy nodes from proxy groups. Adding targets disables automatic direct disconnect because these behaviors are mutually exclusive.',
-      selectTarget: 'Select a failover target',
+        'Pick a target from the list to add it to the failover order immediately. You can mix whole profiles and specific proxy nodes from proxy groups, then reorder them by dragging. While automatic direct disconnect is enabled, this list is preserved but inactive.',
+      selectTarget: 'Click to add a failover target',
       profiles: 'Profiles',
       groupProxies: 'Proxy group nodes',
       empty: 'No fallback targets configured.',

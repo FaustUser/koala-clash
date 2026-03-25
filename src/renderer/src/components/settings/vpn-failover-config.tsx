@@ -28,7 +28,7 @@ import {
 } from '@dnd-kit/core'
 import { SortableContext, useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { GripVertical, MessageCircleQuestionMark, Plus, Trash2 } from 'lucide-react'
+import { GripVertical, MessageCircleQuestionMark, Trash2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import useSWR from 'swr'
 
@@ -164,7 +164,10 @@ const VpnFailoverConfig: React.FC = () => {
     [targetOptionMap, t, vpnServerFailoverTargets]
   )
 
-  const availableToAdd = selectedOptionKey && !targetKeys.has(selectedOptionKey)
+  const selectableTargetOptions = useMemo(
+    () => targetOptions.filter((option) => !targetKeys.has(option.key)),
+    [targetKeys, targetOptions]
+  )
 
   const updateTargets = async (targets: VpnServerFailoverTarget[]): Promise<void> => {
     await patchAppConfig({ vpnServerFailoverTargets: targets })
@@ -184,10 +187,9 @@ const VpnFailoverConfig: React.FC = () => {
     await updateTargets(nextTargets)
   }
 
-  const addTarget = async (): Promise<void> => {
-    if (!selectedOptionKey) return
-    const option = targetOptionMap.get(selectedOptionKey)
-    if (!option || targetKeys.has(selectedOptionKey)) return
+  const addTarget = async (optionKey: string): Promise<void> => {
+    const option = targetOptionMap.get(optionKey)
+    if (!option || targetKeys.has(optionKey)) return
 
     await patchAppConfig({
       disconnectOnVpnServerUnavailable: false,
@@ -257,14 +259,21 @@ const VpnFailoverConfig: React.FC = () => {
             disconnectOnVpnServerUnavailable && 'pointer-events-none opacity-60'
           )}
         >
-          <Select value={selectedOptionKey} onValueChange={setSelectedOptionKey}>
+          <Select
+            disabled={disconnectOnVpnServerUnavailable || selectableTargetOptions.length === 0}
+            value={selectedOptionKey}
+            onValueChange={(value) => {
+              setSelectedOptionKey(undefined)
+              void addTarget(value)
+            }}
+          >
             <SelectTrigger size="sm" className="w-56">
               <SelectValue placeholder={t('settings.vpnFailover.selectTarget')} />
             </SelectTrigger>
             <SelectContent>
               <SelectGroup>
                 <SelectLabel>{t('settings.vpnFailover.profiles')}</SelectLabel>
-                {targetOptions
+                {selectableTargetOptions
                   .filter((option) => option.group === 'profiles')
                   .map((option) => (
                     <SelectItem key={option.key} value={option.key}>
@@ -275,7 +284,7 @@ const VpnFailoverConfig: React.FC = () => {
               <SelectSeparator />
               <SelectGroup>
                 <SelectLabel>{t('settings.vpnFailover.groupProxies')}</SelectLabel>
-                {targetOptions
+                {selectableTargetOptions
                   .filter((option) => option.group === 'groupProxies')
                   .map((option) => (
                     <SelectItem key={option.key} value={option.key}>
@@ -285,10 +294,6 @@ const VpnFailoverConfig: React.FC = () => {
               </SelectGroup>
             </SelectContent>
           </Select>
-          <Button size="sm" onClick={addTarget} disabled={!availableToAdd || disconnectOnVpnServerUnavailable}>
-            <Plus className="size-4" />
-            {t('common.add')}
-          </Button>
         </div>
       </SettingItem>
       <div className="mt-3 space-y-2">
