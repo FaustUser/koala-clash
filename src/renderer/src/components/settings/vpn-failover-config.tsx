@@ -7,6 +7,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectLabel,
   SelectSeparator,
@@ -211,23 +212,27 @@ const VpnFailoverConfig: React.FC = () => {
               <SelectValue placeholder={t('settings.vpnFailover.selectTarget')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectLabel>{t('settings.vpnFailover.profiles')}</SelectLabel>
-              {targetOptions
-                .filter((option) => option.group === 'profiles')
-                .map((option) => (
-                  <SelectItem key={option.key} value={option.key}>
-                    {option.label}
-                  </SelectItem>
-                ))}
+              <SelectGroup>
+                <SelectLabel>{t('settings.vpnFailover.profiles')}</SelectLabel>
+                {targetOptions
+                  .filter((option) => option.group === 'profiles')
+                  .map((option) => (
+                    <SelectItem key={option.key} value={option.key}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+              </SelectGroup>
               <SelectSeparator />
-              <SelectLabel>{t('settings.vpnFailover.groupProxies')}</SelectLabel>
-              {targetOptions
-                .filter((option) => option.group === 'groupProxies')
-                .map((option) => (
-                  <SelectItem key={option.key} value={option.key}>
-                    {option.label}
-                  </SelectItem>
-                ))}
+              <SelectGroup>
+                <SelectLabel>{t('settings.vpnFailover.groupProxies')}</SelectLabel>
+                {targetOptions
+                  .filter((option) => option.group === 'groupProxies')
+                  .map((option) => (
+                    <SelectItem key={option.key} value={option.key}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+              </SelectGroup>
             </SelectContent>
           </Select>
           <Button size="sm" onClick={addTarget} disabled={!availableToAdd}>
