@@ -289,7 +289,7 @@ const VpnFailoverConfig: React.FC = () => {
             <SelectTrigger size="sm" className="w-56">
               <SelectValue placeholder={t('settings.vpnFailover.selectTarget')} />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent position="popper">
               <SelectGroup>
                 <SelectLabel>{t('settings.vpnFailover.profiles')}</SelectLabel>
                 {selectableTargetOptions
