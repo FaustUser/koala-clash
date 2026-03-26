@@ -45,6 +45,7 @@ type FindProcessMode = 'off' | 'strict' | 'always'
 type DnsMode = 'normal' | 'fake-ip' | 'redir-host'
 type FilterMode = 'blacklist' | 'whitelist'
 type NetworkInterfaceInfo = os.NetworkInterfaceInfo
+type EditableProxyGroupType = 'Selector' | 'Fallback' | 'URLTest'
 type Fingerprints =
   | ''
   | 'random'
@@ -62,3 +63,33 @@ type Fingerprints =
   | 'edge'
   | '360'
   | 'qq'
+
+interface EditableProxyGroupConfig {
+  name: string
+  type: EditableProxyGroupType
+  proxies: string[]
+  candidates: string[]
+  usesProviders: boolean
+  providerOnly: boolean
+  providers: string[]
+  url?: string
+  interval?: number
+  timeout?: number
+  lazy?: boolean
+  maxFailedTimes?: number
+  tolerance?: number
+  expectedStatus?: string
+}
+
+interface EditableProxyGroupPatch {
+  name: string
+  type: EditableProxyGroupType
+  proxies: string[]
+  url?: string
+  interval?: number
+  timeout?: number
+  lazy?: boolean
+  maxFailedTimes?: number
+  tolerance?: number
+  expectedStatus?: string
+}

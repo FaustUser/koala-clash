@@ -877,7 +877,74 @@ export default {
     delayTestTimeoutPlaceholder: 'Default: 5000',
     delayTest: 'Test',
     timeout: 'Timeout',
-    unpin: 'Unpin'
+    unpin: 'Unpin',
+    groupEditorOpen: 'Edit group',
+    groupEditorTitle: 'Edit {{name}}',
+    groupEditorNotFound: 'Proxy group configuration not found',
+    groupEditorType: 'Group type',
+    groupEditorTypeHint:
+      'This configures the Mihomo group behavior itself. The current proxy for Selector is still chosen on the Proxies page.',
+    groupEditorSaveHint: 'Changes take effect after you save this group.',
+    groupEditorHealthSection: 'Health check behavior',
+    groupEditorHealthSectionHint:
+      'These settings control how Mihomo checks proxies before switching or choosing one automatically.',
+    groupEditorSecondsUnit: '(seconds)',
+    groupEditorMillisecondsUnit: '(ms)',
+    groupEditorOrder: 'Proxy order',
+    groupEditorProxyListTitleSelector: 'Available proxies in this group',
+    groupEditorProxyListTitleFallback: 'Failover order',
+    groupEditorProxyListTitleUrlTest: 'Proxies for auto testing',
+    groupEditorProxyListHintSelector:
+      'Selector mode does not switch automatically. The list below only defines which proxies can be chosen manually in this group.',
+    groupEditorProxyListHintFallback:
+      'Mihomo checks proxies from top to bottom and uses the first available one.',
+    groupEditorProxyListHintUrlTest:
+      'Mihomo regularly tests these proxies and chooses the best available result.',
+    groupEditorAddNode: 'Add proxy or DIRECT',
+    groupEditorEmpty: 'No proxies configured for this group.',
+    groupEditorEmptySelector: 'No manually selectable proxies have been added to this group yet.',
+    groupEditorEmptyFallback: 'Add proxies that Mihomo can use for failover.',
+    groupEditorEmptyUrlTest: 'Add proxies that Mihomo can test and compare automatically.',
+    groupEditorRequireProxy: 'Add at least one proxy before saving',
+    groupEditorTestUrl: 'Health check URL',
+    groupEditorTestUrlPlaceholder: 'Example: https://www.gstatic.com/generate_204',
+    groupEditorTestUrlHint:
+      'If left empty, Mihomo will use the group default URL from the configuration.',
+    groupEditorInterval: 'Check interval',
+    groupEditorIntervalPlaceholder: 'Example: 300',
+    groupEditorIntervalHint: 'How often Mihomo should re-check proxy availability.',
+    groupEditorTimeout: 'Timeout',
+    groupEditorTimeoutPlaceholder: 'Optional',
+    groupEditorTimeoutHint: 'How long to wait for a health check response from a proxy.',
+    groupEditorMaxFailedTimes: 'Max failed times',
+    groupEditorMaxFailedTimesPlaceholder: 'Optional',
+    groupEditorMaxFailedTimesHint:
+      'After this many failed checks in a row, Mihomo treats the proxy as unavailable.',
+    groupEditorLazy: 'Lazy checks',
+    groupEditorLazyHint:
+      'Do not pre-check proxies in advance. Start checking only when this group is actually used.',
+    groupEditorProviderWarning:
+      'This group also uses proxy providers ({{providers}}). Mihomo fallback order works with the proxies list below, so provider-only entries may still need manual profile editing.',
+    groupEditorProviderOnlyWarning:
+      'This group is built only from proxy providers ({{providers}}). Mihomo health checks and failover order here apply only to explicit proxies entries, so change this group in the profile YAML instead.',
+    groupEditorOpenYaml: 'Open YAML',
+    groupEditorTolerance: 'Tolerance',
+    groupEditorTolerancePlaceholder: 'Optional',
+    groupEditorToleranceHint:
+      'Only for URL Test. Small delay differences within this value are treated as equivalent.',
+    groupEditorExpectedStatus: 'Expected status',
+    groupEditorExpectedStatusPlaceholder: 'Optional, for example: 204',
+    groupEditorExpectedStatusHint:
+      'Optional HTTP status matcher for health checks, for example 204 or 2xx.',
+    groupTypeSelector: 'Selector',
+    groupTypeSelectorDescription:
+      'Manual mode. The active proxy for this group is chosen on the Proxies page. Here you can keep the group manual or switch it to Fallback / URL Test.',
+    groupTypeFallback: 'Fallback',
+    groupTypeFallbackDescription:
+      'Failover mode. Mihomo checks proxies in the order below and uses the first available one.',
+    groupTypeUrlTest: 'URL Test',
+    groupTypeUrlTestDescription:
+      'Auto-test mode. Mihomo regularly checks proxies and prefers the best available result instead of a fixed order.'
   },
 
   sysproxy: {
