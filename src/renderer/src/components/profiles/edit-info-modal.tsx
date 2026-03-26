@@ -36,7 +36,7 @@ interface Props {
 function isValidUrl(url: string): boolean {
   try {
     const u = new URL(url)
-    return u.protocol === 'http:' || u.protocol === 'https:'
+    return u.protocol === 'http:' || u.protocol === 'https:' || u.protocol === 'vless:'
   } catch {
     return false
   }
