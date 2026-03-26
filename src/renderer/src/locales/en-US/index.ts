@@ -882,7 +882,8 @@ export default {
     groupEditorTitle: 'Edit {{name}}',
     groupEditorNotFound: 'Proxy group configuration not found',
     groupEditorType: 'Group type',
-    groupEditorTypeHint: 'Choose how Mihomo should use and switch between the proxies in this group.',
+    groupEditorTypeHint:
+      'This configures the Mihomo group behavior itself. The current proxy for Selector is still chosen on the Proxies page.',
     groupEditorSaveHint: 'Changes take effect after you save this group.',
     groupEditorHealthSection: 'Health check behavior',
     groupEditorHealthSectionHint:
@@ -937,7 +938,7 @@ export default {
       'Optional HTTP status matcher for health checks, for example 204 or 2xx.',
     groupTypeSelector: 'Selector',
     groupTypeSelectorDescription:
-      'Manual mode. Mihomo will use the proxy you choose for this group and will not automatically switch to another one.',
+      'Manual mode. The active proxy for this group is chosen on the Proxies page. Here you can keep the group manual or switch it to Fallback / URL Test.',
     groupTypeFallback: 'Fallback',
     groupTypeFallbackDescription:
       'Failover mode. Mihomo checks proxies in the order below and uses the first available one.',

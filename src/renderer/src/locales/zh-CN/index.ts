@@ -939,7 +939,8 @@ export default {
     groupEditorTitle: '编辑 {{name}}',
     groupEditorNotFound: '未找到代理组配置',
     groupEditorType: '分组类型',
-    groupEditorTypeHint: '选择 Mihomo 在这个分组里如何使用和切换代理。',
+    groupEditorTypeHint:
+      '这里配置的是 Mihomo 分组本身的行为。Selector 的当前节点仍然是在 Proxies 页面里选择的。',
     groupEditorSaveHint: '保存分组后更改才会生效。',
     groupEditorHealthSection: '健康检查行为',
     groupEditorHealthSectionHint: '这些参数控制 Mihomo 在自动切换或自动选择前如何检查代理。',
@@ -988,7 +989,7 @@ export default {
     groupEditorExpectedStatusHint: '可选的健康检查 HTTP 状态匹配，例如 204 或 2xx。',
     groupTypeSelector: 'Selector',
     groupTypeSelectorDescription:
-      '手动模式。Mihomo 会使用你为该分组选中的代理，不会自动切换到其他代理。',
+      '手动模式。这个分组的当前代理仍然是在 Proxies 页面里选择的。这里可以保持手动模式，或者切换成 Fallback / URL Test。',
     groupTypeFallback: 'Fallback',
     groupTypeFallbackDescription:
       '故障转移模式。Mihomo 会按下面的顺序检查代理，并使用第一个可用的代理。',

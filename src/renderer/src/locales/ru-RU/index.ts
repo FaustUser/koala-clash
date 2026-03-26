@@ -882,7 +882,8 @@ export default {
     groupEditorTitle: 'Редактировать {{name}}',
     groupEditorNotFound: 'Конфигурация группы прокси не найдена',
     groupEditorType: 'Режим группы',
-    groupEditorTypeHint: 'Выберите, как Mihomo должен использовать и переключать прокси внутри этой группы.',
+    groupEditorTypeHint:
+      'Здесь настраивается поведение самой группы Mihomo. Выбор текущего узла для Selector по-прежнему делается на странице Proxies.',
     groupEditorSaveHint: 'Изменения применятся после сохранения группы.',
     groupEditorHealthSection: 'Проверка доступности',
     groupEditorHealthSectionHint:
@@ -937,7 +938,7 @@ export default {
       'Необязательный HTTP-статус для проверки доступности, например 204 или 2xx.',
     groupTypeSelector: 'Selector',
     groupTypeSelectorDescription:
-      'Ручной режим. Mihomo будет использовать выбранный вами прокси и не станет автоматически переключаться на другой.',
+      'Ручной режим. Активный прокси для такой группы выбирается на странице Proxies. Здесь можно только оставить группу в ручном режиме или переключить её на Fallback / URL Test.',
     groupTypeFallback: 'Fallback',
     groupTypeFallbackDescription:
       'Режим резервирования. Mihomo проверяет прокси в порядке ниже и использует первый доступный.',

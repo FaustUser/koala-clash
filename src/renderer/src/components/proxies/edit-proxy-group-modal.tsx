@@ -143,6 +143,7 @@ const EditProxyGroupModal: React.FC<Props> = ({ groupName, onClose, onSaved }) =
 
   const isHealthCheckType = groupConfig?.type === 'Fallback' || groupConfig?.type === 'URLTest'
   const isUrlTestType = groupConfig?.type === 'URLTest'
+  const isSelectorType = groupConfig?.type === 'Selector'
   const isProviderOnly = groupConfig?.providerOnly ?? false
   const groupTypeDescriptionKey = useMemo(() => {
     if (!groupConfig) return 'proxies.groupTypeSelectorDescription'
@@ -528,67 +529,71 @@ const EditProxyGroupModal: React.FC<Props> = ({ groupName, onClose, onSaved }) =
               </div>
             )}
 
-            <div className="space-y-3">
-              <div className="space-y-2">
-                <div className="text-md leading-8">{t(proxyListTitleKey)}</div>
-                <p className="text-sm text-muted-foreground">{t(proxyListHintKey)}</p>
-                <div className="flex w-full items-center gap-2">
-                <Select
-                  value={selectedCandidate}
-                  disabled={isProviderOnly || saving}
-                  onValueChange={setSelectedCandidate}
-                >
-                  <SelectTrigger size="sm" className="min-w-0 flex-1">
-                    <SelectValue placeholder={t('proxies.groupEditorAddNode')} />
-                  </SelectTrigger>
-                  <SelectContent position="popper">
-                    {availableCandidates.map((candidate) => (
-                      <SelectItem key={candidate} value={candidate}>
-                        {candidate}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Button
-                  size="sm"
-                  disabled={!selectedCandidate || isProviderOnly || saving}
-                  className="shrink-0"
-                  onClick={addCandidate}
-                >
-                  <Plus className="size-4" />
-                  {t('common.add')}
-                </Button>
+            {!isSelectorType && (
+              <div className="space-y-3">
+                <div className="space-y-2">
+                  <div className="text-md leading-8">{t(proxyListTitleKey)}</div>
+                  <p className="text-sm text-muted-foreground">{t(proxyListHintKey)}</p>
+                  <div className="flex w-full items-center gap-2">
+                    <Select
+                      value={selectedCandidate}
+                      disabled={isProviderOnly || saving}
+                      onValueChange={setSelectedCandidate}
+                    >
+                      <SelectTrigger size="sm" className="min-w-0 flex-1">
+                        <SelectValue placeholder={t('proxies.groupEditorAddNode')} />
+                      </SelectTrigger>
+                      <SelectContent position="popper">
+                        {availableCandidates.map((candidate) => (
+                          <SelectItem key={candidate} value={candidate}>
+                            {candidate}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      size="sm"
+                      disabled={!selectedCandidate || isProviderOnly || saving}
+                      className="shrink-0"
+                      onClick={addCandidate}
+                    >
+                      <Plus className="size-4" />
+                      {t('common.add')}
+                    </Button>
+                  </div>
                 </div>
+                <Separator />
               </div>
-              <Separator />
-            </div>
+            )}
 
-            <div className="space-y-2 pb-2">
-              {groupConfig.proxies.length === 0 ? (
-                <div className="rounded-xl border border-dashed border-stroke px-3 py-4 text-sm text-muted-foreground">
-                  {t(emptyProxyListKey)}
-                </div>
-              ) : (
-                <DndContext
-                  sensors={sensors}
-                  collisionDetection={closestCenter}
-                  onDragEnd={onDragEnd}
-                >
-                  <SortableContext items={groupConfig.proxies}>
-                    <div className="space-y-2">
-                      {groupConfig.proxies.map((proxy) => (
-                        <SortableProxyItem
-                          key={proxy}
-                          id={proxy}
-                          disabled={saving || isProviderOnly}
-                          onRemove={() => removeProxy(proxy)}
-                        />
-                      ))}
-                    </div>
-                  </SortableContext>
-                </DndContext>
-              )}
-            </div>
+            {!isSelectorType && (
+              <div className="space-y-2 pb-2">
+                {groupConfig.proxies.length === 0 ? (
+                  <div className="rounded-xl border border-dashed border-stroke px-3 py-4 text-sm text-muted-foreground">
+                    {t(emptyProxyListKey)}
+                  </div>
+                ) : (
+                  <DndContext
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragEnd={onDragEnd}
+                  >
+                    <SortableContext items={groupConfig.proxies}>
+                      <div className="space-y-2">
+                        {groupConfig.proxies.map((proxy) => (
+                          <SortableProxyItem
+                            key={proxy}
+                            id={proxy}
+                            disabled={saving || isProviderOnly}
+                            onRemove={() => removeProxy(proxy)}
+                          />
+                        ))}
+                      </div>
+                    </SortableContext>
+                  </DndContext>
+                )}
+              </div>
+            )}
           </div>
         )}
       <DialogFooter>
