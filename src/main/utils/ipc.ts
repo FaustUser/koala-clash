@@ -115,6 +115,7 @@ import { getAppName } from './appName'
 import { getUserAgent } from './userAgent'
 import { setLanguage } from './i18n'
 import { updateApplicationMenu } from '../resolve/menu'
+import { getGeoDataEntries } from './geodata'
 
 function ipcErrorWrapper<T>( // eslint-disable-next-line @typescript-eslint/no-explicit-any
   fn: (...args: any[]) => Promise<T> // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -234,6 +235,7 @@ export function registerIpcMainHandlers(): void {
   ipcMain.handle('getRawProfileStr', ipcErrorWrapper(getRawProfileStr))
   ipcMain.handle('getCurrentProfileStr', ipcErrorWrapper(getCurrentProfileStr))
   ipcMain.handle('getRuntimeConfig', ipcErrorWrapper(getRuntimeConfig))
+  ipcMain.handle('getGeoDataEntries', (_e, kind) => ipcErrorWrapper(getGeoDataEntries)(kind))
   ipcMain.handle('downloadAndInstallUpdate', (_e, version) =>
     ipcErrorWrapper(downloadAndInstallUpdate)(version)
   )

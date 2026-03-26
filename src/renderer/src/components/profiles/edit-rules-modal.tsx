@@ -12,13 +12,6 @@ import { Badge } from '@renderer/components/ui/badge'
 import { Input } from '@renderer/components/ui/input'
 import { Label } from '@renderer/components/ui/label'
 import { Textarea } from '@renderer/components/ui/textarea'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@renderer/components/ui/select'
 import { Switch } from '@renderer/components/ui/switch'
 import { Separator } from '@renderer/components/ui/separator'
 import { Spinner } from '@renderer/components/ui/spinner'
@@ -63,6 +56,7 @@ import {
   ArrowUpToLine,
   CheckIcon,
   ChevronsUpDownIcon,
+  CircleHelp,
   GripVertical,
   Trash2,
   Undo2,
@@ -73,12 +67,13 @@ import React, {
   useState,
   useMemo,
   useCallback,
+  useDeferredValue,
   startTransition,
   memo,
   useRef
 } from 'react'
 import { createPortal, flushSync } from 'react-dom'
-import { getProfileStr, setRuleStr, getRuleStr } from '@renderer/utils/ipc'
+import { getGeoDataEntries, getProfileStr, setRuleStr, getRuleStr } from '@renderer/utils/ipc'
 import { useTranslation } from 'react-i18next'
 import yaml from 'js-yaml'
 import { platform } from '@renderer/utils/init'
@@ -98,6 +93,7 @@ interface RuleItem {
 }
 
 type RuleDraft = Omit<RuleItem, 'id'>
+type GeoDataKind = 'geoip' | 'geosite'
 
 const createRuleId = (): string => {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
@@ -543,6 +539,228 @@ const ruleDefinitionsMap = new Map<
 ])
 
 const ruleTypes = Array.from(ruleDefinitionsMap.keys())
+const geoDataRuleKindMap: Partial<Record<string, GeoDataKind>> = {
+  GEOIP: 'geoip',
+  'SRC-GEOIP': 'geoip',
+  GEOSITE: 'geosite'
+}
+
+const getGeoDataKindForRuleType = (ruleType: string): GeoDataKind | null =>
+  geoDataRuleKindMap[ruleType] ?? null
+
+const MAX_COMBOBOX_RESULTS = 200
+
+const normalizeSearchValue = (value: string): string => value.trim().toLowerCase()
+
+const filterComboboxValues = (values: string[], query: string): string[] => {
+  const normalizedQuery = normalizeSearchValue(query)
+  if (!normalizedQuery) {
+    return values.slice(0, MAX_COMBOBOX_RESULTS)
+  }
+
+  const startsWithMatches: string[] = []
+  const includesMatches: string[] = []
+
+  for (const value of values) {
+    const normalizedValue = value.toLowerCase()
+    if (normalizedValue.startsWith(normalizedQuery)) {
+      startsWithMatches.push(value)
+      continue
+    }
+    if (normalizedValue.includes(normalizedQuery)) {
+      includesMatches.push(value)
+    }
+  }
+
+  return [...startsWithMatches, ...includesMatches].slice(0, MAX_COMBOBOX_RESULTS)
+}
+
+interface RuleTypeComboboxProps {
+  value: string
+  onChange: (value: string) => void
+  className?: string
+  contentClassName?: string
+}
+
+interface RulePayloadComboboxProps {
+  value: string
+  values: string[]
+  disabled?: boolean
+  invalid?: boolean
+  loading?: boolean
+  className?: string
+  onChange: (value: string) => void
+}
+
+const RuleTypeCombobox: React.FC<RuleTypeComboboxProps> = ({
+  value,
+  onChange,
+  className,
+  contentClassName
+}) => {
+  const { t } = useTranslation()
+  const [open, setOpen] = useState(false)
+  const [query, setQuery] = useState('')
+  const deferredQuery = useDeferredValue(query)
+  const getRuleTypeDescription = (ruleType: string): string =>
+    t(`profile.editRules.ruleTypeDescriptions.${ruleType}`, {
+      defaultValue: t('profile.editRules.noRuleTypeDescription')
+    })
+  const filteredRuleTypes = useMemo(
+    () => filterComboboxValues(ruleTypes, deferredQuery),
+    [deferredQuery]
+  )
+
+  useEffect(() => {
+    if (!open) {
+      setQuery('')
+    }
+  }, [open])
+
+  return (
+    <Popover modal open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button variant="outline" className={cn('w-full justify-between font-normal', className)}>
+          <span className="truncate">{value}</span>
+          <ChevronsUpDownIcon className="ml-1 size-3 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent
+        className={cn('min-w-56 overflow-hidden p-0', contentClassName)}
+        style={{ width: 'var(--radix-popover-trigger-width)' }}
+        align="start"
+      >
+        <Command className="max-h-60" shouldFilter={false}>
+          <CommandInput placeholder={t('common.search')} value={query} onValueChange={setQuery} />
+          <CommandList className="max-h-48">
+            <CommandEmpty>{t('profile.editRules.noMatchingRules')}</CommandEmpty>
+            <CommandGroup>
+              {filteredRuleTypes.map((type) => (
+                <CommandItem
+                  key={type}
+                  value={type}
+                  onSelect={() => {
+                    onChange(type)
+                    setOpen(false)
+                  }}
+                >
+                  <span className="min-w-0 flex-1 truncate">{type}</span>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        className="text-muted-foreground hover:text-foreground inline-flex size-4 items-center justify-center"
+                        onClick={(event) => event.stopPropagation()}
+                        onPointerDown={(event) => event.stopPropagation()}
+                        aria-label={`About ${type}`}
+                      >
+                        <CircleHelp className="size-3.5" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="right" align="start" className="max-w-64 text-left">
+                      <div className="space-y-1">
+                        <div className="font-medium">{type}</div>
+                        <div>{getRuleTypeDescription(type)}</div>
+                        {ruleDefinitionsMap.get(type)?.example && (
+                          <div className="text-background/80">
+                            {t('profile.editRules.exampleLabel')}: {ruleDefinitionsMap.get(type)?.example}
+                          </div>
+                        )}
+                      </div>
+                    </TooltipContent>
+                  </Tooltip>
+                  <CheckIcon
+                    className={cn('ml-auto size-3', value === type ? 'opacity-100' : 'opacity-0')}
+                  />
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  )
+}
+
+const RulePayloadCombobox: React.FC<RulePayloadComboboxProps> = ({
+  value,
+  values,
+  disabled = false,
+  invalid = false,
+  loading = false,
+  className,
+  onChange
+}) => {
+  const { t } = useTranslation()
+  const [open, setOpen] = useState(false)
+  const [query, setQuery] = useState('')
+  const deferredQuery = useDeferredValue(query)
+  const filteredValues = useMemo(() => filterComboboxValues(values, deferredQuery), [values, deferredQuery])
+
+  useEffect(() => {
+    if (!open) {
+      setQuery('')
+    }
+  }, [open])
+
+  return (
+    <Popover modal open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          disabled={disabled}
+          className={cn(
+            'w-full justify-between font-normal',
+            className,
+            invalid && 'border-destructive focus-visible:border-destructive focus-visible:ring-destructive/50'
+          )}
+        >
+          <span className={cn('truncate', !value && 'text-muted-foreground')}>
+            {value || t('profile.editRules.payloadPlaceholder')}
+          </span>
+          <ChevronsUpDownIcon className="ml-1 size-3 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent
+        className="min-w-56 overflow-hidden p-0"
+        style={{ width: 'var(--radix-popover-trigger-width)' }}
+        align="start"
+      >
+        <Command className="max-h-60" shouldFilter={false}>
+          <CommandInput
+            placeholder={t('profile.editRules.searchPayloadPlaceholder')}
+            value={query}
+            onValueChange={setQuery}
+          />
+          <CommandList className="max-h-48">
+            <CommandEmpty>
+              {loading
+                ? t('profile.editRules.loadingPayloadOptions')
+                : t('profile.editRules.noMatchingPayloadOptions')}
+            </CommandEmpty>
+            <CommandGroup>
+              {filteredValues.map((item) => (
+                <CommandItem
+                  key={item}
+                  value={item}
+                  onSelect={() => {
+                    onChange(item)
+                    setOpen(false)
+                  }}
+                >
+                  <span className="min-w-0 flex-1 truncate">{item}</span>
+                  <CheckIcon
+                    className={cn('ml-auto size-3', value === item ? 'opacity-100' : 'opacity-0')}
+                  />
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  )
+}
 
 const isRuleSupportsNoResolve = (ruleType: string): boolean => {
   const rule = ruleDefinitionsMap.get(ruleType)
@@ -589,6 +807,8 @@ interface RuleListItemProps {
   onConfirmEditing: () => void
   onEditingRuleChange: (rule: RuleItem) => void
   proxyGroups: string[]
+  geoDataOptions: Record<GeoDataKind, string[]>
+  isGeoDataLoading: boolean
 }
 
 interface RuleDisplayContentProps {
@@ -695,7 +915,9 @@ const RuleListItemBase: React.FC<RuleListItemProps> = ({
   onCancelEditing,
   onConfirmEditing,
   onEditingRuleChange,
-  proxyGroups
+  proxyGroups,
+  geoDataOptions,
+  isGeoDataLoading
 }) => {
   const { t } = useTranslation()
   const [proxyPopoverOpen, setProxyPopoverOpen] = useState(false)
@@ -724,6 +946,13 @@ const RuleListItemBase: React.FC<RuleListItemProps> = ({
   // Inline editing mode
   if (isEditing && editingRule) {
     const isEditingLogicalRule = isLogicalRuleType(editingRule.type)
+    const editingGeoDataKind = getGeoDataKindForRuleType(editingRule.type)
+    const editingGeoDataValues = editingGeoDataKind ? geoDataOptions[editingGeoDataKind] : []
+    const isEditingGeoDataRule = editingGeoDataKind !== null
+    const isEditingPayloadInvalid =
+      editingRule.payload.trim() !== '' &&
+      editingRule.type !== 'MATCH' &&
+      ((isEditingGeoDataRule && !editingGeoDataValues.includes(editingRule.payload)) || false)
 
     const handleEditKeyDown = (e: React.KeyboardEvent): void => {
       if (e.key === 'Escape') {
@@ -749,28 +978,24 @@ const RuleListItemBase: React.FC<RuleListItemProps> = ({
     }
 
     const typeSelect = (
-      <Select
+      <RuleTypeCombobox
         value={editingRule.type}
-        onValueChange={(v) => {
+        onChange={(v) => {
           const noResolve = isRuleSupportsNoResolve(v)
           const src = isRuleSupportsSrc(v)
           let params = [...(editingRule.additionalParams || [])]
           if (!noResolve) params = params.filter((p) => p !== 'no-resolve')
           if (!src) params = params.filter((p) => p !== 'src')
-          onEditingRuleChange({ ...editingRule, type: v, additionalParams: params })
+          const geoDataKind = getGeoDataKindForRuleType(v)
+          const nextPayload =
+            geoDataKind && !geoDataOptions[geoDataKind].includes(editingRule.payload)
+              ? ''
+              : editingRule.payload
+          onEditingRuleChange({ ...editingRule, type: v, payload: nextPayload, additionalParams: params })
         }}
-      >
-        <SelectTrigger className="w-full h-8 text-xs">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent className="max-h-60" style={{ maxHeight: 240 }} position="popper">
-          {ruleTypes.map((type) => (
-            <SelectItem key={type} value={type}>
-              {type}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+        className="h-8 text-xs"
+        contentClassName="max-h-60"
+      />
     )
 
     const proxySelector = (
@@ -884,14 +1109,28 @@ const RuleListItemBase: React.FC<RuleListItemProps> = ({
             {/* Row 1: Type + Payload */}
             <div className="flex gap-2">
               <div className="w-45 shrink-0">{typeSelect}</div>
-              <Input
-                className="flex-1 h-8 text-xs"
-                value={editingRule.payload}
-                onChange={(e) => onEditingRuleChange({ ...editingRule, payload: e.target.value })}
-                placeholder={getRuleExample(editingRule.type) || ''}
-                disabled={editingRule.type === 'MATCH'}
-                autoFocus
-              />
+              <div className="flex-1">
+                {isEditingGeoDataRule ? (
+                  <RulePayloadCombobox
+                    value={editingRule.payload}
+                    values={editingGeoDataValues}
+                    loading={isGeoDataLoading}
+                    invalid={isEditingPayloadInvalid}
+                    className="h-8 text-xs"
+                    disabled={editingRule.type === 'MATCH'}
+                    onChange={(value) => onEditingRuleChange({ ...editingRule, payload: value })}
+                  />
+                ) : (
+                  <Input
+                    className="flex-1 h-8 text-xs"
+                    value={editingRule.payload}
+                    onChange={(e) => onEditingRuleChange({ ...editingRule, payload: e.target.value })}
+                    placeholder={getRuleExample(editingRule.type) || ''}
+                    disabled={editingRule.type === 'MATCH'}
+                    autoFocus
+                  />
+                )}
+              </div>
             </div>
 
             {/* Row 2: Proxy + params + actions */}
@@ -986,7 +1225,9 @@ const RuleListItem = memo(RuleListItemBase, (prevProps, nextProps) => {
     prevProps.isDragDisabled === nextProps.isDragDisabled &&
     prevProps.isEditing === nextProps.isEditing &&
     prevProps.editingRule === nextProps.editingRule &&
-    prevProps.proxyGroups === nextProps.proxyGroups
+    prevProps.proxyGroups === nextProps.proxyGroups &&
+    prevProps.geoDataOptions === nextProps.geoDataOptions &&
+    prevProps.isGeoDataLoading === nextProps.isGeoDataLoading
   )
 })
 
@@ -1017,7 +1258,40 @@ const EditRulesModal: React.FC<Props> = (props) => {
   const [activeDragSize, setActiveDragSize] = useState<{ width: number; height: number } | null>(
     null
   )
+  const [geoDataOptions, setGeoDataOptions] = useState<Record<GeoDataKind, string[]>>({
+    geoip: [],
+    geosite: []
+  })
+  const [isGeoDataLoading, setIsGeoDataLoading] = useState(true)
   const { t } = useTranslation()
+
+  useEffect(() => {
+    let disposed = false
+
+    void Promise.all([getGeoDataEntries('geoip'), getGeoDataEntries('geosite')])
+      .then(([geoip, geosite]) => {
+        if (disposed) return
+        setGeoDataOptions({
+          geoip,
+          geosite
+        })
+      })
+      .catch((error) => {
+        if (disposed) return
+        toast.error(
+          t('profile.editRules.geoDataLoadError') + ': ' + (error instanceof Error ? error.message : String(error))
+        )
+      })
+      .finally(() => {
+        if (!disposed) {
+          setIsGeoDataLoading(false)
+        }
+      })
+
+    return () => {
+      disposed = true
+    }
+  }, [t])
 
   const ruleIndexMap = useMemo(() => {
     const map = new Map<RuleItem, number>()
@@ -1287,6 +1561,11 @@ const EditRulesModal: React.FC<Props> = (props) => {
       return true
     }
 
+    const geoDataKind = getGeoDataKindForRuleType(ruleType)
+    if (geoDataKind) {
+      return geoDataOptions[geoDataKind].includes(payload)
+    }
+
     const rule = ruleDefinitionsMap.get(ruleType)
     const validator = rule?.validator
     if (!validator) {
@@ -1294,7 +1573,7 @@ const EditRulesModal: React.FC<Props> = (props) => {
     }
 
     return validator(payload)
-  }, [])
+  }, [geoDataOptions])
 
   const isPayloadValid = useMemo(() => {
     if (newRule.type === 'MATCH' || !newRule.payload) {
@@ -1302,6 +1581,8 @@ const EditRulesModal: React.FC<Props> = (props) => {
     }
     return validateRulePayload(newRule.type, newRule.payload)
   }, [newRule.type, newRule.payload, validateRulePayload])
+  const newRuleGeoDataKind = getGeoDataKindForRuleType(newRule.type)
+  const newRuleGeoDataValues = newRuleGeoDataKind ? geoDataOptions[newRuleGeoDataKind] : []
   const isNewRuleLogical = isLogicalRuleType(newRule.type)
   const newRuleLogicalSummary = useMemo(() => {
     if (!isNewRuleLogical) return []
@@ -1408,6 +1689,7 @@ const EditRulesModal: React.FC<Props> = (props) => {
   const handleRuleTypeChange = (selected: string): void => {
     const noResolveSupported = isRuleSupportsNoResolve(selected)
     const srcSupported = isRuleSupportsSrc(selected)
+    const geoDataKind = getGeoDataKindForRuleType(selected)
 
     let additionalParams = [...(newRule.additionalParams || [])]
     if (!noResolveSupported) {
@@ -1420,6 +1702,7 @@ const EditRulesModal: React.FC<Props> = (props) => {
     setNewRule({
       ...newRule,
       type: selected,
+      payload: geoDataKind && !geoDataOptions[geoDataKind].includes(newRule.payload) ? '' : newRule.payload,
       additionalParams: additionalParams.length > 0 ? additionalParams : []
     })
   }
@@ -1769,25 +2052,12 @@ const EditRulesModal: React.FC<Props> = (props) => {
               <div className="flex flex-col gap-3">
                 <div className="flex flex-col gap-1.5">
                   <Label>{t('profile.editRules.ruleType')}</Label>
-                  <Select
+                  <RuleTypeCombobox
                     value={newRule.type}
-                    onValueChange={(value) => handleRuleTypeChange(value)}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent
-                      className="max-h-60"
-                      style={{ maxHeight: 240 }}
-                      position="popper"
-                    >
-                      {ruleTypes.map((type) => (
-                        <SelectItem key={type} value={type}>
-                          {type}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    onChange={handleRuleTypeChange}
+                    className="h-9"
+                    contentClassName="max-h-60"
+                  />
                 </div>
 
                 <div className="flex flex-col gap-1.5">
@@ -1806,6 +2076,16 @@ const EditRulesModal: React.FC<Props> = (props) => {
                           ? 'border-destructive focus-visible:border-destructive focus-visible:ring-destructive/50'
                           : ''
                       )}
+                    />
+                  ) : newRuleGeoDataKind ? (
+                    <RulePayloadCombobox
+                      value={newRule.payload}
+                      values={newRuleGeoDataValues}
+                      loading={isGeoDataLoading}
+                      invalid={newRule.payload !== '' && !isPayloadValid}
+                      className="h-9"
+                      disabled={newRule.type === 'MATCH'}
+                      onChange={(value) => setNewRule({ ...newRule, payload: value })}
                     />
                   ) : (
                     <Input
@@ -2048,6 +2328,8 @@ const EditRulesModal: React.FC<Props> = (props) => {
                             onConfirmEditing={handleConfirmEditing}
                             onEditingRuleChange={handleEditingRuleChange}
                             proxyGroups={proxyGroups}
+                            geoDataOptions={geoDataOptions}
+                            isGeoDataLoading={isGeoDataLoading}
                           />
                         )
                       })
