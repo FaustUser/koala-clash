@@ -1,7 +1,16 @@
 import { electronApp, is, optimizer } from '@electron-toolkit/utils'
 import { registerIpcMainHandlers } from './utils/ipc'
 import windowStateKeeper from 'electron-window-state'
-import { app, BrowserWindow, dialog, ipcMain, Menu, Notification, powerMonitor, shell } from 'electron'
+import {
+  app,
+  BrowserWindow,
+  dialog,
+  ipcMain,
+  Menu,
+  Notification,
+  powerMonitor,
+  shell
+} from 'electron'
 import { addProfileItem, getAppConfig, patchControledMihomoConfig } from './config'
 import { quitWithoutCore, startCore, stopCore } from './core/manager'
 import { triggerSysProxy } from './sys/sysproxy'
@@ -20,10 +29,16 @@ import { showFloatingWindow } from './resolve/floatingWindow'
 import { getAppConfigSync } from './config/app'
 import { t } from './utils/i18n'
 
-
 let quitTimeout: NodeJS.Timeout | null = null
 export let mainWindow: BrowserWindow | null = null
 export let needsFirstRunAdmin = false
+
+function configureDevInstanceIsolation(): void {
+  if (!is.dev) return
+
+  const devUserDataPath = path.join(app.getPath('appData'), 'io.github.koala-clash-dev')
+  app.setPath('userData', devUserDataPath)
+}
 
 /**
  * Show error to the user via renderer toast notification.
@@ -41,6 +56,10 @@ let isCreatingWindow = false
 let windowShown = false
 let createWindowPromiseResolve: (() => void) | null = null
 let createWindowPromise: Promise<void> | null = null
+const DEV_RENDERER_LOAD_RETRY_MS = 350
+const DEV_RENDERER_LOAD_MAX_ATTEMPTS = 30
+
+configureDevInstanceIsolation()
 
 async function scheduleLightweightMode(): Promise<void> {
   const {
@@ -105,7 +124,7 @@ if (process.platform === 'win32' && is.dev) {
   patchControledMihomoConfig({ tun: { enable: false } })
 }
 
-const gotTheLock = app.requestSingleInstanceLock()
+const gotTheLock = is.dev ? true : app.requestSingleInstanceLock()
 
 if (!gotTheLock) {
   app.quit()
@@ -277,7 +296,7 @@ powerMonitor.on('shutdown', async () => {
 // Some APIs can only be used after this event occurs.
 app.whenReady().then(async () => {
   // Set app user model id for windows
-  electronApp.setAppUserModelId('koala-clash.app')
+  electronApp.setAppUserModelId(is.dev ? 'koala-clash.app.dev' : 'koala-clash.app')
   try {
     await initPromise
   } catch (e) {
@@ -446,6 +465,27 @@ function parseFilename(str: string): string {
   }
 }
 
+async function loadRendererWindow(window: BrowserWindow): Promise<void> {
+  const devRendererUrl = process.env['ELECTRON_RENDERER_URL']
+  if (is.dev && devRendererUrl) {
+    let lastError: unknown
+
+    for (let attempt = 1; attempt <= DEV_RENDERER_LOAD_MAX_ATTEMPTS; attempt++) {
+      try {
+        await window.loadURL(devRendererUrl)
+        return
+      } catch (error) {
+        lastError = error
+        await new Promise((resolve) => setTimeout(resolve, DEV_RENDERER_LOAD_RETRY_MS))
+      }
+    }
+
+    throw lastError
+  }
+
+  await window.loadFile(join(__dirname, '../renderer/index.html'))
+}
+
 export async function createWindow(appConfig?: AppConfig): Promise<void> {
   if (isCreatingWindow) {
     if (createWindowPromise) {
@@ -513,8 +553,11 @@ export async function createWindow(appConfig?: AppConfig): Promise<void> {
         await scheduleLightweightMode()
       }
     })
-    mainWindow.webContents.on('did-fail-load', () => {
-      mainWindow?.webContents.reload()
+    mainWindow.webContents.on('did-fail-load', (_event, errorCode, errorDescription, _url, isMainFrame) => {
+      if (!isMainFrame) return
+      if (errorCode === -3) return
+
+      showError(t('dialog.appInitFailed'), `${errorDescription} (${errorCode})`)
     })
 
     mainWindow.webContents.once('did-finish-load', () => {
@@ -561,13 +604,7 @@ export async function createWindow(appConfig?: AppConfig): Promise<void> {
       shell.openExternal(details.url)
       return { action: 'deny' }
     })
-    // HMR for renderer base on electron-vite cli.
-    // Load the remote URL for development or the local html file for production.
-    if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
-      mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL'])
-    } else {
-      mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
-    }
+    await loadRendererWindow(mainWindow)
   } finally {
     isCreatingWindow = false
     if (createWindowPromiseResolve) {

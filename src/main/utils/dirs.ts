@@ -9,6 +9,10 @@ import { t } from './i18n'
 
 export const homeDir = app.getPath('home')
 
+function runtimeNamespace(): string {
+  return is.dev ? 'koala-clash-dev' : 'koala-clash'
+}
+
 export function isPortable(): boolean {
   return existsSync(path.join(exeDir(), 'PORTABLE'))
 }
@@ -59,23 +63,23 @@ export function themesDir(): string {
 
 export function mihomoIpcPath(): string {
   if (process.platform === 'win32') {
-    return '\\\\.\\pipe\\Koala-Clash\\mihomo'
+    return `\\\\.\\pipe\\${runtimeNamespace()}\\mihomo`
   }
   const { core = 'mihomo' } = getAppConfigSync()
   if (core === 'system') {
-    return '/tmp/koala-clash-mihomo-external.sock'
+    return `/tmp/${runtimeNamespace()}-mihomo-external.sock`
   }
   if (!checkCorePermissionSync(core as 'mihomo' | 'mihomo-alpha')) {
-    return '/tmp/koala-clash-mihomo-api-noperm.sock'
+    return `/tmp/${runtimeNamespace()}-mihomo-api-noperm.sock`
   }
-  return '/tmp/koala-clash-mihomo-api.sock'
+  return `/tmp/${runtimeNamespace()}-mihomo-api.sock`
 }
 
 export function serviceIpcPath(): string {
   if (process.platform === 'win32') {
-    return '\\\\.\\pipe\\sparkle\\service'
+    return `\\\\.\\pipe\\sparkle\\${runtimeNamespace()}-service`
   }
-  return '/tmp/sparkle-service.sock'
+  return `/tmp/${runtimeNamespace()}-service.sock`
 }
 
 export function mihomoCoreDir(): string {
@@ -90,7 +94,9 @@ export function mihomoCorePath(core: string): string {
   if (core === 'system') {
     const sysPath = systemCorePath()
     if (!sysPath || !existsSync(sysPath)) {
-      const errorMsg = sysPath ? `${t('error.systemCorePathInvalid')}: ${sysPath}` : t('error.systemCorePathNotSet')
+      const errorMsg = sysPath
+        ? `${t('error.systemCorePathInvalid')}: ${sysPath}`
+        : t('error.systemCorePathNotSet')
       throw new Error(errorMsg)
     }
     return sysPath
