@@ -10,6 +10,7 @@ import {
   SelectTrigger,
   SelectValue
 } from '@renderer/components/ui/select'
+import { Input } from '@renderer/components/ui/input'
 import { Spinner } from '@renderer/components/ui/spinner'
 import { Switch } from '@renderer/components/ui/switch'
 import { Tabs, TabsList, TabsTrigger } from '@renderer/components/ui/tabs'
@@ -41,6 +42,15 @@ interface AppearanceConfigProps {
   showHiddenSettings: boolean
 }
 
+const MIN_FLOATING_WINDOW_WIDTH = 88
+const MAX_FLOATING_WINDOW_WIDTH = 400
+const MIN_FLOATING_WINDOW_HEIGHT = 32
+const MAX_FLOATING_WINDOW_HEIGHT = 160
+
+function clampDimension(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, Math.round(value)))
+}
+
 const AppearanceConfig: React.FC<AppearanceConfigProps> = (props) => {
   const { showHiddenSettings } = props
   const { t } = useTranslation()
@@ -55,17 +65,28 @@ const AppearanceConfig: React.FC<AppearanceConfigProps> = (props) => {
     disableTray = false,
     showFloatingWindow: showFloating = false,
     spinFloatingIcon = true,
+    floatingWindowSize = 'default',
+    floatingWindowUseCustomSize = false,
+    floatingWindowWidth = 120,
+    floatingWindowHeight = 42,
     useWindowFrame = false,
     customTheme = 'default.css',
     appTheme = 'system'
   } = appConfig || {}
   const [localShowFloating, setLocalShowFloating] = useState(showFloating)
+  const [customWidth, setCustomWidth] = useState(floatingWindowWidth.toString())
+  const [customHeight, setCustomHeight] = useState(floatingWindowHeight.toString())
   const [onTop, setOnTop] = useState(false)
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
     setLocalShowFloating(showFloating)
   }, [showFloating])
+
+  useEffect(() => {
+    setCustomWidth(floatingWindowWidth.toString())
+    setCustomHeight(floatingWindowHeight.toString())
+  }, [floatingWindowHeight, floatingWindowWidth])
 
   useEffect(() => {
     resolveThemes().then((themes) => {
@@ -81,6 +102,24 @@ const AppearanceConfig: React.FC<AppearanceConfigProps> = (props) => {
       }
     }
   }, [])
+
+  const updateCustomDimension = async (
+    rawValue: string,
+    fallbackValue: number,
+    min: number,
+    max: number,
+    configKey: 'floatingWindowWidth' | 'floatingWindowHeight',
+    setValue: (value: string) => void
+  ): Promise<void> => {
+    const parsedValue = Number.parseInt(rawValue, 10)
+    const nextValue = Number.isFinite(parsedValue)
+      ? clampDimension(parsedValue, min, max)
+      : fallbackValue
+
+    setValue(nextValue.toString())
+    await patchAppConfig({ [configKey]: nextValue })
+    window.electron.ipcRenderer.send('updateFloatingWindow')
+  }
 
   return (
     <>
@@ -132,6 +171,111 @@ const AppearanceConfig: React.FC<AppearanceConfigProps> = (props) => {
             }}
           />
         </SettingItem>
+        {localShowFloating && (
+          <SettingItem title={t('settings.appearance.floatingWindowSize')} divider>
+            <Select
+              value={floatingWindowSize}
+              onValueChange={async (value) => {
+                await patchAppConfig({
+                  floatingWindowSize: value as NonNullable<AppConfig['floatingWindowSize']>
+                })
+                window.electron.ipcRenderer.send('updateFloatingWindow')
+              }}
+            >
+              <SelectTrigger size="sm" className="w-[150px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="small">
+                  {t('settings.appearance.floatingWindowSizeSmall')}
+                </SelectItem>
+                <SelectItem value="default">
+                  {t('settings.appearance.floatingWindowSizeDefault')}
+                </SelectItem>
+                <SelectItem value="large">
+                  {t('settings.appearance.floatingWindowSizeLarge')}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </SettingItem>
+        )}
+        {localShowFloating && (
+          <SettingItem title={t('settings.appearance.useCustomFloatingWindowSize')} divider>
+            <Switch
+              checked={floatingWindowUseCustomSize}
+              onCheckedChange={async (value) => {
+                await patchAppConfig({ floatingWindowUseCustomSize: value })
+                window.electron.ipcRenderer.send('updateFloatingWindow')
+              }}
+            />
+          </SettingItem>
+        )}
+        {localShowFloating && floatingWindowUseCustomSize && (
+          <SettingItem
+            title={t('settings.appearance.customFloatingWindowSize')}
+            actions={
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button size="icon-sm" variant="ghost">
+                    <MessageCircleQuestionMark className="text-lg" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent className="max-w-72 leading-relaxed">
+                  {t('settings.appearance.customFloatingWindowSizeHelp', {
+                    minWidth: MIN_FLOATING_WINDOW_WIDTH,
+                    minHeight: MIN_FLOATING_WINDOW_HEIGHT
+                  })}
+                </TooltipContent>
+              </Tooltip>
+            }
+            divider
+          >
+            <div className="flex items-center gap-2">
+              <Input
+                type="number"
+                min={MIN_FLOATING_WINDOW_WIDTH.toString()}
+                max={MAX_FLOATING_WINDOW_WIDTH.toString()}
+                className="w-[110px] h-8"
+                value={customWidth}
+                placeholder={t('settings.appearance.width')}
+                onChange={(event) => {
+                  setCustomWidth(event.target.value)
+                }}
+                onBlur={async () => {
+                  await updateCustomDimension(
+                    customWidth,
+                    floatingWindowWidth,
+                    MIN_FLOATING_WINDOW_WIDTH,
+                    MAX_FLOATING_WINDOW_WIDTH,
+                    'floatingWindowWidth',
+                    setCustomWidth
+                  )
+                }}
+              />
+              <Input
+                type="number"
+                min={MIN_FLOATING_WINDOW_HEIGHT.toString()}
+                max={MAX_FLOATING_WINDOW_HEIGHT.toString()}
+                className="w-[110px] h-8"
+                value={customHeight}
+                placeholder={t('settings.appearance.height')}
+                onChange={(event) => {
+                  setCustomHeight(event.target.value)
+                }}
+                onBlur={async () => {
+                  await updateCustomDimension(
+                    customHeight,
+                    floatingWindowHeight,
+                    MIN_FLOATING_WINDOW_HEIGHT,
+                    MAX_FLOATING_WINDOW_HEIGHT,
+                    'floatingWindowHeight',
+                    setCustomHeight
+                  )
+                }}
+              />
+            </div>
+          </SettingItem>
+        )}
         {localShowFloating && (
           <SettingItem title={t('settings.appearance.rotateFloatingIcon')} divider>
             <Switch

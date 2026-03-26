@@ -9,6 +9,49 @@ import { buildContextMenu } from './tray'
 export let floatingWindow: BrowserWindow | null = null
 let triggerTimeoutRef: NodeJS.Timeout | null = null
 
+const floatingWindowSizes: Record<
+  NonNullable<AppConfig['floatingWindowSize']>,
+  { width: number; height: number }
+> = {
+  small: { width: 104, height: 36 },
+  default: { width: 120, height: 42 },
+  large: { width: 144, height: 50 }
+}
+
+function clampFloatingDimension(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, Math.round(value)))
+}
+
+async function getFloatingWindowBounds(): Promise<{ width: number; height: number }> {
+  const {
+    floatingWindowSize = 'default',
+    floatingWindowUseCustomSize = false,
+    floatingWindowWidth,
+    floatingWindowHeight
+  } = await getAppConfig()
+  if (
+    floatingWindowUseCustomSize &&
+    Number.isFinite(floatingWindowWidth) &&
+    Number.isFinite(floatingWindowHeight)
+  ) {
+    return {
+      width: clampFloatingDimension(floatingWindowWidth!, 88, 400),
+      height: clampFloatingDimension(floatingWindowHeight!, 32, 160)
+    }
+  }
+  return floatingWindowSizes[floatingWindowSize] ?? floatingWindowSizes.default
+}
+
+async function resizeFloatingWindow(): Promise<void> {
+  if (!floatingWindow || floatingWindow.isDestroyed()) return
+  const { width, height } = await getFloatingWindowBounds()
+  floatingWindow.setBounds({
+    ...floatingWindow.getBounds(),
+    width,
+    height
+  })
+}
+
 async function preallocateGpuResources(): Promise<void> {
   const preallocWin = new BrowserWindow({
     width: 1,
@@ -37,9 +80,10 @@ async function createFloatingWindow(): Promise<void> {
     file: 'floating-window-state.json'
   })
   const { customTheme = 'default.css' } = await getAppConfig()
+  const { width, height } = await getFloatingWindowBounds()
   floatingWindow = new BrowserWindow({
-    width: 120,
-    height: 42,
+    width,
+    height,
     x: floatingWindowState.x,
     y: floatingWindowState.y,
     show: false,
@@ -69,6 +113,7 @@ async function createFloatingWindow(): Promise<void> {
   })
   ipcMain.on('updateFloatingWindow', () => {
     if (floatingWindow) {
+      void resizeFloatingWindow()
       floatingWindow?.webContents.send('controledMihomoConfigUpdated')
       floatingWindow?.webContents.send('appConfigUpdated')
     }
