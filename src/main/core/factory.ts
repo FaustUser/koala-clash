@@ -5,6 +5,7 @@ import {
   getProfileStr,
   getAppConfig
 } from '../config'
+import { getMergedProfileProxies } from '../config/profileMerge'
 import {
   mihomoProfileWorkDir,
   mihomoWorkConfigPath,
@@ -135,6 +136,8 @@ export async function generateProfile(): Promise<void> {
       currentProfile.rules = rules as unknown as []
     }
   }
+
+  currentProfile.proxies = (await getMergedProfileProxies(current)) as unknown as []
 
   const profile = deepMerge(JSON.parse(JSON.stringify(currentProfile)), configToMerge)
 

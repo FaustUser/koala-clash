@@ -1,4 +1,5 @@
 import { getProfile, getProfileConfig, setProfileStr } from './profile'
+import { getMergedProfileProxies } from './profileMerge'
 import { stringifyYaml } from '../utils/yaml'
 
 const BUILTIN_PROXY_CANDIDATES = ['DIRECT']
@@ -15,10 +16,6 @@ const EDITABLE_TO_RAW_GROUP_TYPE: Record<EditableProxyGroupType, string> = {
   URLTest: 'url-test'
 }
 
-interface MihomoNamedProxy {
-  name?: string
-}
-
 interface MihomoProxyGroupRecord {
   name?: string
   type?: string
@@ -32,10 +29,6 @@ interface MihomoProxyGroupRecord {
   tolerance?: number
   'expected-status'?: string
   [key: string]: unknown
-}
-
-function isNamedProxy(proxy: unknown): proxy is MihomoNamedProxy {
-  return !!proxy && typeof proxy === 'object' && 'name' in proxy && typeof proxy.name === 'string'
 }
 
 function isProxyGroupRecord(group: unknown): group is MihomoProxyGroupRecord {
@@ -71,13 +64,10 @@ function toOptionalPositiveNumber(value: number | undefined): number | undefined
 export async function getEditableCurrentProfileProxyGroups(): Promise<EditableProxyGroupConfig[]> {
   const { current } = await getProfileConfig()
   const profile = await getProfile(current)
-  const rawProxies = Array.isArray(profile.proxies) ? (profile.proxies as unknown[]) : []
   const rawProxyGroups = Array.isArray(profile['proxy-groups'])
     ? (profile['proxy-groups'] as unknown[])
     : []
-  const proxyNames = getUniqueStrings(
-    rawProxies.filter(isNamedProxy).map((proxy) => proxy.name!)
-  )
+  const proxyNames = getUniqueStrings((await getMergedProfileProxies(current)).map((proxy) => proxy.name!))
 
   const proxyGroups = rawProxyGroups.filter(isProxyGroupRecord)
   const groupNames = getUniqueStrings(proxyGroups.map((group) => group.name!))
