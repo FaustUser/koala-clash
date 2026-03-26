@@ -167,6 +167,18 @@ export async function getProfileStr(id: string): Promise<string> {
   return ipcErrorWrapper(await window.electron.ipcRenderer.invoke('getProfileStr', id))
 }
 
+export async function getEditableCurrentProfileProxyGroups(): Promise<EditableProxyGroupConfig[]> {
+  return ipcErrorWrapper(
+    await window.electron.ipcRenderer.invoke('getEditableCurrentProfileProxyGroups')
+  )
+}
+
+export async function updateCurrentProfileProxyGroup(
+  patch: EditableProxyGroupPatch
+): Promise<void> {
+  return ipcErrorWrapper(await window.electron.ipcRenderer.invoke('updateCurrentProfileProxyGroup', patch))
+}
+
 export async function getFileStr(id: string): Promise<string> {
   return ipcErrorWrapper(await window.electron.ipcRenderer.invoke('getFileStr', id))
 }

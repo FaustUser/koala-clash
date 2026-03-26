@@ -934,7 +934,67 @@ export default {
     delayTestTimeoutPlaceholder: '默认 5000',
     delayTest: '测试',
     timeout: '超时',
-    unpin: '取消固定'
+    unpin: '取消固定',
+    groupEditorOpen: '编辑分组',
+    groupEditorTitle: '编辑 {{name}}',
+    groupEditorNotFound: '未找到代理组配置',
+    groupEditorType: '分组类型',
+    groupEditorTypeHint: '选择 Mihomo 在这个分组里如何使用和切换代理。',
+    groupEditorSaveHint: '保存分组后更改才会生效。',
+    groupEditorHealthSection: '健康检查行为',
+    groupEditorHealthSectionHint: '这些参数控制 Mihomo 在自动切换或自动选择前如何检查代理。',
+    groupEditorSecondsUnit: '（秒）',
+    groupEditorMillisecondsUnit: '（毫秒）',
+    groupEditorOrder: '代理顺序',
+    groupEditorProxyListTitleSelector: '分组中的可选代理',
+    groupEditorProxyListTitleFallback: '故障转移顺序',
+    groupEditorProxyListTitleUrlTest: '自动测试代理',
+    groupEditorProxyListHintSelector:
+      'Selector 模式不会自动切换。下面的列表只决定这个分组里哪些代理可以手动选择。',
+    groupEditorProxyListHintFallback:
+      'Mihomo 会按从上到下的顺序检查代理，并使用第一个可用的代理。',
+    groupEditorProxyListHintUrlTest:
+      'Mihomo 会定期测试这些代理，并选择当前表现最好的可用结果。',
+    groupEditorAddNode: '添加代理或 DIRECT',
+    groupEditorEmpty: '该分组尚未配置代理。',
+    groupEditorEmptySelector: '这个分组里还没有可供手动选择的代理。',
+    groupEditorEmptyFallback: '添加可供 Mihomo 故障转移使用的代理。',
+    groupEditorEmptyUrlTest: '添加可供 Mihomo 自动测试和比较的代理。',
+    groupEditorRequireProxy: '保存前至少添加一个代理',
+    groupEditorTestUrl: '健康检查 URL',
+    groupEditorTestUrlPlaceholder: '例如：https://www.gstatic.com/generate_204',
+    groupEditorTestUrlHint: '如果留空，Mihomo 将使用该分组配置里的默认 URL。',
+    groupEditorInterval: '检查间隔',
+    groupEditorIntervalPlaceholder: '例如：300',
+    groupEditorIntervalHint: 'Mihomo 重新检查代理可用性的频率。',
+    groupEditorTimeout: '超时时间',
+    groupEditorTimeoutPlaceholder: '可选',
+    groupEditorTimeoutHint: '健康检查时等待代理响应的时间。',
+    groupEditorMaxFailedTimes: '最大失败次数',
+    groupEditorMaxFailedTimesPlaceholder: '可选',
+    groupEditorMaxFailedTimesHint: '连续失败达到这个次数后，Mihomo 会把代理视为不可用。',
+    groupEditorLazy: '惰性检查',
+    groupEditorLazyHint: '不提前检查代理，只有在这个分组实际被使用时才开始检查。',
+    groupEditorProviderWarning:
+      '该分组同时使用了 proxy providers（{{providers}}）。mihomo 的 fallback 顺序只会按下面的 proxies 列表工作，因此纯 provider 条目可能仍需手动编辑配置文件。',
+    groupEditorProviderOnlyWarning:
+      '该分组完全由 proxy providers（{{providers}}）构成。Mihomo 这里的健康检查和故障转移顺序只作用于显式的 proxies 列表，因此这类分组更适合直接编辑配置 YAML。',
+    groupEditorOpenYaml: '打开 YAML',
+    groupEditorTolerance: '容差',
+    groupEditorTolerancePlaceholder: '可选',
+    groupEditorToleranceHint: '仅用于 URL Test。延迟差异在这个值以内时会被视为相近。',
+    groupEditorExpectedStatus: '期望状态码',
+    groupEditorExpectedStatusPlaceholder: '可选，例如：204',
+    groupEditorExpectedStatusHint: '可选的健康检查 HTTP 状态匹配，例如 204 或 2xx。',
+    groupTypeSelector: 'Selector',
+    groupTypeSelectorDescription:
+      '手动模式。Mihomo 会使用你为该分组选中的代理，不会自动切换到其他代理。',
+    groupTypeFallback: 'Fallback',
+    groupTypeFallbackDescription:
+      '故障转移模式。Mihomo 会按下面的顺序检查代理，并使用第一个可用的代理。',
+    groupTypeUrlTest: 'URL Test',
+    groupTypeUrlTestDescription:
+      '自动测试模式。Mihomo 会定期检查代理，并优先选择当前表现最好的可用代理，而不是固定顺序。'
   },
 
   sysproxy: {

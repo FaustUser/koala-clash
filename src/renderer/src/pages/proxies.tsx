@@ -16,6 +16,7 @@ import { useLocation } from 'react-router-dom'
 import { GroupedVirtuoso, GroupedVirtuosoHandle } from 'react-virtuoso'
 import ProxyItem from '@renderer/components/proxies/proxy-item'
 import ProxySettingModal from '@renderer/components/proxies/proxy-setting-modal'
+import EditProxyGroupModal from '@renderer/components/proxies/edit-proxy-group-modal'
 import { useGroups } from '@renderer/hooks/use-groups'
 import CollapseInput from '@renderer/components/base/collapse-input'
 import { includesIgnoreCase } from '@renderer/utils/includes'
@@ -28,6 +29,7 @@ import {
   ChevronsUpDown,
   Gauge,
   LocateFixed,
+  Pencil,
   SlidersHorizontal
 } from 'lucide-react'
 
@@ -61,6 +63,7 @@ const Proxies: React.FC = () => {
   const [delaying, setDelaying] = useState(Array(groups.length).fill(false))
   const [searchValue, setSearchValue] = useState(Array(groups.length).fill(''))
   const [isSettingModalOpen, setIsSettingModalOpen] = useState(false)
+  const [editingGroupName, setEditingGroupName] = useState<string>()
   const virtuosoRef = useRef<GroupedVirtuosoHandle>(null)
   const { groupCounts, allProxies } = useMemo(() => {
     const groupCounts: number[] = []
@@ -312,6 +315,16 @@ const Proxies: React.FC = () => {
                       value={searchValue[index]}
                       onValueChange={(v) => updateSearchValue(index, v)}
                     />
+                    {['Selector', 'Fallback', 'URLTest'].includes(group.type) && (
+                      <Button
+                        title={t('proxies.groupEditorOpen')}
+                        variant="ghost"
+                        size="icon-sm"
+                        onClick={() => setEditingGroupName(group.name)}
+                      >
+                        <Pencil className="text-base" />
+                      </Button>
+                    )}
                     <Button
                       title={t('sider.locateCurrentNode')}
                       variant="ghost"
@@ -444,6 +457,15 @@ const Proxies: React.FC = () => {
       }
     >
       {isSettingModalOpen && <ProxySettingModal onClose={() => setIsSettingModalOpen(false)} />}
+      {editingGroupName && (
+        <EditProxyGroupModal
+          groupName={editingGroupName}
+          onClose={() => setEditingGroupName(undefined)}
+          onSaved={() => {
+            mutate()
+          }}
+        />
+      )}
       {mode === 'direct' ? (
         <div className="h-full w-full flex justify-center items-center">
           <div className="flex flex-col items-center gap-3">

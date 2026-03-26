@@ -877,7 +877,73 @@ export default {
     delayTestTimeoutPlaceholder: 'По умолчанию: 5000',
     delayTest: 'Тест',
     timeout: 'Тайм-аут',
-    unpin: 'Открепить'
+    unpin: 'Открепить',
+    groupEditorOpen: 'Редактировать группу',
+    groupEditorTitle: 'Редактировать {{name}}',
+    groupEditorNotFound: 'Конфигурация группы прокси не найдена',
+    groupEditorType: 'Режим группы',
+    groupEditorTypeHint: 'Выберите, как Mihomo должен использовать и переключать прокси внутри этой группы.',
+    groupEditorSaveHint: 'Изменения применятся после сохранения группы.',
+    groupEditorHealthSection: 'Проверка доступности',
+    groupEditorHealthSectionHint:
+      'Эти параметры управляют тем, как Mihomo проверяет прокси перед автопереключением или автоматическим выбором.',
+    groupEditorSecondsUnit: '(секунды)',
+    groupEditorMillisecondsUnit: '(мс)',
+    groupEditorOrder: 'Порядок прокси',
+    groupEditorProxyListTitleSelector: 'Доступные прокси в группе',
+    groupEditorProxyListTitleFallback: 'Порядок переключения',
+    groupEditorProxyListTitleUrlTest: 'Прокси для автотеста',
+    groupEditorProxyListHintSelector:
+      'В режиме Selector автопереключения нет. Список ниже определяет, какие прокси можно выбрать вручную в этой группе.',
+    groupEditorProxyListHintFallback:
+      'Mihomo проверяет прокси сверху вниз и использует первый доступный.',
+    groupEditorProxyListHintUrlTest:
+      'Mihomo регулярно тестирует эти прокси и выбирает лучший доступный вариант.',
+    groupEditorAddNode: 'Добавить прокси или DIRECT',
+    groupEditorEmpty: 'В этой группе пока нет прокси.',
+    groupEditorEmptySelector: 'В этой группе пока нет доступных для ручного выбора прокси.',
+    groupEditorEmptyFallback: 'Добавьте прокси для резервного переключения.',
+    groupEditorEmptyUrlTest: 'Добавьте прокси, которые Mihomo сможет тестировать автоматически.',
+    groupEditorRequireProxy: 'Перед сохранением добавьте хотя бы один прокси',
+    groupEditorTestUrl: 'URL для проверки доступности',
+    groupEditorTestUrlPlaceholder: 'Например: https://www.gstatic.com/generate_204',
+    groupEditorTestUrlHint:
+      'Если оставить пустым, Mihomo использует URL по умолчанию из конфигурации группы.',
+    groupEditorInterval: 'Интервал проверки',
+    groupEditorIntervalPlaceholder: 'Например: 300',
+    groupEditorIntervalHint: 'Как часто Mihomo должен перепроверять доступность прокси.',
+    groupEditorTimeout: 'Тайм-аут',
+    groupEditorTimeoutPlaceholder: 'Необязательно',
+    groupEditorTimeoutHint: 'Сколько ждать ответа от прокси во время проверки.',
+    groupEditorMaxFailedTimes: 'Максимум неудачных проверок',
+    groupEditorMaxFailedTimesPlaceholder: 'Необязательно',
+    groupEditorMaxFailedTimesHint:
+      'После этого числа подряд неудачных проверок прокси считается недоступным.',
+    groupEditorLazy: 'Ленивые проверки',
+    groupEditorLazyHint:
+      'Не проверять прокси заранее, а начинать проверки только когда эта группа реально используется.',
+    groupEditorProviderWarning:
+      'Эта группа также использует proxy providers ({{providers}}). Порядок fallback в mihomo работает по списку proxies ниже, поэтому для provider-only записей может понадобиться ручное редактирование профиля.',
+    groupEditorProviderOnlyWarning:
+      'Эта группа построена только на proxy providers ({{providers}}). В Mihomo проверка доступности и порядок failover здесь применяются только к явному списку proxies, поэтому такую группу лучше менять через YAML профиля.',
+    groupEditorOpenYaml: 'Открыть YAML',
+    groupEditorTolerance: 'Допуск',
+    groupEditorTolerancePlaceholder: 'Необязательно',
+    groupEditorToleranceHint:
+      'Только для URL Test. Небольшие различия в задержке в пределах этого значения считаются одинаковыми.',
+    groupEditorExpectedStatus: 'Ожидаемый статус',
+    groupEditorExpectedStatusPlaceholder: 'Необязательно, например: 204',
+    groupEditorExpectedStatusHint:
+      'Необязательный HTTP-статус для проверки доступности, например 204 или 2xx.',
+    groupTypeSelector: 'Selector',
+    groupTypeSelectorDescription:
+      'Ручной режим. Mihomo будет использовать выбранный вами прокси и не станет автоматически переключаться на другой.',
+    groupTypeFallback: 'Fallback',
+    groupTypeFallbackDescription:
+      'Режим резервирования. Mihomo проверяет прокси в порядке ниже и использует первый доступный.',
+    groupTypeUrlTest: 'URL Test',
+    groupTypeUrlTestDescription:
+      'Режим автотеста. Mihomo регулярно проверяет прокси и выбирает лучший доступный вариант, а не фиксированный порядок.'
   },
 
   sysproxy: {
