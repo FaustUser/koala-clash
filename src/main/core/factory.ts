@@ -3,16 +3,13 @@ import {
   getProfileConfig,
   getProfile,
   getProfileStr,
-  getAppConfig
+  getAppConfig,
+  getRuleStr
 } from '../config'
 import { getMergedProfileProxies } from '../config/profileMerge'
-import {
-  mihomoProfileWorkDir,
-  mihomoWorkConfigPath,
-  mihomoWorkDir, rulePath
-} from '../utils/dirs'
+import { mihomoProfileWorkDir, mihomoWorkConfigPath, mihomoWorkDir } from '../utils/dirs'
 import { parseYaml, stringifyYaml } from '../utils/yaml'
-import { copyFile, mkdir, readFile, writeFile } from 'fs/promises'
+import { copyFile, mkdir, writeFile } from 'fs/promises'
 import { deepMerge } from '../utils/merge'
 import { existsSync } from 'fs'
 import path from 'path'
@@ -58,6 +55,166 @@ function getDefaultAppendInsertPosition(rules: string[]): number {
   return matchIndex === -1 ? rules.length : matchIndex
 }
 
+const VPN_RULE_TARGET = 'VPN'
+const LEGACY_VPN_RULE_TARGETS = new Set(['__VPN_ROUTE__', '__ACTIVE_VPN__'])
+
+function getRuleTarget(ruleStr: string): string | undefined {
+  const parts = ruleStr.split(',').map((part) => part.trim())
+  const firstPartIsNumber = !isNaN(Number(parts[0])) && parts[0] !== '' && parts.length >= 3
+  const ruleParts = firstPartIsNumber ? parts.slice(1) : parts
+  const [type = '', payloadOrTarget = '', proxy = ''] = ruleParts
+
+  if (!type) return undefined
+  return type === 'MATCH' ? payloadOrTarget : proxy
+}
+
+function getProfileDefaultRuleTarget(profile: MihomoConfig): string {
+  const rawRules = Array.isArray(profile.rules) ? (profile.rules as unknown as string[]) : []
+  const matchRule = [...rawRules].reverse().find((rule) => rule.split(',')[0]?.trim() === 'MATCH')
+
+  return getRuleTarget(matchRule || '') || 'DIRECT'
+}
+
+function normalizeRuleTarget(ruleStr: string, defaultTarget: string): string {
+  const target = getRuleTarget(ruleStr)
+  if (!target) {
+    return ruleStr
+  }
+
+  if (LEGACY_VPN_RULE_TARGETS.has(target) || target === defaultTarget) {
+    return ruleStr.replace(target, VPN_RULE_TARGET)
+  }
+
+  return ruleStr
+}
+
+interface MihomoProxyGroupRecord extends Record<string, unknown> {
+  name?: string
+  type?: string
+  proxies?: string[]
+  url?: string
+  interval?: number
+  timeout?: number
+  lazy?: boolean
+  'max-failed-times'?: number
+  tolerance?: number
+  'expected-status'?: string
+}
+
+function isProxyGroupRecord(group: unknown): group is MihomoProxyGroupRecord {
+  return !!group && typeof group === 'object'
+}
+
+function buildVpnRouteGroup(
+  profile: MihomoConfig,
+  mergedProxies: Array<{ name?: unknown }>,
+  defaultTarget: string
+): MihomoProxyGroupRecord | null {
+  const proxyNames = [
+    ...new Set(
+      mergedProxies
+        .map((proxy) => (typeof proxy?.name === 'string' ? proxy.name.trim() : ''))
+        .filter(Boolean)
+    )
+  ]
+
+  if (proxyNames.length === 0) {
+    return null
+  }
+
+  const sourceGroups = Array.isArray(profile['proxy-groups'])
+    ? (profile['proxy-groups'] as unknown[])
+    : []
+  const sourceGroup = sourceGroups.find((group) => {
+    return (
+      isProxyGroupRecord(group) && typeof group.name === 'string' && group.name === defaultTarget
+    )
+  }) as MihomoProxyGroupRecord | undefined
+
+  const vpnGroup: MihomoProxyGroupRecord = {
+    name: VPN_RULE_TARGET,
+    type:
+      sourceGroup?.type === 'fallback' || sourceGroup?.type === 'url-test'
+        ? sourceGroup.type
+        : 'fallback',
+    proxies: proxyNames
+  }
+
+  if (typeof sourceGroup?.url === 'string') {
+    vpnGroup.url = sourceGroup.url
+  }
+  if (typeof sourceGroup?.interval === 'number') {
+    vpnGroup.interval = sourceGroup.interval
+  }
+  if (typeof sourceGroup?.timeout === 'number') {
+    vpnGroup.timeout = sourceGroup.timeout
+  }
+  if (typeof sourceGroup?.lazy === 'boolean') {
+    vpnGroup.lazy = sourceGroup.lazy
+  }
+  if (typeof sourceGroup?.['max-failed-times'] === 'number') {
+    vpnGroup['max-failed-times'] = sourceGroup['max-failed-times']
+  }
+  if (typeof sourceGroup?.tolerance === 'number') {
+    vpnGroup.tolerance = sourceGroup.tolerance
+  }
+  if (typeof sourceGroup?.['expected-status'] === 'string') {
+    vpnGroup['expected-status'] = sourceGroup['expected-status']
+  }
+
+  if (!vpnGroup.url && ['fallback', 'url-test'].includes(String(vpnGroup.type))) {
+    vpnGroup.url = 'https://www.gstatic.com/generate_204'
+  }
+  if (vpnGroup.interval === undefined && ['fallback', 'url-test'].includes(String(vpnGroup.type))) {
+    vpnGroup.interval = 300
+  }
+
+  return vpnGroup
+}
+
+function getAvailableRuleTargets(profile: MihomoConfig, mergedProxies: unknown[]): Set<string> {
+  const targets = new Set(['DIRECT', 'REJECT', 'REJECT-DROP', 'PASS', 'COMPATIBLE'])
+
+  if (Array.isArray(profile['proxy-groups'])) {
+    profile['proxy-groups'].forEach((group) => {
+      const groupName =
+        group && typeof group === 'object' && 'name' in group
+          ? (group as { name?: unknown }).name
+          : undefined
+      if (typeof groupName === 'string') {
+        targets.add(groupName)
+      }
+    })
+  }
+
+  if (Array.isArray(mergedProxies)) {
+    mergedProxies.forEach((proxy) => {
+      const proxyName =
+        proxy && typeof proxy === 'object' && 'name' in proxy
+          ? (proxy as { name?: unknown }).name
+          : undefined
+      if (typeof proxyName === 'string') {
+        targets.add(proxyName)
+      }
+    })
+  }
+
+  return targets
+}
+
+function prepareSharedRulesForProfile(
+  ruleStrings: string[],
+  availableTargets: Set<string>,
+  defaultTarget: string
+): string[] {
+  return ruleStrings
+    .map((ruleStr) => normalizeRuleTarget(ruleStr, defaultTarget))
+    .filter((ruleStr) => {
+      const target = getRuleTarget(ruleStr)
+      return !target || availableTargets.has(target)
+    })
+}
+
 export async function generateProfile(): Promise<void> {
   const { current } = await getProfileConfig()
   const {
@@ -84,9 +241,37 @@ export async function generateProfile(): Promise<void> {
     delete configToMerge.tun
   }
 
-  const ruleFilePath = rulePath(current || 'default')
-  if (existsSync(ruleFilePath)) {
-    const ruleFileContent = await readFile(ruleFilePath, 'utf-8')
+  const mergedProfileProxies = await getMergedProfileProxies(current)
+  const defaultRuleTarget = getProfileDefaultRuleTarget(currentProfile)
+  const normalizedBaseRules = Array.isArray(currentProfile.rules)
+    ? (currentProfile.rules as unknown as string[]).map((rule) =>
+        normalizeRuleTarget(rule, defaultRuleTarget)
+      )
+    : []
+  currentProfile.rules = normalizedBaseRules as unknown as []
+  const existingProxyGroups = Array.isArray(currentProfile['proxy-groups'])
+    ? (currentProfile['proxy-groups'] as unknown[]).filter(
+        (group) =>
+          !(
+            isProxyGroupRecord(group) &&
+            typeof group.name === 'string' &&
+            group.name === VPN_RULE_TARGET
+          )
+      )
+    : []
+  const vpnRouteGroup = buildVpnRouteGroup(
+    currentProfile,
+    mergedProfileProxies as Array<{ name?: unknown }>,
+    defaultRuleTarget
+  )
+  if (vpnRouteGroup) {
+    currentProfile['proxy-groups'] = [...existingProxyGroups, vpnRouteGroup] as unknown as []
+  } else if (existingProxyGroups.length > 0) {
+    currentProfile['proxy-groups'] = existingProxyGroups as unknown as []
+  }
+  const availableRuleTargets = getAvailableRuleTargets(currentProfile, mergedProfileProxies)
+  const ruleFileContent = await getRuleStr(current || 'default')
+  if (ruleFileContent.trim()) {
     const ruleData = parseYaml(ruleFileContent) as {
       prepend?: string[]
       append?: string[]
@@ -103,8 +288,13 @@ export async function generateProfile(): Promise<void> {
 
       // 处理前置规则
       if (ruleData.prepend?.length) {
-        const { normalRules: prependRules, insertRules } = processRulesWithOffset(
+        const prependRuleStrings = prepareSharedRulesForProfile(
           ruleData.prepend,
+          availableRuleTargets,
+          defaultRuleTarget
+        )
+        const { normalRules: prependRules, insertRules } = processRulesWithOffset(
+          prependRuleStrings,
           rules
         )
         rules = [...prependRules, ...insertRules]
@@ -112,8 +302,13 @@ export async function generateProfile(): Promise<void> {
 
       // 处理后置规则
       if (ruleData.append?.length) {
-        const { normalRules: appendRules, insertRules } = processRulesWithOffset(
+        const appendRuleStrings = prepareSharedRulesForProfile(
           ruleData.append,
+          availableRuleTargets,
+          defaultRuleTarget
+        )
+        const { normalRules: appendRules, insertRules } = processRulesWithOffset(
+          appendRuleStrings,
           rules,
           true
         )
@@ -137,7 +332,7 @@ export async function generateProfile(): Promise<void> {
     }
   }
 
-  currentProfile.proxies = (await getMergedProfileProxies(current)) as unknown as []
+  currentProfile.proxies = mergedProfileProxies as unknown as []
 
   const profile = deepMerge(JSON.parse(JSON.stringify(currentProfile)), configToMerge)
 

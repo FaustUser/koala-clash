@@ -1,7 +1,14 @@
 import { getControledMihomoConfig } from './controledMihomo'
-import { mihomoProfileWorkDir, mihomoWorkDir, profileConfigPath, profilePath, rulePath } from '../utils/dirs'
+import {
+  legacyRulePath,
+  mihomoProfileWorkDir,
+  mihomoWorkDir,
+  profileConfigPath,
+  profilePath,
+  rulePath
+} from '../utils/dirs'
 import { addProfileUpdater, delProfileUpdater } from '../core/profileUpdater'
-import { mkdir, readFile, rm, writeFile } from 'fs/promises'
+import { mkdir, readFile, readdir, rm, stat, writeFile } from 'fs/promises'
 import { restartCore } from '../core/manager'
 import { getAppConfig } from './app'
 import { existsSync } from 'fs'
@@ -33,7 +40,8 @@ export async function setProfileConfig(config: ProfileConfig): Promise<void> {
 
 export async function getProfileItem(id: string | undefined): Promise<ProfileItem | undefined> {
   const { items } = await getProfileConfig()
-  if (!id || id === 'default') return { id: 'default', type: 'local', name: t('ui.blankSubscription') }
+  if (!id || id === 'default')
+    return { id: 'default', type: 'local', name: t('ui.blankSubscription') }
   return items?.find((item) => item.id === id)
 }
 
@@ -66,7 +74,9 @@ export async function updateProfileItem(item: ProfileItem): Promise<void> {
 export async function addProfileItem(item: Partial<ProfileItem>): Promise<void> {
   if (item.url && item.type === 'remote') {
     const config = await getProfileConfig()
-    const duplicate = config.items?.find((existing) => existing.url === item.url && existing.id !== item.id)
+    const duplicate = config.items?.find(
+      (existing) => existing.url === item.url && existing.id !== item.id
+    )
     if (duplicate) {
       throw new Error(t('error.duplicateProfile'))
     }
@@ -115,7 +125,13 @@ export async function removeProfileItem(id: string): Promise<void> {
 
 export async function getCurrentProfileItem(): Promise<ProfileItem> {
   const { current } = await getProfileConfig()
-  return (await getProfileItem(current)) || { id: 'default', type: 'local', name: t('ui.blankSubscription') }
+  return (
+    (await getProfileItem(current)) || {
+      id: 'default',
+      type: 'local',
+      name: t('ui.blankSubscription')
+    }
+  )
 }
 
 async function downloadLogoAsBase64(
@@ -201,7 +217,6 @@ export async function createProfile(item: Partial<ProfileItem>): Promise<Profile
         throw error
       }
 
-
       const data = normalizeImportedProfile(res.data, newItem.name)
       const headers = res.headers
       const contentType = (headers['content-type'] || '').toLowerCase()
@@ -257,9 +272,7 @@ export async function createProfile(item: Partial<ProfileItem>): Promise<Profile
       if (userinfoKey) {
         newItem.extra = parseSubinfo(headers[userinfoKey])
       }
-      const logoKey = Object.keys(headers).find((k) =>
-        k.toLowerCase().endsWith('profile-logo')
-      )
+      const logoKey = Object.keys(headers).find((k) => k.toLowerCase().endsWith('profile-logo'))
       if (logoKey) {
         const logoUrl = headers[logoKey]
         const proxyConfig =
@@ -275,9 +288,7 @@ export async function createProfile(item: Partial<ProfileItem>): Promise<Profile
       if (supportUrlKey) {
         newItem.supportUrl = headers[supportUrlKey]
       }
-      const announceKey = Object.keys(headers).find((k) =>
-        k.toLowerCase().endsWith('announce')
-      )
+      const announceKey = Object.keys(headers).find((k) => k.toLowerCase().endsWith('announce'))
       if (announceKey) {
         const announceValue = headers[announceKey]
         if (announceValue.startsWith('base64:')) {
@@ -414,7 +425,10 @@ function decodeBase64Subscription(content: string): string | undefined {
     return undefined
   }
 
-  const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, '=').replace(/-/g, '+').replace(/_/g, '/')
+  const padded = normalized
+    .padEnd(Math.ceil(normalized.length / 4) * 4, '=')
+    .replace(/-/g, '+')
+    .replace(/_/g, '/')
 
   try {
     const decoded = Buffer.from(padded, 'base64').toString('utf-8').trim()
@@ -592,7 +606,9 @@ function applyVlessTransportOptions(
     proxy['http-opts'] = {
       method: 'GET',
       path: [normalizedPath],
-      ...(options.host ? { headers: { Host: options.host.split(',').map((item) => item.trim()) } } : {})
+      ...(options.host
+        ? { headers: { Host: options.host.split(',').map((item) => item.trim()) } }
+        : {})
     }
     return
   }
@@ -707,12 +723,58 @@ export async function setFileStr(path: string, content: string): Promise<void> {
   }
 }
 
-export async function getRuleStr(id: string): Promise<string> {
-  return await readFile(rulePath(id), 'utf-8')
+async function migrateLegacyRuleStr(preferredId?: string): Promise<string> {
+  const sharedPath = rulePath()
+  const sharedDir = dirname(sharedPath)
+  const preferredLegacyPath = preferredId ? legacyRulePath(preferredId) : undefined
+  const candidatePaths = new Set<string>()
+
+  if (preferredLegacyPath && existsSync(preferredLegacyPath)) {
+    candidatePaths.add(preferredLegacyPath)
+  }
+
+  if (existsSync(sharedDir)) {
+    const legacyFiles = (await readdir(sharedDir))
+      .filter((file) => file.endsWith('.yaml') && file !== 'shared.yaml')
+      .map((file) => legacyRulePath(file.slice(0, -5)))
+
+    legacyFiles.forEach((filePath) => candidatePaths.add(filePath))
+  }
+
+  const sortedCandidates = await Promise.all(
+    [...candidatePaths].map(async (filePath) => ({
+      filePath,
+      mtimeMs: (await stat(filePath)).mtimeMs
+    }))
+  )
+
+  sortedCandidates.sort((left, right) => right.mtimeMs - left.mtimeMs)
+
+  for (const { filePath } of sortedCandidates) {
+    const content = await readFile(filePath, 'utf-8')
+    if (!content.trim()) continue
+
+    await mkdir(dirname(sharedPath), { recursive: true })
+    await writeFile(sharedPath, content, 'utf-8')
+    return content
+  }
+
+  return ''
 }
 
-export async function setRuleStr(id: string, str: string): Promise<void> {
-  await writeFile(rulePath(id), str, 'utf-8')
+export async function getRuleStr(id: string): Promise<string> {
+  const sharedPath = rulePath()
+
+  if (existsSync(sharedPath)) {
+    return await readFile(sharedPath, 'utf-8')
+  }
+
+  return await migrateLegacyRuleStr(id)
+}
+
+export async function setRuleStr(_id: string, str: string): Promise<void> {
+  await mkdir(dirname(rulePath()), { recursive: true })
+  await writeFile(rulePath(), str, 'utf-8')
 }
 
 export async function convertMrsRuleset(filePath: string, behavior: string): Promise<string> {

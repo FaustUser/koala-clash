@@ -94,6 +94,24 @@ interface RuleItem {
 
 type RuleDraft = Omit<RuleItem, 'id'>
 type GeoDataKind = 'geoip' | 'geosite'
+const DEFAULT_VPN_RULE_PROXY = 'VPN'
+const LEGACY_VPN_RULE_PROXIES = new Set(['__VPN_ROUTE__', '__ACTIVE_VPN__'])
+const BUILTIN_RULE_PROXIES = [
+  DEFAULT_VPN_RULE_PROXY,
+  'DIRECT',
+  'REJECT',
+  'REJECT-DROP',
+  'PASS',
+  'COMPATIBLE'
+]
+
+const getRuleProxyLabel = (proxy: string, t: ReturnType<typeof useTranslation>['t']): string => {
+  if (proxy === DEFAULT_VPN_RULE_PROXY || LEGACY_VPN_RULE_PROXIES.has(proxy)) {
+    return t('profile.editRules.activeProxy', { defaultValue: 'VPN' })
+  }
+
+  return proxy
+}
 
 const createRuleId = (): string => {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
@@ -210,6 +228,41 @@ const parseRuleStringToItem = (ruleStr: string): RuleItem => {
 const getDefaultAppendInsertPosition = (rules: RuleItem[]): number => {
   const matchIndex = rules.findLastIndex((rule) => rule.type === 'MATCH')
   return matchIndex === -1 ? rules.length : matchIndex
+}
+
+const normalizeRuleProxy = (proxy: string, defaultMatchTarget: string | null): string => {
+  if (!proxy) return proxy
+  if (proxy === DEFAULT_VPN_RULE_PROXY || LEGACY_VPN_RULE_PROXIES.has(proxy)) {
+    return DEFAULT_VPN_RULE_PROXY
+  }
+  if (defaultMatchTarget && proxy === defaultMatchTarget) {
+    return DEFAULT_VPN_RULE_PROXY
+  }
+  return proxy
+}
+
+const normalizeInitialRules = (
+  rules: RuleItem[]
+): { rules: RuleItem[]; defaultMatchTarget: string | null } => {
+  const matchIndex = rules.findLastIndex((rule) => rule.type === 'MATCH')
+  if (matchIndex === -1) {
+    return { rules, defaultMatchTarget: null }
+  }
+
+  const defaultMatchTarget = rules[matchIndex].proxy || null
+  if (!defaultMatchTarget) {
+    return { rules, defaultMatchTarget: null }
+  }
+
+  const normalizedRules = rules.map((rule, index) => ({
+    ...rule,
+    proxy:
+      index === matchIndex
+        ? DEFAULT_VPN_RULE_PROXY
+        : normalizeRuleProxy(rule.proxy, defaultMatchTarget)
+  }))
+
+  return { rules: normalizedRules, defaultMatchTarget }
 }
 
 const domainValidator = (value: string): boolean => {
@@ -663,7 +716,8 @@ const RuleTypeCombobox: React.FC<RuleTypeComboboxProps> = ({
                         <div>{getRuleTypeDescription(type)}</div>
                         {ruleDefinitionsMap.get(type)?.example && (
                           <div className="text-background/80">
-                            {t('profile.editRules.exampleLabel')}: {ruleDefinitionsMap.get(type)?.example}
+                            {t('profile.editRules.exampleLabel')}:{' '}
+                            {ruleDefinitionsMap.get(type)?.example}
                           </div>
                         )}
                       </div>
@@ -695,7 +749,10 @@ const RulePayloadCombobox: React.FC<RulePayloadComboboxProps> = ({
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
   const deferredQuery = useDeferredValue(query)
-  const filteredValues = useMemo(() => filterComboboxValues(values, deferredQuery), [values, deferredQuery])
+  const filteredValues = useMemo(
+    () => filterComboboxValues(values, deferredQuery),
+    [values, deferredQuery]
+  )
 
   useEffect(() => {
     if (!open) {
@@ -712,7 +769,8 @@ const RulePayloadCombobox: React.FC<RulePayloadComboboxProps> = ({
           className={cn(
             'w-full justify-between font-normal',
             className,
-            invalid && 'border-destructive focus-visible:border-destructive focus-visible:ring-destructive/50'
+            invalid &&
+              'border-destructive focus-visible:border-destructive focus-visible:ring-destructive/50'
           )}
         >
           <span className={cn('truncate', !value && 'text-muted-foreground')}>
@@ -826,6 +884,7 @@ const RuleDisplayContent: React.FC<RuleDisplayContentProps> = ({
   isOverlay = false,
   dragHandleProps
 }) => {
+  const { t } = useTranslation()
   const isLogicalRule = isLogicalRuleType(rule.type)
   const logicalRuleClauses = isLogicalRule ? getLogicalRuleClauses(rule.payload) : []
   const logicalRuleSummary = logicalRuleClauses.map(formatLogicalRuleClause)
@@ -840,12 +899,12 @@ const RuleDisplayContent: React.FC<RuleDisplayContentProps> = ({
   const primaryContent = isLogicalRule
     ? logicalRuleContent
     : rule.type === 'MATCH'
-      ? rule.proxy
+      ? getRuleProxyLabel(rule.proxy, t)
       : rule.payload
   const primaryContentTitle = isLogicalRule
     ? logicalRuleContentTitle
     : rule.type === 'MATCH'
-      ? rule.proxy
+      ? getRuleProxyLabel(rule.proxy, t)
       : rule.payload
 
   return (
@@ -893,7 +952,7 @@ const RuleDisplayContent: React.FC<RuleDisplayContentProps> = ({
           <div
             className={cn('text-xs text-muted-foreground truncate', isDeleted && 'line-through')}
           >
-            {rule.proxy}
+            {getRuleProxyLabel(rule.proxy, t)}
           </div>
         )}
       </div>
@@ -991,7 +1050,12 @@ const RuleListItemBase: React.FC<RuleListItemProps> = ({
             geoDataKind && !geoDataOptions[geoDataKind].includes(editingRule.payload)
               ? ''
               : editingRule.payload
-          onEditingRuleChange({ ...editingRule, type: v, payload: nextPayload, additionalParams: params })
+          onEditingRuleChange({
+            ...editingRule,
+            type: v,
+            payload: nextPayload,
+            additionalParams: params
+          })
         }}
         className="h-8 text-xs"
         contentClassName="max-h-60"
@@ -1002,7 +1066,7 @@ const RuleListItemBase: React.FC<RuleListItemProps> = ({
       <Popover modal open={proxyPopoverOpen} onOpenChange={setProxyPopoverOpen}>
         <PopoverTrigger asChild>
           <Button variant="outline" className="w-full justify-between font-normal h-8 text-xs">
-            <span className="truncate">{editingRule.proxy}</span>
+            <span className="truncate">{getRuleProxyLabel(editingRule.proxy, t)}</span>
             <ChevronsUpDownIcon className="ml-1 size-3 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
@@ -1021,7 +1085,7 @@ const RuleListItemBase: React.FC<RuleListItemProps> = ({
                       setProxyPopoverOpen(false)
                     }}
                   >
-                    {group}
+                    {getRuleProxyLabel(group, t)}
                     <CheckIcon
                       className={cn(
                         'ml-auto size-3',
@@ -1090,18 +1154,21 @@ const RuleListItemBase: React.FC<RuleListItemProps> = ({
             </div>
 
             {/* Row 2: Params + actions */}
-            <div className="flex items-center gap-2">
-              {additionalParamsControls}
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="flex min-w-0 flex-wrap items-center gap-2">
+                {additionalParamsControls}
+              </div>
 
-              <div className="flex-1" />
-              <Button size="xs" variant="ghost" onClick={onCancelEditing}>
-                <XIcon className="size-3" />
-                {t('common.cancel')}
-              </Button>
-              <Button size="xs" onClick={onConfirmEditing}>
-                <CheckIcon className="size-3" />
-                {t('common.save')}
-              </Button>
+              <div className="ml-auto flex shrink-0 items-center gap-1.5">
+                <Button size="xs" variant="ghost" onClick={onCancelEditing}>
+                  <XIcon className="size-3" />
+                  {t('common.cancel')}
+                </Button>
+                <Button size="xs" onClick={onConfirmEditing}>
+                  <CheckIcon className="size-3" />
+                  {t('common.save')}
+                </Button>
+              </div>
             </div>
           </>
         ) : (
@@ -1124,7 +1191,9 @@ const RuleListItemBase: React.FC<RuleListItemProps> = ({
                   <Input
                     className="flex-1 h-8 text-xs"
                     value={editingRule.payload}
-                    onChange={(e) => onEditingRuleChange({ ...editingRule, payload: e.target.value })}
+                    onChange={(e) =>
+                      onEditingRuleChange({ ...editingRule, payload: e.target.value })
+                    }
                     placeholder={getRuleExample(editingRule.type) || ''}
                     disabled={editingRule.type === 'MATCH'}
                     autoFocus
@@ -1134,20 +1203,23 @@ const RuleListItemBase: React.FC<RuleListItemProps> = ({
             </div>
 
             {/* Row 2: Proxy + params + actions */}
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <div className="w-45 shrink-0">{proxySelector}</div>
 
-              {additionalParamsControls}
+              <div className="flex min-w-0 flex-wrap items-center gap-2">
+                {additionalParamsControls}
+              </div>
 
-              <div className="flex-1" />
-              <Button size="xs" variant="ghost" onClick={onCancelEditing}>
-                <XIcon className="size-3" />
-                {t('common.cancel')}
-              </Button>
-              <Button size="xs" onClick={onConfirmEditing}>
-                <CheckIcon className="size-3" />
-                {t('common.save')}
-              </Button>
+              <div className="ml-auto flex shrink-0 items-center gap-1.5">
+                <Button size="xs" variant="ghost" onClick={onCancelEditing}>
+                  <XIcon className="size-3" />
+                  {t('common.cancel')}
+                </Button>
+                <Button size="xs" onClick={onConfirmEditing}>
+                  <CheckIcon className="size-3" />
+                  {t('common.save')}
+                </Button>
+              </div>
             </div>
           </>
         )}
@@ -1241,12 +1313,13 @@ const EditRulesModal: React.FC<Props> = (props) => {
   const [newRule, setNewRule] = useState<RuleDraft>({
     type: 'DOMAIN',
     payload: '',
-    proxy: 'DIRECT',
+    proxy: DEFAULT_VPN_RULE_PROXY,
     additionalParams: []
   })
   const [searchTerm, setSearchTerm] = useState('')
   const [deferredSearchTerm, setDeferredSearchTerm] = useState('')
   const [proxyGroups, setProxyGroups] = useState<string[]>([])
+  const [defaultMatchTarget, setDefaultMatchTarget] = useState<string | null>(null)
   const [deletedRules, setDeletedRules] = useState<Set<number>>(new Set())
   const [prependRules, setPrependRules] = useState<Set<number>>(new Set())
   const [appendRules, setAppendRules] = useState<Set<number>>(new Set())
@@ -1279,7 +1352,9 @@ const EditRulesModal: React.FC<Props> = (props) => {
       .catch((error) => {
         if (disposed) return
         toast.error(
-          t('profile.editRules.geoDataLoadError') + ': ' + (error instanceof Error ? error.message : String(error))
+          t('profile.editRules.geoDataLoadError') +
+            ': ' +
+            (error instanceof Error ? error.message : String(error))
         )
       })
       .finally(() => {
@@ -1341,9 +1416,13 @@ const EditRulesModal: React.FC<Props> = (props) => {
   )
 
   // 解析规则字符串
-  const parseRuleString = useCallback((ruleStr: string): RuleItem => {
-    return parseRuleStringToItem(ruleStr)
-  }, [])
+  const parseRuleString = useCallback(
+    (ruleStr: string): RuleItem => {
+      const rule = parseRuleStringToItem(ruleStr)
+      return { ...rule, proxy: normalizeRuleProxy(rule.proxy, defaultMatchTarget) }
+    },
+    [defaultMatchTarget]
+  )
 
   // 处理前置规则位置
   const processRulesWithPositions = useCallback(
@@ -1424,34 +1503,17 @@ const EditRulesModal: React.FC<Props> = (props) => {
         let initialRules: RuleItem[] = []
 
         if (parsed && parsed.rules && Array.isArray(parsed.rules)) {
-          initialRules = parsed.rules.map((rule: string) => parseRuleStringToItem(rule))
+          const normalized = normalizeInitialRules(
+            parsed.rules.map((rule: string) => parseRuleStringToItem(rule))
+          )
+          initialRules = normalized.rules
+          setDefaultMatchTarget(normalized.defaultMatchTarget)
+        } else {
+          setDefaultMatchTarget(null)
         }
 
         if (parsed) {
-          const groups: string[] = []
-
-          if (Array.isArray(parsed['proxy-groups'])) {
-            groups.push(
-              ...((parsed['proxy-groups'] as Array<Record<string, unknown>>)
-                .map((group) =>
-                  group && typeof group['name'] === 'string' ? (group['name'] as string) : ''
-                )
-                .filter(Boolean) as string[])
-            )
-          }
-
-          if (Array.isArray(parsed['proxies'])) {
-            groups.push(
-              ...((parsed['proxies'] as Array<Record<string, unknown>>)
-                .map((proxy) =>
-                  proxy && typeof proxy['name'] === 'string' ? (proxy['name'] as string) : ''
-                )
-                .filter(Boolean) as string[])
-            )
-          }
-
-          groups.push('DIRECT', 'REJECT', 'REJECT-DROP', 'PASS', 'COMPATIBLE')
-          setProxyGroups([...new Set(groups)])
+          setProxyGroups(BUILTIN_RULE_PROXIES)
         }
 
         try {
@@ -1556,24 +1618,27 @@ const EditRulesModal: React.FC<Props> = (props) => {
     loadContent()
   }, [id, parseRuleString, processRulesWithPositions, processAppendRulesWithPositions])
 
-  const validateRulePayload = useCallback((ruleType: string, payload: string): boolean => {
-    if (ruleType === 'MATCH') {
-      return true
-    }
+  const validateRulePayload = useCallback(
+    (ruleType: string, payload: string): boolean => {
+      if (ruleType === 'MATCH') {
+        return true
+      }
 
-    const geoDataKind = getGeoDataKindForRuleType(ruleType)
-    if (geoDataKind) {
-      return geoDataOptions[geoDataKind].includes(payload)
-    }
+      const geoDataKind = getGeoDataKindForRuleType(ruleType)
+      if (geoDataKind) {
+        return geoDataOptions[geoDataKind].includes(payload)
+      }
 
-    const rule = ruleDefinitionsMap.get(ruleType)
-    const validator = rule?.validator
-    if (!validator) {
-      return true
-    }
+      const rule = ruleDefinitionsMap.get(ruleType)
+      const validator = rule?.validator
+      if (!validator) {
+        return true
+      }
 
-    return validator(payload)
-  }, [geoDataOptions])
+      return validator(payload)
+    },
+    [geoDataOptions]
+  )
 
   const isPayloadValid = useMemo(() => {
     if (newRule.type === 'MATCH' || !newRule.payload) {
@@ -1638,34 +1703,39 @@ const EditRulesModal: React.FC<Props> = (props) => {
     dialogCloseRef.current?.click()
   }
 
+  const serializeRule = useCallback((rule: RuleItem): string => {
+    const parts = [rule.type]
+    if (rule.payload) parts.push(rule.payload)
+    if (rule.proxy) parts.push(rule.proxy)
+    if (rule.additionalParams && rule.additionalParams.length > 0) {
+      parts.push(...rule.additionalParams)
+    }
+
+    if (rule.offset !== undefined && rule.offset > 0) {
+      parts.unshift(rule.offset.toString())
+    }
+    return parts.join(',')
+  }, [])
+
   const handleSave = useCallback(async (): Promise<boolean> => {
     try {
       // 保存规则到文件
       const prependRuleStrings = Array.from(prependRules)
         .filter((index) => !deletedRules.has(index) && index < rules.length)
         .sort((left, right) => left - right)
-        .map((index) => convertRuleToString(rules[index]))
+        .map((index) => serializeRule(rules[index]))
 
       const appendRuleStrings = Array.from(appendRules)
         .filter((index) => !deletedRules.has(index) && index < rules.length)
         .sort((left, right) => left - right)
-        .map((index) => convertRuleToString(rules[index]))
+        .map((index) => serializeRule(rules[index]))
 
       // 保存删除的规则
       const deletedRuleStrings = Array.from(deletedRules)
         .filter(
           (index) => index < rules.length && !prependRules.has(index) && !appendRules.has(index)
         )
-        .map((index) => {
-          const rule = rules[index]
-          const parts = [rule.type]
-          if (rule.payload) parts.push(rule.payload)
-          if (rule.proxy) parts.push(rule.proxy)
-          if (rule.additionalParams && rule.additionalParams.length > 0) {
-            parts.push(...rule.additionalParams)
-          }
-          return parts.join(',')
-        })
+        .map((index) => serializeRule(rules[index]))
 
       // 创建规则数据对象
       const ruleData = {
@@ -1684,7 +1754,7 @@ const EditRulesModal: React.FC<Props> = (props) => {
       )
       return false
     }
-  }, [prependRules, deletedRules, rules, appendRules, id, t])
+  }, [prependRules, deletedRules, rules, appendRules, id, t, serializeRule])
 
   const handleRuleTypeChange = (selected: string): void => {
     const noResolveSupported = isRuleSupportsNoResolve(selected)
@@ -1702,7 +1772,10 @@ const EditRulesModal: React.FC<Props> = (props) => {
     setNewRule({
       ...newRule,
       type: selected,
-      payload: geoDataKind && !geoDataOptions[geoDataKind].includes(newRule.payload) ? '' : newRule.payload,
+      payload:
+        geoDataKind && !geoDataOptions[geoDataKind].includes(newRule.payload)
+          ? ''
+          : newRule.payload,
       additionalParams: additionalParams.length > 0 ? additionalParams : []
     })
   }
@@ -2007,21 +2080,6 @@ const EditRulesModal: React.FC<Props> = (props) => {
   )
 
   // 规则转字符串
-  const convertRuleToString = (rule: RuleItem): string => {
-    const parts = [rule.type]
-    if (rule.payload) parts.push(rule.payload)
-    if (rule.proxy) parts.push(rule.proxy)
-    if (rule.additionalParams && rule.additionalParams.length > 0) {
-      parts.push(...rule.additionalParams)
-    }
-
-    if (rule.offset !== undefined && rule.offset > 0) {
-      parts.unshift(rule.offset.toString())
-    }
-
-    return parts.join(',')
-  }
-
   // Check if a rule item is custom (for coloring)
   const isRuleCustom = useCallback(
     (rule: RuleItem): boolean => {
@@ -2138,7 +2196,9 @@ const EditRulesModal: React.FC<Props> = (props) => {
                         className="w-full justify-between font-normal"
                       >
                         <span className="truncate">
-                          {newRule.proxy || t('profile.editRules.proxyPlaceholder')}
+                          {newRule.proxy
+                            ? getRuleProxyLabel(newRule.proxy, t)
+                            : t('profile.editRules.proxyPlaceholder')}
                         </span>
                         <ChevronsUpDownIcon className="ml-2 size-4 shrink-0 opacity-50" />
                       </Button>
@@ -2162,7 +2222,7 @@ const EditRulesModal: React.FC<Props> = (props) => {
                                   setNewRuleProxyOpen(false)
                                 }}
                               >
-                                {group}
+                                {getRuleProxyLabel(group, t)}
                                 <CheckIcon
                                   className={cn(
                                     'ml-auto size-4',
@@ -2257,8 +2317,8 @@ const EditRulesModal: React.FC<Props> = (props) => {
 
             {/* Right panel - Rule list in actual order */}
             <div className="w-3/5 border-l pl-4 pr-1 flex flex-col min-h-0">
-              <div className="flex justify-between items-center mb-3">
-                <div className="flex items-center gap-2">
+              <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+                <div className="flex min-w-0 items-center gap-2">
                   <h3 className="text-lg font-semibold">{t('profile.editRules.currentRules')}</h3>
                   <Badge variant="secondary">{rules.length}</Badge>
                   {customRulesCount > 0 && (
@@ -2272,7 +2332,7 @@ const EditRulesModal: React.FC<Props> = (props) => {
                 </div>
                 <Input
                   placeholder={t('profile.editRules.searchPlaceholder')}
-                  className="max-w-42 h-8"
+                  className="h-8 w-56 max-w-full shrink-0"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
