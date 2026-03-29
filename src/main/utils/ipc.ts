@@ -44,8 +44,8 @@ import {
   convertMrsRuleset
 } from '../config'
 import {
-  getEditableCurrentProfileProxyGroups,
-  updateCurrentProfileProxyGroup
+  getEditableVpnRoutingGroup,
+  updateVpnRoutingGroup
 } from '../config/proxyGroup'
 import {
   manualGrantCorePermition,
@@ -188,12 +188,9 @@ export function registerIpcMainHandlers(): void {
   ipcMain.handle('getCurrentProfileItem', ipcErrorWrapper(getCurrentProfileItem))
   ipcMain.handle('getProfileItem', (_e, id) => ipcErrorWrapper(getProfileItem)(id))
   ipcMain.handle('getProfileStr', (_e, id) => ipcErrorWrapper(getProfileStr)(id))
-  ipcMain.handle(
-    'getEditableCurrentProfileProxyGroups',
-    ipcErrorWrapper(getEditableCurrentProfileProxyGroups)
-  )
-  ipcMain.handle('updateCurrentProfileProxyGroup', (_e, patch) =>
-    ipcErrorWrapper(updateCurrentProfileProxyGroup)(patch)
+  ipcMain.handle('getEditableVpnRoutingGroup', ipcErrorWrapper(getEditableVpnRoutingGroup))
+  ipcMain.handle('updateVpnRoutingGroup', (_e, patch) =>
+    ipcErrorWrapper(updateVpnRoutingGroup)(patch)
   )
   ipcMain.handle('getFileStr', (_e, path) => ipcErrorWrapper(getFileStr)(path))
   ipcMain.handle('setFileStr', (_e, path, str) => ipcErrorWrapper(setFileStr)(path, str))

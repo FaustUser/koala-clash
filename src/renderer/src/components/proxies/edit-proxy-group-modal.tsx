@@ -21,10 +21,10 @@ import { Separator } from '@renderer/components/ui/separator'
 import EditFileModal from '../profiles/edit-file-modal'
 import { toast } from 'sonner'
 import {
-  getEditableCurrentProfileProxyGroups,
+  getEditableVpnRoutingGroup,
   getProfileConfig,
   restartCore,
-  updateCurrentProfileProxyGroup
+  updateVpnRoutingGroup
 } from '@renderer/utils/ipc'
 import {
   DndContext,
@@ -120,12 +120,11 @@ const EditProxyGroupModal: React.FC<Props> = ({ groupName, onClose, onSaved }) =
       try {
         const profileConfig = await getProfileConfig()
         setCurrentProfileId(profileConfig.current || 'default')
-        const groups = await getEditableCurrentProfileProxyGroups()
-        const currentGroup = groups.find((item) => item.name === groupName)
-        if (!currentGroup) {
+        const vpnGroup = await getEditableVpnRoutingGroup()
+        if (vpnGroup.name !== groupName) {
           throw new Error(t('proxies.groupEditorNotFound'))
         }
-        setGroupConfig(currentGroup)
+        setGroupConfig(vpnGroup)
       } catch (error) {
         toast.error(`${error}`)
         onClose()
@@ -241,7 +240,7 @@ const EditProxyGroupModal: React.FC<Props> = ({ groupName, onClose, onSaved }) =
 
     setSaving(true)
     try {
-      await updateCurrentProfileProxyGroup({
+      await updateVpnRoutingGroup({
         name: groupConfig.name,
         type: groupConfig.type,
         proxies: groupConfig.proxies,
@@ -635,10 +634,9 @@ const EditProxyGroupModal: React.FC<Props> = ({ groupName, onClose, onSaved }) =
             setOpenProfileYamlEditor(false)
             void (async () => {
               try {
-                const groups = await getEditableCurrentProfileProxyGroups()
-                const currentGroup = groups.find((item) => item.name === groupName)
-                if (currentGroup) {
-                  setGroupConfig(currentGroup)
+                const vpnGroup = await getEditableVpnRoutingGroup()
+                if (vpnGroup.name === groupName) {
+                  setGroupConfig(vpnGroup)
                 }
               } catch {
                 // ignore refresh failure, modal already has existing state

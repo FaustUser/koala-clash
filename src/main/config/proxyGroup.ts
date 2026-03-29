@@ -94,7 +94,7 @@ function buildEditableGroupConfig(
   }
 }
 
-export async function getEditableCurrentProfileProxyGroups(): Promise<EditableProxyGroupConfig[]> {
+async function getEditableRuntimeProxyGroups(): Promise<EditableProxyGroupConfig[]> {
   const { current } = await getProfileConfig()
   const profile = await getProfile(current)
   const appConfig = await getAppConfig()
@@ -133,25 +133,31 @@ export async function getEditableCurrentProfileProxyGroups(): Promise<EditablePr
     )
 }
 
-export async function updateCurrentProfileProxyGroup(
-  patch: EditableProxyGroupPatch
-): Promise<void> {
-  if (patch.name === VPN_RULE_TARGET) {
-    await patchAppConfig({
-      vpnRoutingGroup: {
-        type: patch.type,
-        proxies: getUniqueStrings(patch.proxies),
-        url: patch.url?.trim() || undefined,
-        interval: toOptionalPositiveNumber(patch.interval),
-        timeout: toOptionalPositiveNumber(patch.timeout),
-        lazy: typeof patch.lazy === 'boolean' ? patch.lazy : undefined,
-        maxFailedTimes: toOptionalPositiveNumber(patch.maxFailedTimes),
-        tolerance: patch.type === 'URLTest' ? toOptionalPositiveNumber(patch.tolerance) : undefined,
-        expectedStatus: patch.expectedStatus?.trim() || undefined
-      }
-    })
-    return
+export async function getEditableVpnRoutingGroup(): Promise<EditableProxyGroupConfig> {
+  const groups = await getEditableRuntimeProxyGroups()
+  const vpnGroup = groups.find((group) => group.name === VPN_RULE_TARGET)
+  if (!vpnGroup) {
+    throw new Error('Global VPN routing group configuration not found')
+  }
+  return vpnGroup
+}
+
+export async function updateVpnRoutingGroup(patch: EditableProxyGroupPatch): Promise<void> {
+  if (patch.name !== VPN_RULE_TARGET) {
+    throw new Error('Only the global VPN group supports routing mode changes')
   }
 
-  throw new Error('Only the global VPN group supports routing mode changes')
+  await patchAppConfig({
+    vpnRoutingGroup: {
+      type: patch.type,
+      proxies: getUniqueStrings(patch.proxies),
+      url: patch.url?.trim() || undefined,
+      interval: toOptionalPositiveNumber(patch.interval),
+      timeout: toOptionalPositiveNumber(patch.timeout),
+      lazy: typeof patch.lazy === 'boolean' ? patch.lazy : undefined,
+      maxFailedTimes: toOptionalPositiveNumber(patch.maxFailedTimes),
+      tolerance: patch.type === 'URLTest' ? toOptionalPositiveNumber(patch.tolerance) : undefined,
+      expectedStatus: patch.expectedStatus?.trim() || undefined
+    }
+  })
 }
