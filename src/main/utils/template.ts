@@ -19,6 +19,12 @@ export const defaultConfig: AppConfig = {
   floatingWindowHeight: 42,
   controlDns: false,
   controlSniff: false,
+  vpnRoutingGroup: {
+    type: 'Fallback',
+    proxies: [],
+    url: 'https://www.gstatic.com/generate_204',
+    interval: 300
+  },
   hosts: [],
   sysProxy: { enable: false, mode: 'manual' },
   disableLoopbackDetector: false,

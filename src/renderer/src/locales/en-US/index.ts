@@ -84,7 +84,7 @@ export default {
 
   sider: {
     home: 'Home',
-    proxyGroup: 'Proxy Groups',
+    proxyGroup: 'Proxy Routing',
     profileManagement: 'Profile Management',
     rules: 'Rules',
     connection: 'Connections',
@@ -196,8 +196,8 @@ export default {
       support: 'Support'
     },
     proxies: {
-      title: 'Proxy Groups',
-      proxyGroupSettings: 'Proxy group settings',
+      title: 'Proxy Routing',
+      proxyGroupSettings: 'Proxy routing settings',
       expandAll: 'Expand all',
       collapseAll: 'Collapse all',
       delayTestAll: 'Delay test all',
@@ -988,6 +988,26 @@ export default {
     groupEditorExpectedStatusPlaceholder: 'Optional, for example: 204',
     groupEditorExpectedStatusHint:
       'Optional HTTP status matcher for health checks, for example 204 or 2xx.',
+    groupEditorOpenVpn: 'Edit shared VPN routing',
+    groupEditorTitleVpn: 'Edit Shared VPN Routing',
+    groupEditorTypeVpn: 'Shared VPN routing mode',
+    groupEditorTypeHintVpn:
+      'This config controls the shared VPN routing group used by common rules. It is not tied to the selected profile.',
+    groupEditorVpnHint:
+      'VPN is a global routing group for shared rules. Its mode and failover order are shared across profiles.',
+    groupRuntimeSharedBadge: 'Shared rules',
+    runtimeGroupsTitle: 'Runtime groups of the active profile',
+    runtimeGroupsDescription:
+      'This page shows the proxy groups that Mihomo is using right now for the current profile. Switching the active profile rebuilds this runtime list.',
+    runtimeGroupsVpnDescription:
+      'The VPN group is special: it is a shared routing group for common rules and its mode, health checks, and fallback order are global across profiles.',
+    sharedVpnCardDescription: 'Global VPN routing used by shared rules across profiles.',
+    sharedVpnCurrentProxy: 'Current target: {{name}}',
+    activeProfileGroupsTitle: 'Groups of the active profile',
+    activeProfileGroupsDescription:
+      'These groups belong to the currently selected profile and change when you switch profiles.',
+    activeProfileGroupsReadOnly:
+      'Their routing mode is not edited here. Configure shared Fallback or URL Test only in the VPN block above.',
     groupTypeSelector: 'Selector',
     groupTypeSelectorDescription:
       'Manual mode. The active proxy for this group is chosen on the Proxies page. Here you can keep the group manual or switch it to Fallback / URL Test.',

@@ -3,6 +3,7 @@ import { Badge } from '@renderer/components/ui/badge'
 import { Button } from '@renderer/components/ui/button'
 import { Card, CardContent } from '@renderer/components/ui/card'
 import { Spinner } from '@renderer/components/ui/spinner'
+import { Separator } from '@renderer/components/ui/separator'
 import BasePage from '@renderer/components/base/base-page'
 import { useAppConfig } from '@renderer/hooks/use-app-config'
 import {
@@ -40,6 +41,7 @@ const groupTypeColor: Record<string, string> = {
   LoadBalance: 'bg-violet-500/15 text-violet-600 dark:text-violet-400',
   Relay: 'bg-rose-500/15 text-rose-600 dark:text-rose-400'
 }
+const VPN_GROUP_NAME = 'VPN'
 
 const Proxies: React.FC = () => {
   const { t } = useTranslation()
@@ -58,18 +60,29 @@ const Proxies: React.FC = () => {
     delayTestConcurrency = 50,
     expandProxyGroups = false
   } = appConfig || {}
+  const vpnGroup = useMemo(
+    () => groups.find((group) => group.name === VPN_GROUP_NAME),
+    [groups]
+  )
+  const runtimeGroups = useMemo(
+    () => groups.filter((group) => group.name !== VPN_GROUP_NAME),
+    [groups]
+  )
   const [cols, setCols] = useState(1)
-  const [isOpen, setIsOpen] = useState(Array(groups.length).fill(expandProxyGroups))
-  const [delaying, setDelaying] = useState(Array(groups.length).fill(false))
-  const [searchValue, setSearchValue] = useState(Array(groups.length).fill(''))
+  const [isOpen, setIsOpen] = useState(Array(runtimeGroups.length).fill(expandProxyGroups))
+  const [delaying, setDelaying] = useState(Array(runtimeGroups.length).fill(false))
+  const [searchValue, setSearchValue] = useState(Array(runtimeGroups.length).fill(''))
+  const [vpnDelaying, setVpnDelaying] = useState(false)
   const [isSettingModalOpen, setIsSettingModalOpen] = useState(false)
   const [editingGroupName, setEditingGroupName] = useState<string>()
   const virtuosoRef = useRef<GroupedVirtuosoHandle>(null)
   const { groupCounts, allProxies } = useMemo(() => {
     const groupCounts: number[] = []
     const allProxies: (ControllerProxiesDetail | ControllerGroupDetail)[][] = []
-    if (groups.length !== searchValue.length) setSearchValue(Array(groups.length).fill(''))
-    groups.forEach((group, index) => {
+    if (runtimeGroups.length !== searchValue.length) {
+      setSearchValue(Array(runtimeGroups.length).fill(''))
+    }
+    runtimeGroups.forEach((group, index) => {
       if (isOpen[index]) {
         let groupProxies = group.all.filter(
           (proxy) => proxy && includesIgnoreCase(proxy.name, searchValue[index])
@@ -95,11 +108,11 @@ const Proxies: React.FC = () => {
       }
     })
     return { groupCounts, allProxies }
-  }, [groups, isOpen, proxyDisplayOrder, cols, searchValue])
+  }, [runtimeGroups, isOpen, proxyDisplayOrder, cols, searchValue])
 
   const allExpanded = useMemo(() => {
-    return groups.length > 0 && isOpen.every(Boolean)
-  }, [groups, isOpen])
+    return runtimeGroups.length > 0 && isOpen.every(Boolean)
+  }, [runtimeGroups, isOpen])
 
   const onChangeProxy = useCallback(
     async (group: string, proxy: string): Promise<void> => {
@@ -138,7 +151,7 @@ const Proxies: React.FC = () => {
       for (const proxy of allProxies[index]) {
         const promise = Promise.resolve().then(async () => {
           try {
-            await mihomoProxyDelay(proxy.name, groups[index].testUrl)
+            await mihomoProxyDelay(proxy.name, runtimeGroups[index].testUrl)
           } catch {
             // ignore
           } finally {
@@ -161,7 +174,7 @@ const Proxies: React.FC = () => {
         return newDelaying
       })
     },
-    [allProxies, groups, delayTestConcurrency, mutate]
+    [allProxies, runtimeGroups, delayTestConcurrency, mutate]
   )
 
   const calcCols = useCallback((): number => {
@@ -191,6 +204,37 @@ const Proxies: React.FC = () => {
     })
   }, [])
 
+  const onVpnDelay = useCallback(async (): Promise<void> => {
+    if (!vpnGroup) return
+    setVpnDelaying(true)
+    try {
+      const result: Promise<void>[] = []
+      const runningList: Promise<void>[] = []
+      for (const proxy of vpnGroup.all) {
+        const promise = Promise.resolve().then(async () => {
+          try {
+            await mihomoProxyDelay(proxy.name, vpnGroup.testUrl)
+          } catch {
+            // ignore
+          } finally {
+            mutate()
+          }
+        })
+        result.push(promise)
+        const running = promise.then(() => {
+          runningList.splice(runningList.indexOf(running), 1)
+        })
+        runningList.push(running)
+        if (runningList.length >= (delayTestConcurrency || 50)) {
+          await Promise.race(runningList)
+        }
+      }
+      await Promise.all(result)
+    } finally {
+      setVpnDelaying(false)
+    }
+  }, [vpnGroup, delayTestConcurrency, mutate])
+
   const updateSearchValue = useCallback((index: number, value: string) => {
     setSearchValue((prev) => {
       const newSearchValue = [...prev]
@@ -213,14 +257,14 @@ const Proxies: React.FC = () => {
         i += groupCounts[j]
       }
       i += Math.floor(
-        allProxies[index].findIndex((proxy) => proxy.name === groups[index].now) / cols
+        allProxies[index].findIndex((proxy) => proxy.name === runtimeGroups[index].now) / cols
       )
       virtuosoRef.current?.scrollToIndex({
         index: Math.floor(i),
         align: 'start'
       })
     },
-    [isOpen, groupCounts, allProxies, groups, cols]
+    [isOpen, groupCounts, allProxies, runtimeGroups, cols]
   )
 
   useEffect(() => {
@@ -241,17 +285,17 @@ const Proxies: React.FC = () => {
   const groupContent = useCallback(
     (index: number) => {
       if (
-        groups[index] &&
-        groups[index].icon &&
-        groups[index].icon.startsWith('http') &&
-        !localStorage.getItem(groups[index].icon)
+        runtimeGroups[index] &&
+        runtimeGroups[index].icon &&
+        runtimeGroups[index].icon.startsWith('http') &&
+        !localStorage.getItem(runtimeGroups[index].icon)
       ) {
-        getImageDataURL(groups[index].icon).then((dataURL) => {
-          localStorage.setItem(groups[index].icon, dataURL)
+        getImageDataURL(runtimeGroups[index].icon).then((dataURL) => {
+          localStorage.setItem(runtimeGroups[index].icon, dataURL)
           mutate()
         })
       }
-      const group = groups[index]
+      const group = runtimeGroups[index]
       if (!group) return <div>Never See This</div>
 
       const typeColorClass =
@@ -315,16 +359,6 @@ const Proxies: React.FC = () => {
                       value={searchValue[index]}
                       onValueChange={(v) => updateSearchValue(index, v)}
                     />
-                    {['Selector', 'Fallback', 'URLTest'].includes(group.type) && (
-                      <Button
-                        title={t('proxies.groupEditorOpen')}
-                        variant="ghost"
-                        size="icon-sm"
-                        onClick={() => setEditingGroupName(group.name)}
-                      >
-                        <Pencil className="text-base" />
-                      </Button>
-                    )}
                     <Button
                       title={t('sider.locateCurrentNode')}
                       variant="ghost"
@@ -359,8 +393,7 @@ const Proxies: React.FC = () => {
       )
     },
     [
-      groups,
-      groupCounts,
+      runtimeGroups,
       isOpen,
       groupDisplayLayout,
       searchValue,
@@ -399,10 +432,10 @@ const Proxies: React.FC = () => {
                 onProxyDelay={onProxyDelay}
                 onSelect={onChangeProxy}
                 proxy={allProxies[groupIndex][innerIndex * cols + i]}
-                group={groups[groupIndex]}
+                group={runtimeGroups[groupIndex]}
                 proxyDisplayLayout={proxyDisplayLayout}
                 selected={
-                  allProxies[groupIndex][innerIndex * cols + i]?.name === groups[groupIndex].now
+                  allProxies[groupIndex][innerIndex * cols + i]?.name === runtimeGroups[groupIndex].now
                 }
               />
             )
@@ -420,7 +453,7 @@ const Proxies: React.FC = () => {
       mutate,
       onProxyDelay,
       onChangeProxy,
-      groups,
+      runtimeGroups,
       proxyDisplayLayout
     ]
   )
@@ -477,6 +510,102 @@ const Proxies: React.FC = () => {
         </div>
       ) : (
         <div className="h-[calc(100vh-58px)]">
+          <div className="px-2 pb-2">
+            <Card className="border-stroke bg-card/50">
+              <CardContent className="px-4 py-3">
+                <div className="flex flex-col gap-2 text-sm">
+                  <div className="font-medium">
+                    {t('proxies.runtimeGroupsTitle')}
+                  </div>
+                  <div className="text-muted-foreground">
+                    {t('proxies.runtimeGroupsDescription')}
+                  </div>
+                  <Separator />
+                  <div className="text-muted-foreground">
+                    {t('proxies.runtimeGroupsVpnDescription')}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+          {vpnGroup && (
+            <div className="px-2 pb-2">
+              <Card className="border-stroke bg-card/60">
+                <CardContent className="px-4 py-3">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="min-w-0 space-y-1">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="truncate text-sm font-medium">{vpnGroup.name}</span>
+                        <Badge variant="outline" className="text-[10px]">
+                          {t('proxies.groupRuntimeSharedBadge')}
+                        </Badge>
+                        <Badge
+                          variant="ghost"
+                          className={`text-[10px] px-1.5 py-0 h-4 rounded-md font-medium shrink-0 ${groupTypeColor[vpnGroup.type] || 'bg-muted text-muted-foreground'}`}
+                        >
+                          {vpnGroup.type}
+                        </Badge>
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        {t('proxies.sharedVpnCardDescription')}
+                      </div>
+                      <div className="text-xs text-muted-foreground truncate">
+                        {t('proxies.sharedVpnCurrentProxy', { name: vpnGroup.now })}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <Button
+                        title={t('proxies.groupEditorOpenVpn')}
+                        variant="ghost"
+                        size="icon-sm"
+                        onClick={() => setEditingGroupName(vpnGroup.name)}
+                      >
+                        <Pencil className="text-base" />
+                      </Button>
+                      <Button
+                        title={t('sider.locateCurrentNode')}
+                        variant="ghost"
+                        size="icon-sm"
+                        onClick={() => {
+                          const runtimeIndex = runtimeGroups.findIndex((group) =>
+                            group.all.some((proxy) => proxy.name === vpnGroup.now)
+                          )
+                          if (runtimeIndex >= 0) {
+                            scrollToCurrentProxy(runtimeIndex)
+                          }
+                        }}
+                      >
+                        <LocateFixed className="text-base" />
+                      </Button>
+                      <Button
+                        title={t('sider.delayTest')}
+                        variant="ghost"
+                        size="icon-sm"
+                        disabled={vpnDelaying}
+                        aria-busy={vpnDelaying}
+                        onClick={() => void onVpnDelay()}
+                      >
+                        {vpnDelaying ? <Spinner className="size-4" /> : <Gauge className="text-base" />}
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+          <div className="px-2 pb-2">
+            <div className="px-2 py-1">
+              <div className="text-sm font-medium">
+                {t('proxies.activeProfileGroupsTitle')}
+              </div>
+              <div className="text-xs text-muted-foreground">
+                {t('proxies.activeProfileGroupsDescription')}
+              </div>
+              <div className="text-xs text-muted-foreground">
+                {t('proxies.activeProfileGroupsReadOnly')}
+              </div>
+            </div>
+          </div>
           <GroupedVirtuoso
             ref={virtuosoRef}
             groupCounts={groupCounts}

@@ -64,6 +64,18 @@ type Fingerprints =
   | '360'
   | 'qq'
 
+interface GlobalVpnRoutingGroupConfig {
+  type: EditableProxyGroupType
+  proxies: string[]
+  url?: string
+  interval?: number
+  timeout?: number
+  lazy?: boolean
+  maxFailedTimes?: number
+  tolerance?: number
+  expectedStatus?: string
+}
+
 interface EditableProxyGroupConfig {
   name: string
   type: EditableProxyGroupType
@@ -72,6 +84,8 @@ interface EditableProxyGroupConfig {
   usesProviders: boolean
   providerOnly: boolean
   providers: string[]
+  generated?: boolean
+  sourceName?: string
   url?: string
   interval?: number
   timeout?: number

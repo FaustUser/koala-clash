@@ -85,7 +85,7 @@ export default {
 
   sider: {
     home: 'Главная',
-    proxyGroup: 'Группы прокси',
+    proxyGroup: 'Прокси и маршрутизация',
     profileManagement: 'Профили',
     rules: 'Правила',
     connection: 'Подключения',
@@ -197,8 +197,8 @@ export default {
       support: 'Поддержка'
     },
     proxies: {
-      title: 'Группы прокси',
-      proxyGroupSettings: 'Настройки группы прокси',
+      title: 'Прокси и маршрутизация',
+      proxyGroupSettings: 'Настройки прокси и маршрутизации',
       expandAll: 'Развернуть все',
       collapseAll: 'Свернуть все',
       delayTestAll: 'Тест задержки для всех',
@@ -987,6 +987,26 @@ export default {
     groupEditorExpectedStatusPlaceholder: 'Необязательно, например: 204',
     groupEditorExpectedStatusHint:
       'Необязательный HTTP-статус для проверки доступности, например 204 или 2xx.',
+    groupEditorOpenVpn: 'Настроить общую VPN-маршрутизацию',
+    groupEditorTitleVpn: 'Настройка общей VPN-маршрутизации',
+    groupEditorTypeVpn: 'Режим общей VPN-маршрутизации',
+    groupEditorTypeHintVpn:
+      'Эта настройка управляет общей VPN-группой маршрутизации для общих правил. Она не привязана к текущему профилю.',
+    groupEditorVpnHint:
+      'VPN - это глобальная группа маршрутизации для общих правил. Ее режим и порядок fallback общие для всех профилей.',
+    groupRuntimeSharedBadge: 'Общие правила',
+    runtimeGroupsTitle: 'Runtime-группы активного профиля',
+    runtimeGroupsDescription:
+      'Здесь показаны группы прокси, с которыми Mihomo работает сейчас для текущего профиля. При смене профиля этот runtime-список пересобирается.',
+    runtimeGroupsVpnDescription:
+      'Группа VPN особая: это общая группа маршрутизации для общих правил, и ее режим, health check и порядок fallback общие для всех профилей.',
+    sharedVpnCardDescription: 'Глобальная VPN-маршрутизация для общих правил во всех профилях.',
+    sharedVpnCurrentProxy: 'Текущая цель: {{name}}',
+    activeProfileGroupsTitle: 'Группы активного профиля',
+    activeProfileGroupsDescription:
+      'Эти группы относятся к текущему выбранному профилю и меняются при его переключении.',
+    activeProfileGroupsReadOnly:
+      'Их режим маршрутизации здесь не настраивается. Общий Fallback или URL Test задается только в блоке VPN выше.',
     groupTypeSelector: 'Selector',
     groupTypeSelectorDescription:
       'Ручной режим. Активный прокси для такой группы выбирается на странице Proxies. Здесь можно только оставить группу в ручном режиме или переключить её на Fallback / URL Test.',

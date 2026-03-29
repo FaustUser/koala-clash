@@ -83,6 +83,7 @@ interface AppConfig {
   delayTestConcurrency?: number
   delayTestUrl?: string
   delayTestTimeout?: number
+  vpnRoutingGroup?: GlobalVpnRoutingGroupConfig
   encryptedPassword?: number[]
   controlDns?: boolean
   controlSniff?: boolean

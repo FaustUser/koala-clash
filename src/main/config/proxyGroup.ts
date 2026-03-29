@@ -1,8 +1,9 @@
-import { getProfile, getProfileConfig, setProfileStr } from './profile'
+import { getAppConfig, patchAppConfig } from './app'
+import { getProfile, getProfileConfig } from './profile'
 import { getMergedProfileProxies } from './profileMerge'
-import { stringifyYaml } from '../utils/yaml'
 
 const BUILTIN_PROXY_CANDIDATES = ['DIRECT']
+const VPN_RULE_TARGET = 'VPN'
 const RAW_TO_EDITABLE_GROUP_TYPE: Record<string, EditableProxyGroupType> = {
   select: 'Selector',
   selector: 'Selector',
@@ -61,9 +62,42 @@ function toOptionalPositiveNumber(value: number | undefined): number | undefined
   return Math.trunc(value)
 }
 
+function buildEditableGroupConfig(
+  group: MihomoProxyGroupRecord,
+  proxyNames: string[],
+  groupNames: string[],
+  extra?: Partial<EditableProxyGroupConfig>
+): EditableProxyGroupConfig {
+  const proxies = getStringArray(group.proxies)
+  const providers = getStringArray(group.use)
+
+  return {
+    name: group.name!,
+    type: parseGroupType(group.type),
+    proxies,
+    candidates: getUniqueStrings(
+      proxies.concat(proxyNames, groupNames.filter((name) => name !== group.name), BUILTIN_PROXY_CANDIDATES)
+    ),
+    usesProviders: providers.length > 0,
+    providerOnly: providers.length > 0 && proxies.length === 0,
+    providers,
+    url: typeof group.url === 'string' ? group.url : undefined,
+    interval: typeof group.interval === 'number' ? group.interval : undefined,
+    timeout: typeof group.timeout === 'number' ? group.timeout : undefined,
+    lazy: typeof group.lazy === 'boolean' ? group.lazy : undefined,
+    maxFailedTimes:
+      typeof group['max-failed-times'] === 'number' ? group['max-failed-times'] : undefined,
+    tolerance: typeof group.tolerance === 'number' ? group.tolerance : undefined,
+    expectedStatus:
+      typeof group['expected-status'] === 'string' ? group['expected-status'] : undefined,
+    ...extra
+  }
+}
+
 export async function getEditableCurrentProfileProxyGroups(): Promise<EditableProxyGroupConfig[]> {
   const { current } = await getProfileConfig()
   const profile = await getProfile(current)
+  const appConfig = await getAppConfig()
   const rawProxyGroups = Array.isArray(profile['proxy-groups'])
     ? (profile['proxy-groups'] as unknown[])
     : []
@@ -72,102 +106,52 @@ export async function getEditableCurrentProfileProxyGroups(): Promise<EditablePr
   const proxyGroups = rawProxyGroups.filter(isProxyGroupRecord)
   const groupNames = getUniqueStrings(proxyGroups.map((group) => group.name!))
 
-  return proxyGroups
+  const editableGroups = proxyGroups
     .filter((group) => isEditableGroupType(group.type))
-    .map((group) => {
-      const proxies = getStringArray(group.proxies)
-      const providers = getStringArray(group.use)
+    .map((group) => buildEditableGroupConfig(group, proxyNames, groupNames))
 
-      return {
-        name: group.name!,
-        type: parseGroupType(group.type),
-        proxies,
-        candidates: getUniqueStrings(
-          proxies.concat(proxyNames, groupNames.filter((name) => name !== group.name), BUILTIN_PROXY_CANDIDATES)
-        ),
-        usesProviders: providers.length > 0,
-        providerOnly: providers.length > 0 && proxies.length === 0,
-        providers,
-        url: typeof group.url === 'string' ? group.url : undefined,
-        interval: typeof group.interval === 'number' ? group.interval : undefined,
-        timeout: typeof group.timeout === 'number' ? group.timeout : undefined,
-        lazy: typeof group.lazy === 'boolean' ? group.lazy : undefined,
-        maxFailedTimes:
-          typeof group['max-failed-times'] === 'number' ? group['max-failed-times'] : undefined,
-        tolerance: typeof group.tolerance === 'number' ? group.tolerance : undefined,
-        expectedStatus:
-          typeof group['expected-status'] === 'string' ? group['expected-status'] : undefined
-      }
+  const vpnRoutingGroup = appConfig.vpnRoutingGroup
+  const generatedVpnGroup: MihomoProxyGroupRecord = {
+    name: VPN_RULE_TARGET,
+    type: EDITABLE_TO_RAW_GROUP_TYPE[vpnRoutingGroup?.type ?? 'Fallback'],
+    proxies: getUniqueStrings(vpnRoutingGroup?.proxies?.length ? vpnRoutingGroup.proxies : proxyNames),
+    url: vpnRoutingGroup?.url,
+    interval: vpnRoutingGroup?.interval,
+    timeout: vpnRoutingGroup?.timeout,
+    lazy: vpnRoutingGroup?.lazy,
+    'max-failed-times': vpnRoutingGroup?.maxFailedTimes,
+    tolerance: vpnRoutingGroup?.tolerance,
+    'expected-status': vpnRoutingGroup?.expectedStatus
+  }
+
+  return editableGroups
+    .filter((group) => group.name !== VPN_RULE_TARGET)
+    .concat(
+    buildEditableGroupConfig(generatedVpnGroup, proxyNames, groupNames, {
+      generated: true
     })
+    )
 }
 
 export async function updateCurrentProfileProxyGroup(
   patch: EditableProxyGroupPatch
 ): Promise<void> {
-  const { current } = await getProfileConfig()
-  const profile = await getProfile(current)
-  const rawProxyGroups = Array.isArray(profile['proxy-groups'])
-    ? (profile['proxy-groups'] as unknown[])
-    : []
-  const proxyGroups = rawProxyGroups.filter(isProxyGroupRecord)
-  const groupIndex = proxyGroups.findIndex((group) => group.name === patch.name)
-
-  if (groupIndex === -1) {
-    throw new Error(`Proxy group "${patch.name}" not found`)
+  if (patch.name === VPN_RULE_TARGET) {
+    await patchAppConfig({
+      vpnRoutingGroup: {
+        type: patch.type,
+        proxies: getUniqueStrings(patch.proxies),
+        url: patch.url?.trim() || undefined,
+        interval: toOptionalPositiveNumber(patch.interval),
+        timeout: toOptionalPositiveNumber(patch.timeout),
+        lazy: typeof patch.lazy === 'boolean' ? patch.lazy : undefined,
+        maxFailedTimes: toOptionalPositiveNumber(patch.maxFailedTimes),
+        tolerance: patch.type === 'URLTest' ? toOptionalPositiveNumber(patch.tolerance) : undefined,
+        expectedStatus: patch.expectedStatus?.trim() || undefined
+      }
+    })
+    return
   }
 
-  const targetGroup = proxyGroups[groupIndex]
-  targetGroup.type = EDITABLE_TO_RAW_GROUP_TYPE[patch.type]
-  targetGroup.proxies = getUniqueStrings(patch.proxies)
-
-  const url = patch.url?.trim()
-  if (url) {
-    targetGroup.url = url
-  } else {
-    delete targetGroup.url
-  }
-
-  const interval = toOptionalPositiveNumber(patch.interval)
-  if (interval !== undefined) {
-    targetGroup.interval = interval
-  } else {
-    delete targetGroup.interval
-  }
-
-  const timeout = toOptionalPositiveNumber(patch.timeout)
-  if (timeout !== undefined) {
-    targetGroup.timeout = timeout
-  } else {
-    delete targetGroup.timeout
-  }
-
-  if (typeof patch.lazy === 'boolean') {
-    targetGroup.lazy = patch.lazy
-  } else {
-    delete targetGroup.lazy
-  }
-
-  const maxFailedTimes = toOptionalPositiveNumber(patch.maxFailedTimes)
-  if (maxFailedTimes !== undefined) {
-    targetGroup['max-failed-times'] = maxFailedTimes
-  } else {
-    delete targetGroup['max-failed-times']
-  }
-
-  const tolerance = toOptionalPositiveNumber(patch.tolerance)
-  if (patch.type === 'URLTest' && tolerance !== undefined) {
-    targetGroup.tolerance = tolerance
-  } else {
-    delete targetGroup.tolerance
-  }
-
-  const expectedStatus = patch.expectedStatus?.trim()
-  if (expectedStatus) {
-    targetGroup['expected-status'] = expectedStatus
-  } else {
-    delete targetGroup['expected-status']
-  }
-
-  profile['proxy-groups'] = proxyGroups as unknown as []
-  await setProfileStr(current || 'default', stringifyYaml(profile))
+  throw new Error('Only the global VPN group supports routing mode changes')
 }

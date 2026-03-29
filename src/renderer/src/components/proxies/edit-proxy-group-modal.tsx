@@ -23,6 +23,7 @@ import { toast } from 'sonner'
 import {
   getEditableCurrentProfileProxyGroups,
   getProfileConfig,
+  restartCore,
   updateCurrentProfileProxyGroup
 } from '@renderer/utils/ipc'
 import {
@@ -252,6 +253,7 @@ const EditProxyGroupModal: React.FC<Props> = ({ groupName, onClose, onSaved }) =
         tolerance: groupConfig.tolerance,
         expectedStatus: groupConfig.expectedStatus
       })
+      await restartCore()
       onSaved()
       onClose()
     } catch (error) {
@@ -268,7 +270,11 @@ const EditProxyGroupModal: React.FC<Props> = ({ groupName, onClose, onSaved }) =
         showCloseButton={false}
       >
         <DialogHeader className="pb-0">
-          <DialogTitle>{t('proxies.groupEditorTitle', { name: groupName })}</DialogTitle>
+          <DialogTitle>
+            {groupName === 'VPN'
+              ? t('proxies.groupEditorTitleVpn')
+              : t('proxies.groupEditorTitle', { name: groupName })}
+          </DialogTitle>
         </DialogHeader>
         {loading || !groupConfig ? (
           <div className="py-6 text-sm text-muted-foreground">{t('common.loading')}</div>
@@ -276,10 +282,16 @@ const EditProxyGroupModal: React.FC<Props> = ({ groupName, onClose, onSaved }) =
           <div className="py-2 flex flex-col gap-1 overflow-y-auto min-h-0">
             <div className="rounded-2xl border border-stroke bg-card/40 p-4 space-y-4">
               <div className="flex items-start justify-between gap-4">
-                <div className="space-y-1">
-                  <div className="text-sm font-medium">{t('proxies.groupEditorType')}</div>
+                  <div className="space-y-1">
+                  <div className="text-sm font-medium">
+                    {groupName === 'VPN'
+                      ? t('proxies.groupEditorTypeVpn')
+                      : t('proxies.groupEditorType')}
+                  </div>
                   <p className="text-sm text-muted-foreground">
-                    {t('proxies.groupEditorTypeHint')}
+                    {groupName === 'VPN'
+                      ? t('proxies.groupEditorTypeHintVpn')
+                      : t('proxies.groupEditorTypeHint')}
                   </p>
                 </div>
                 <Select
@@ -314,6 +326,11 @@ const EditProxyGroupModal: React.FC<Props> = ({ groupName, onClose, onSaved }) =
                     </div>
                     <p className="text-muted-foreground">{t(groupTypeDescriptionKey)}</p>
                     <p className="text-muted-foreground">{t('proxies.groupEditorSaveHint')}</p>
+                    {groupConfig.generated && groupConfig.name === 'VPN' && (
+                      <p className="text-muted-foreground">
+                        {t('proxies.groupEditorVpnHint')}
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>

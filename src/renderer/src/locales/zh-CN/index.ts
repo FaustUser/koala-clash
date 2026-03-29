@@ -159,7 +159,7 @@ export default {
 
   sider: {
     home: '首页',
-    proxyGroup: '代理组',
+    proxyGroup: '代理与路由',
     profileManagement: '订阅管理',
     rules: '规则',
     connection: '连接',
@@ -270,8 +270,8 @@ export default {
       support: '支持'
     },
     proxies: {
-      title: '代理组',
-      proxyGroupSettings: '代理组设置',
+      title: '代理与路由',
+      proxyGroupSettings: '代理与路由设置',
       expandAll: '展开全部',
       collapseAll: '收起全部',
       delayTestAll: '全部延迟测试',
@@ -1038,6 +1038,26 @@ export default {
     groupEditorExpectedStatus: '期望状态码',
     groupEditorExpectedStatusPlaceholder: '可选，例如：204',
     groupEditorExpectedStatusHint: '可选的健康检查 HTTP 状态匹配，例如 204 或 2xx。',
+    groupEditorOpenVpn: '编辑共享 VPN 路由',
+    groupEditorTitleVpn: '编辑共享 VPN 路由',
+    groupEditorTypeVpn: '共享 VPN 路由模式',
+    groupEditorTypeHintVpn:
+      '这项配置用于公共规则使用的 VPN 路由组，不会随着当前选中的配置文件切换而改变。',
+    groupEditorVpnHint:
+      'VPN 是供公共规则使用的全局路由组，其模式和 fallback 顺序在所有配置之间共享。',
+    groupRuntimeSharedBadge: '公共规则',
+    runtimeGroupsTitle: '当前配置的 Runtime 组',
+    runtimeGroupsDescription:
+      '这个页面显示 Mihomo 当前正在使用的代理组。切换当前配置时，这个 runtime 列表会重新构建。',
+    runtimeGroupsVpnDescription:
+      'VPN 组是特殊的：它是公共规则使用的共享路由组，其模式、health check 和 fallback 顺序在所有配置之间共享。',
+    sharedVpnCardDescription: '供所有配置公共规则使用的全局 VPN 路由。',
+    sharedVpnCurrentProxy: '当前目标：{{name}}',
+    activeProfileGroupsTitle: '当前配置的组',
+    activeProfileGroupsDescription:
+      '这些组属于当前选中的配置，会在切换配置时一起发生变化。',
+    activeProfileGroupsReadOnly:
+      '这里不编辑它们的路由模式。共享 Fallback 或 URL Test 只在上方的 VPN 区块中配置。',
     groupTypeSelector: 'Selector',
     groupTypeSelectorDescription:
       '手动模式。这个分组的当前代理仍然是在 Proxies 页面里选择的。这里可以保持手动模式，或者切换成 Fallback / URL Test。',

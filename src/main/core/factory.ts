@@ -92,6 +92,7 @@ interface MihomoProxyGroupRecord extends Record<string, unknown> {
   name?: string
   type?: string
   proxies?: string[]
+  use?: string[]
   url?: string
   interval?: number
   timeout?: number
@@ -106,9 +107,8 @@ function isProxyGroupRecord(group: unknown): group is MihomoProxyGroupRecord {
 }
 
 function buildVpnRouteGroup(
-  profile: MihomoConfig,
   mergedProxies: Array<{ name?: unknown }>,
-  defaultTarget: string
+  vpnRoutingGroup?: GlobalVpnRoutingGroupConfig
 ): MihomoProxyGroupRecord | null {
   const proxyNames = [
     ...new Set(
@@ -122,45 +122,24 @@ function buildVpnRouteGroup(
     return null
   }
 
-  const sourceGroups = Array.isArray(profile['proxy-groups'])
-    ? (profile['proxy-groups'] as unknown[])
-    : []
-  const sourceGroup = sourceGroups.find((group) => {
-    return (
-      isProxyGroupRecord(group) && typeof group.name === 'string' && group.name === defaultTarget
-    )
-  }) as MihomoProxyGroupRecord | undefined
-
   const vpnGroup: MihomoProxyGroupRecord = {
     name: VPN_RULE_TARGET,
     type:
-      sourceGroup?.type === 'fallback' || sourceGroup?.type === 'url-test'
-        ? sourceGroup.type
-        : 'fallback',
-    proxies: proxyNames
+      vpnRoutingGroup?.type === 'URLTest'
+        ? 'url-test'
+        : vpnRoutingGroup?.type === 'Selector'
+          ? 'select'
+          : 'fallback',
+    proxies: vpnRoutingGroup?.proxies?.length ? vpnRoutingGroup.proxies : proxyNames
   }
 
-  if (typeof sourceGroup?.url === 'string') {
-    vpnGroup.url = sourceGroup.url
-  }
-  if (typeof sourceGroup?.interval === 'number') {
-    vpnGroup.interval = sourceGroup.interval
-  }
-  if (typeof sourceGroup?.timeout === 'number') {
-    vpnGroup.timeout = sourceGroup.timeout
-  }
-  if (typeof sourceGroup?.lazy === 'boolean') {
-    vpnGroup.lazy = sourceGroup.lazy
-  }
-  if (typeof sourceGroup?.['max-failed-times'] === 'number') {
-    vpnGroup['max-failed-times'] = sourceGroup['max-failed-times']
-  }
-  if (typeof sourceGroup?.tolerance === 'number') {
-    vpnGroup.tolerance = sourceGroup.tolerance
-  }
-  if (typeof sourceGroup?.['expected-status'] === 'string') {
-    vpnGroup['expected-status'] = sourceGroup['expected-status']
-  }
+  vpnGroup.url = vpnRoutingGroup?.url
+  vpnGroup.interval = vpnRoutingGroup?.interval
+  vpnGroup.timeout = vpnRoutingGroup?.timeout
+  vpnGroup.lazy = vpnRoutingGroup?.lazy
+  vpnGroup['max-failed-times'] = vpnRoutingGroup?.maxFailedTimes
+  vpnGroup.tolerance = vpnRoutingGroup?.tolerance
+  vpnGroup['expected-status'] = vpnRoutingGroup?.expectedStatus
 
   if (!vpnGroup.url && ['fallback', 'url-test'].includes(String(vpnGroup.type))) {
     vpnGroup.url = 'https://www.gstatic.com/generate_204'
@@ -221,7 +200,8 @@ export async function generateProfile(): Promise<void> {
     diffWorkDir = false,
     controlDns = true,
     controlSniff = true,
-    controlTun = false
+    controlTun = false,
+    vpnRoutingGroup
   } = await getAppConfig()
   const currentProfile = await getProfile(current)
   rawProfileStr = await getProfileStr(current)
@@ -260,9 +240,8 @@ export async function generateProfile(): Promise<void> {
       )
     : []
   const vpnRouteGroup = buildVpnRouteGroup(
-    currentProfile,
     mergedProfileProxies as Array<{ name?: unknown }>,
-    defaultRuleTarget
+    vpnRoutingGroup
   )
   if (vpnRouteGroup) {
     currentProfile['proxy-groups'] = [...existingProxyGroups, vpnRouteGroup] as unknown as []
