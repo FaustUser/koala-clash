@@ -209,6 +209,10 @@ export async function restartCore(): Promise<void> {
   return ipcErrorWrapper(await window.electron.ipcRenderer.invoke('restartCore'))
 }
 
+export async function getCoreHealth(): Promise<{ alive: boolean; recovering: boolean }> {
+  return ipcErrorWrapper(await window.electron.ipcRenderer.invoke('getCoreHealth'))
+}
+
 export async function restartMihomoConnections(): Promise<void> {
   return ipcErrorWrapper(await window.electron.ipcRenderer.invoke('restartMihomoConnections'))
 }

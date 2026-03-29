@@ -40,6 +40,7 @@ import { disableSysProxy, triggerSysProxy } from '../sys/sysproxy'
 import { getAxios } from './mihomoApi'
 import { setSysDns } from '../service/api'
 import { t } from '../utils/i18n'
+import { updateTrayIcon } from '../resolve/tray'
 
 const ctlParam = process.platform === 'win32' ? '-ext-ctl-pipe' : '-ext-ctl-unix'
 
@@ -67,10 +68,135 @@ function isUserCancelledError(error: unknown): boolean {
 let setPublicDNSTimer: NodeJS.Timeout | null = null
 let recoverDNSTimer: NodeJS.Timeout | null = null
 let networkDetectionTimer: NodeJS.Timeout | null = null
+let coreHealthCheckTimer: NodeJS.Timeout | null = null
 let networkDownHandled = false
+let coreAlive = false
+let coreRecovering = false
+let consecutiveCoreHealthFailures = 0
 
 let child: ChildProcess
 let retry = 10
+
+const CORE_HEALTH_CHECK_INTERVAL_MS = 15000
+const CORE_HEALTH_FAILURE_THRESHOLD = 3
+
+function emitCoreHealthChanged(): void {
+  mainWindow?.webContents.send('core-health-changed', {
+    alive: coreAlive,
+    recovering: coreRecovering
+  })
+}
+
+function setCoreHealth(nextAlive: boolean): void {
+  if (coreAlive === nextAlive) {
+    return
+  }
+
+  coreAlive = nextAlive
+  emitCoreHealthChanged()
+}
+
+export function getCoreHealth(): { alive: boolean; recovering: boolean } {
+  return {
+    alive: coreAlive,
+    recovering: coreRecovering
+  }
+}
+
+function stopCoreHealthCheck(): void {
+  if (coreHealthCheckTimer) {
+    clearInterval(coreHealthCheckTimer)
+    coreHealthCheckTimer = null
+  }
+  consecutiveCoreHealthFailures = 0
+}
+
+async function handleUnhealthyCore(): Promise<void> {
+  if (coreRecovering) {
+    return
+  }
+
+  coreRecovering = true
+  emitCoreHealthChanged()
+
+  try {
+    const [{ tun }, { sysProxy, onlyActiveDevice = false }] = await Promise.all([
+      getControledMihomoConfig(),
+      getAppConfig()
+    ])
+
+    await writeFile(
+      logPath(),
+      `[Manager]: Core health check failed ${CORE_HEALTH_FAILURE_THRESHOLD} times, starting recovery\n`,
+      { flag: 'a' }
+    )
+
+    const tunEnabled = tun?.enable ?? false
+    const sysProxyEnabled = sysProxy.enable ?? false
+
+    if (tunEnabled) {
+      await stopCore(true)
+      await patchControledMihomoConfig({ tun: { enable: false } })
+      mainWindow?.webContents.send('controledMihomoConfigUpdated')
+      ipcMain.emit('updateTrayMenu')
+    }
+
+    if (sysProxyEnabled) {
+      await triggerSysProxy(false, onlyActiveDevice)
+      await patchAppConfig({ sysProxy: { enable: false } })
+      mainWindow?.webContents.send('appConfigUpdated')
+      ipcMain.emit('updateTrayMenu')
+    }
+
+    await updateTrayIcon()
+    emitCoreHealthChanged()
+
+    showError(
+      t('tray.coreStartError'),
+      'Mihomo stopped responding. TUN/system proxy was disabled to restore internet access.'
+    )
+  } catch (error) {
+    await writeFile(logPath(), `[Manager]: core recovery failed, ${error}\n`, {
+      flag: 'a'
+    })
+  } finally {
+    coreRecovering = false
+    emitCoreHealthChanged()
+  }
+}
+
+async function checkCoreHealth(): Promise<void> {
+  if (!child || child.killed || coreRecovering) {
+    setCoreHealth(false)
+    return
+  }
+
+  try {
+    await mihomoGroups()
+    consecutiveCoreHealthFailures = 0
+    setCoreHealth(true)
+  } catch (error) {
+    consecutiveCoreHealthFailures += 1
+    await writeFile(
+      logPath(),
+      `[Manager]: Core health check failed (${consecutiveCoreHealthFailures}/${CORE_HEALTH_FAILURE_THRESHOLD}), ${error}\n`,
+      { flag: 'a' }
+    )
+
+    if (consecutiveCoreHealthFailures >= CORE_HEALTH_FAILURE_THRESHOLD) {
+      setCoreHealth(false)
+      await handleUnhealthyCore()
+    }
+  }
+}
+
+function startCoreHealthCheck(): void {
+  stopCoreHealthCheck()
+  setCoreHealth(true)
+  coreHealthCheckTimer = setInterval(() => {
+    void checkCoreHealth()
+  }, CORE_HEALTH_CHECK_INTERVAL_MS)
+}
 
 export async function startCore(detached = false): Promise<Promise<void>[]> {
   const {
@@ -102,6 +228,7 @@ export async function startCore(detached = false): Promise<Promise<void>[]> {
   await generateProfile()
   await checkProfile()
   await stopCore()
+  setCoreHealth(false)
   if (tun?.enable && autoSetDNSMode !== 'none') {
     try {
       await setPublicDNS()
@@ -153,11 +280,14 @@ export async function startCore(detached = false): Promise<Promise<void>[]> {
   }
   if (detached) {
     child.unref()
+    setCoreHealth(true)
     return new Promise((resolve) => {
       resolve([new Promise(() => {})])
     })
   }
   child.on('close', async (code, signal) => {
+    stopCoreHealthCheck()
+    setCoreHealth(false)
     await writeFile(logPath(), `[Manager]: Core closed, code: ${code}, signal: ${signal}\n`, {
       flag: 'a'
     })
@@ -238,6 +368,7 @@ export async function startCore(detached = false): Promise<Promise<void>[]> {
 
                 await waitForMihomoReady()
                 initialized = true
+                startCoreHealthCheck()
                 Promise.all([
                   new Promise((r) => setTimeout(r, 100)).then(() => {
                     mainWindow?.webContents.send('groupsUpdated')
@@ -267,6 +398,9 @@ export async function startCore(detached = false): Promise<Promise<void>[]> {
 }
 
 export async function stopCore(force = false): Promise<void> {
+  stopCoreHealthCheck()
+  setCoreHealth(false)
+
   try {
     if (!force) {
       await recoverDNS()

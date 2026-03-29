@@ -4,7 +4,7 @@ import { useAppConfig } from '@renderer/hooks/use-app-config'
 import { useControledMihomoConfig } from '@renderer/hooks/use-controled-mihomo-config'
 import { useProfileConfig } from '@renderer/hooks/use-profile-config'
 import { useGroups } from '@renderer/hooks/use-groups'
-import { restartCore, triggerSysProxy, updateTrayIcon } from '@renderer/utils/ipc'
+import { getCoreHealth, restartCore, triggerSysProxy, updateTrayIcon } from '@renderer/utils/ipc'
 import NumberFlow from '@number-flow/react'
 import { useTranslation } from 'react-i18next'
 import { useEffect, useMemo, useState } from 'react'
@@ -65,6 +65,41 @@ const Home: React.FC = () => {
   }
 
   const [connectionsInfo, setConnectionsInfo] = useState<ControllerConnections>()
+  const [coreAlive, setCoreAlive] = useState(false)
+  const [coreRecovering, setCoreRecovering] = useState(false)
+
+  useEffect(() => {
+    let mounted = true
+
+    const syncCoreHealth = async (): Promise<void> => {
+      try {
+        const health = await getCoreHealth()
+        if (!mounted) return
+        setCoreAlive(health.alive)
+        setCoreRecovering(health.recovering)
+      } catch {
+        if (!mounted) return
+        setCoreAlive(false)
+        setCoreRecovering(false)
+      }
+    }
+
+    const handleCoreHealthChanged = (
+      _e: unknown,
+      health: { alive: boolean; recovering: boolean }
+    ): void => {
+      setCoreAlive(health.alive)
+      setCoreRecovering(health.recovering)
+    }
+
+    void syncCoreHealth()
+    window.electron.ipcRenderer.on('core-health-changed', handleCoreHealthChanged)
+
+    return (): void => {
+      mounted = false
+      window.electron.ipcRenderer.removeListener('core-health-changed', handleCoreHealthChanged)
+    }
+  }, [])
 
   useEffect(() => {
     const handleConnections = (_e: unknown, info: ControllerConnections): void => {
@@ -88,7 +123,8 @@ const Home: React.FC = () => {
     return 0
   })
 
-  const isSelected = (tun?.enable ?? false) || (sysProxyEnable ?? false)
+  const isEnabled = (tun?.enable ?? false) || (sysProxyEnable ?? false)
+  const isSelected = isEnabled && coreAlive
 
   useEffect(() => {
     if (isSelected) {
@@ -114,7 +150,9 @@ const Home: React.FC = () => {
     ? loadingDirection === 'connecting'
       ? t('pages.home.connecting')
       : t('pages.home.disconnecting')
-    : isSelected
+    : coreRecovering
+      ? t('pages.home.connecting')
+      : isSelected
       ? t('pages.home.connected')
       : t('pages.home.disconnected')
   const statusWidthTexts = [
@@ -311,13 +349,13 @@ const Home: React.FC = () => {
             </div>
             <button
               disabled={isDisabled}
-              onClick={() => onValueChange(!isSelected)}
+              onClick={() => onValueChange(!isEnabled)}
               data-guide="home-power-toggle"
               className="relative group transition-transform active:scale-95"
             >
               <div
                 className={`w-32 h-32 rounded-full flex items-center justify-center transition-all duration-300 bg-radial-[at_30%_45%] backdrop-blur-xl border-2 ${
-                  isSelected
+                  isEnabled
                     ? 'from-gradient-start-power-on/60 to-gradient-end-power-on/60 border-stroke-power-on'
                     : 'from-gradient-start-power-off/50 to-gradient-end-power-off/50 border-stroke-power-off'
                 } ${loading ? 'animate-none' : ''}`}
@@ -332,14 +370,14 @@ const Home: React.FC = () => {
                     src={Pause}
                     alt=""
                     className={`absolute inset-0 size-16 fill-foreground transition-all duration-300 ease-out ${
-                      !loading && isSelected ? 'opacity-100 scale-100' : 'opacity-0 scale-90'
+                      !loading && isEnabled ? 'opacity-100 scale-100' : 'opacity-0 scale-90'
                     }`}
                   />
                   <img
                     src={Power}
                     alt=""
                     className={`absolute inset-0 size-16 fill-foreground transition-all duration-300 ease-out ${
-                      !loading && !isSelected ? 'opacity-100 scale-100' : 'opacity-0 scale-90'
+                      !loading && !isEnabled ? 'opacity-100 scale-100' : 'opacity-0 scale-90'
                     }`}
                   />
                 </div>
