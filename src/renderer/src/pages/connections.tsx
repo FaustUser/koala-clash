@@ -52,6 +52,7 @@ import {
 } from 'lucide-react'
 
 let cachedConnections: ControllerConnectionDetail[] = []
+const MAX_CLOSED_CONNECTIONS = 200
 
 const Connections: React.FC = () => {
   const { t } = useTranslation()
@@ -105,6 +106,9 @@ const Connections: React.FC = () => {
 
   // Two-level navigation: null = process list, string = selected process path
   const [selectedProcess, setSelectedProcess] = useState<string | null>(null)
+  const allConnectionsRef = useRef<ControllerConnectionDetail[]>(cachedConnections)
+  const activeConnectionsRef = useRef<ControllerConnectionDetail[]>([])
+  const deletedIdsRef = useRef<Set<string>>(new Set())
 
   const columnOptions = useMemo(
     () => [
@@ -306,9 +310,14 @@ const Connections: React.FC = () => {
     if (closedConnections.length === 0) return
 
     const trashIds = closedConnections.map((conn) => conn.id)
-    setDeletedIds((prev) => new Set([...prev, ...trashIds]))
+    setDeletedIds((prev) => {
+      const next = new Set([...prev, ...trashIds])
+      deletedIdsRef.current = next
+      return next
+    })
     setAllConnections((allConns) => {
       const updatedConnections = allConns.filter((conn) => !trashIds.includes(conn.id))
+      allConnectionsRef.current = updatedConnections
       cachedConnections = updatedConnections
       return updatedConnections
     })
@@ -316,9 +325,14 @@ const Connections: React.FC = () => {
   }, [closedConnections])
 
   const trashClosedConnection = useCallback((id: string): void => {
-    setDeletedIds((prev) => new Set([...prev, id]))
+    setDeletedIds((prev) => {
+      const next = new Set([...prev, id])
+      deletedIdsRef.current = next
+      return next
+    })
     setAllConnections((allConns) => {
       const updatedConnections = allConns.filter((conn) => conn.id !== id)
+      allConnectionsRef.current = updatedConnections
       cachedConnections = updatedConnections
       return updatedConnections
     })
@@ -337,13 +351,25 @@ const Connections: React.FC = () => {
   )
 
   useEffect(() => {
+    allConnectionsRef.current = allConnections
+  }, [allConnections])
+
+  useEffect(() => {
+    activeConnectionsRef.current = activeConnections
+  }, [activeConnections])
+
+  useEffect(() => {
+    deletedIdsRef.current = deletedIds
+  }, [deletedIds])
+
+  useEffect(() => {
     const handleConnections = (_e: unknown, info: ControllerConnections): void => {
       setConnectionsInfo(info)
 
       if (!info.connections) return
 
-      const prevActiveMap = new Map(activeConnections.map((conn) => [conn.id, conn]))
-      const existingConnectionIds = new Set(allConnections.map((conn) => conn.id))
+      const prevActiveMap = new Map(activeConnectionsRef.current.map((conn) => [conn.id, conn]))
+      const existingConnectionIds = new Set(allConnectionsRef.current.map((conn) => conn.id))
 
       const activeConns = info.connections.map((conn) => {
         const preConn = prevActiveMap.get(conn.id)
@@ -364,48 +390,40 @@ const Connections: React.FC = () => {
       })
 
       const newConnections = activeConns.filter(
-        (conn) => !existingConnectionIds.has(conn.id) && !deletedIds.has(conn.id)
+        (conn) => !existingConnectionIds.has(conn.id) && !deletedIdsRef.current.has(conn.id)
       )
 
-      if (newConnections.length > 0) {
-        const updatedAllConnections = [...allConnections, ...newConnections]
+      const updatedAllConnections =
+        newConnections.length > 0
+          ? [...allConnectionsRef.current, ...newConnections]
+          : allConnectionsRef.current
 
-        const activeConnIds = new Set(activeConns.map((conn) => conn.id))
-        const allConns = updatedAllConnections.map((conn) => {
-          const activeConn = activeConns.find((ac) => ac.id === conn.id)
-          return activeConn || { ...conn, isActive: false, downloadSpeed: 0, uploadSpeed: 0 }
-        })
+      const activeConnById = new Map(activeConns.map((conn) => [conn.id, conn]))
+      const activeConnIds = new Set(activeConnById.keys())
+      const allConns = updatedAllConnections.map((conn) => {
+        const activeConn = activeConnById.get(conn.id)
+        return activeConn || { ...conn, isActive: false, downloadSpeed: 0, uploadSpeed: 0 }
+      })
+      const finalAllConnections = allConns.slice(-(activeConns.length + MAX_CLOSED_CONNECTIONS))
+      const closedConns = finalAllConnections.filter((conn) => !activeConnIds.has(conn.id))
 
-        const closedConns = allConns.filter((conn) => !activeConnIds.has(conn.id))
+      activeConnectionsRef.current = activeConns
+      allConnectionsRef.current = finalAllConnections
+      cachedConnections = finalAllConnections
 
-        setActiveConnections(activeConns)
-        setClosedConnections(closedConns)
-        const finalAllConnections = allConns.slice(-(activeConns.length + 200))
-        setAllConnections(finalAllConnections)
-        cachedConnections = finalAllConnections
-      } else {
-        const activeConnIds = new Set(activeConns.map((conn) => conn.id))
-        const allConns = allConnections.map((conn) => {
-          const activeConn = activeConns.find((ac) => ac.id === conn.id)
-          return activeConn || { ...conn, isActive: false, downloadSpeed: 0, uploadSpeed: 0 }
-        })
-
-        const closedConns = allConns.filter((conn) => !activeConnIds.has(conn.id))
-
-        setActiveConnections(activeConns)
-        setClosedConnections(closedConns)
-        setAllConnections(allConns)
-        cachedConnections = allConns
-      }
+      setActiveConnections(activeConns)
+      setClosedConnections(closedConns)
+      setAllConnections(finalAllConnections)
     }
-    if (!isPaused) {
-      window.electron.ipcRenderer.on('mihomoConnections', handleConnections)
-    }
+
+    if (isPaused) return
+
+    window.electron.ipcRenderer.on('mihomoConnections', handleConnections)
 
     return (): void => {
-      window.electron.ipcRenderer.removeAllListeners('mihomoConnections')
+      window.electron.ipcRenderer.removeListener('mihomoConnections', handleConnections)
     }
-  }, [allConnections, activeConnections, closedConnections, deletedIds, isPaused])
+  }, [isPaused])
   const togglePause = useCallback(() => {
     setIsPaused((prev) => !prev)
   }, [])

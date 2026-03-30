@@ -7,6 +7,7 @@ import { calcTraffic } from '../utils/calc'
 import { getRuntimeConfig } from './factory'
 import { floatingWindow } from '../resolve/floatingWindow'
 import { mihomoIpcPath } from '../utils/dirs'
+import type { BrowserWindow } from 'electron'
 
 let axiosIns: AxiosInstance = null!
 let mihomoTrafficWs: WebSocket | null = null
@@ -17,6 +18,41 @@ let mihomoLogsWs: WebSocket | null = null
 let logsRetry = 10
 let mihomoConnectionsWs: WebSocket | null = null
 let connectionsRetry = 10
+let latestConnectionsPayload: ControllerConnections | null = null
+let connectionsFlushTimer: NodeJS.Timeout | null = null
+
+const CONNECTIONS_FLUSH_INTERVAL_MS = 250
+
+function canSendToWindow(window: BrowserWindow | null): boolean {
+  if (!window) {
+    return false
+  }
+
+  return !window.isDestroyed() && !window.webContents.isDestroyed()
+}
+
+function sendToWindow<T>(window: BrowserWindow | null, channel: string, payload: T): void {
+  if (!window || !canSendToWindow(window)) {
+    return
+  }
+
+  try {
+    window.webContents.send(channel, payload)
+  } catch {
+    // ignore
+  }
+}
+
+function flushConnectionsPayload(): void {
+  connectionsFlushTimer = null
+
+  if (!latestConnectionsPayload) {
+    return
+  }
+
+  sendToWindow(mainWindow, 'mihomoConnections', latestConnectionsPayload)
+  latestConnectionsPayload = null
+}
 
 export const getAxios = async (force: boolean = false): Promise<AxiosInstance> => {
   const currentSocketPath = mihomoIpcPath()
@@ -252,20 +288,16 @@ const mihomoTraffic = async (): Promise<void> => {
     const data = e.data as string
     const json = JSON.parse(data) as ControllerTraffic
     trafficRetry = 10
-    try {
-      mainWindow?.webContents.send('mihomoTraffic', json)
-      if (process.platform !== 'linux') {
-        tray?.setToolTip(
-          '↑' +
-            `${calcTraffic(json.up)}/s`.padStart(9) +
-            '\n↓' +
-            `${calcTraffic(json.down)}/s`.padStart(9)
-        )
-      }
-      floatingWindow?.webContents.send('mihomoTraffic', json)
-    } catch {
-      // ignore
+    sendToWindow(mainWindow, 'mihomoTraffic', json)
+    if (process.platform !== 'linux') {
+      tray?.setToolTip(
+        '\u2191' +
+          `${calcTraffic(json.up)}/s`.padStart(9) +
+          '\n\u2193' +
+          `${calcTraffic(json.down)}/s`.padStart(9)
+      )
     }
+    sendToWindow(floatingWindow, 'mihomoTraffic', json)
   }
 
   mihomoTrafficWs.onclose = (): void => {
@@ -303,11 +335,7 @@ const mihomoMemory = async (): Promise<void> => {
   mihomoMemoryWs.onmessage = (e): void => {
     const data = e.data as string
     memoryRetry = 10
-    try {
-      mainWindow?.webContents.send('mihomoMemory', JSON.parse(data) as ControllerMemory)
-    } catch {
-      // ignore
-    }
+    sendToWindow(mainWindow, 'mihomoMemory', JSON.parse(data) as ControllerMemory)
   }
 
   mihomoMemoryWs.onclose = (): void => {
@@ -347,11 +375,7 @@ const mihomoLogs = async (): Promise<void> => {
   mihomoLogsWs.onmessage = (e): void => {
     const data = e.data as string
     logsRetry = 10
-    try {
-      mainWindow?.webContents.send('mihomoLogs', JSON.parse(data) as ControllerLog)
-    } catch {
-      // ignore
-    }
+    sendToWindow(mainWindow, 'mihomoLogs', JSON.parse(data) as ControllerLog)
   }
 
   mihomoLogsWs.onclose = (): void => {
@@ -374,6 +398,11 @@ export const startMihomoConnections = async (): Promise<void> => {
 }
 
 export const stopMihomoConnections = (): void => {
+  latestConnectionsPayload = null
+  if (connectionsFlushTimer) {
+    clearTimeout(connectionsFlushTimer)
+    connectionsFlushTimer = null
+  }
   if (mihomoConnectionsWs) {
     mihomoConnectionsWs.removeAllListeners()
     if (mihomoConnectionsWs.readyState === WebSocket.OPEN) {
@@ -397,10 +426,9 @@ const mihomoConnections = async (): Promise<void> => {
   mihomoConnectionsWs.onmessage = (e): void => {
     const data = e.data as string
     connectionsRetry = 10
-    try {
-      mainWindow?.webContents.send('mihomoConnections', JSON.parse(data) as ControllerConnections)
-    } catch {
-      // ignore
+    latestConnectionsPayload = JSON.parse(data) as ControllerConnections
+    if (!connectionsFlushTimer) {
+      connectionsFlushTimer = setTimeout(flushConnectionsPayload, CONNECTIONS_FLUSH_INTERVAL_MS)
     }
   }
 

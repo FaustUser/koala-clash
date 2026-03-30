@@ -11,11 +11,17 @@ import {
   powerMonitor,
   shell
 } from 'electron'
-import { addProfileItem, getAppConfig, patchControledMihomoConfig } from './config'
+import {
+  addProfileItem,
+  getAppConfig,
+  getControledMihomoConfig,
+  patchAppConfig,
+  patchControledMihomoConfig
+} from './config'
 import { quitWithoutCore, startCore, stopCore } from './core/manager'
 import { triggerSysProxy } from './sys/sysproxy'
 import icon from '../../resources/icon.png?asset'
-import { createTray } from './resolve/tray'
+import { createTray, updateTrayIcon } from './resolve/tray'
 import { createApplicationMenu } from './resolve/menu'
 import { init } from './utils/init'
 import path, { join } from 'path'
@@ -61,6 +67,7 @@ const DEV_RENDERER_LOAD_MAX_ATTEMPTS = 30
 
 configureDevInstanceIsolation()
 let mainWindowRecoveryTimeout: NodeJS.Timeout | null = null
+let rendererFailSafeRunning = false
 
 function scheduleMainWindowRecovery(reason: string): void {
   if (!mainWindow || mainWindow.isDestroyed() || mainWindowRecoveryTimeout) {
@@ -94,6 +101,53 @@ function scheduleMainWindowRecovery(reason: string): void {
 
     mainWindowRecoveryTimeout = null
   }, 300)
+}
+
+async function runRendererCrashFailSafe(reason: string): Promise<void> {
+  if (rendererFailSafeRunning) {
+    return
+  }
+
+  rendererFailSafeRunning = true
+
+  try {
+    const [{ sysProxy, onlyActiveDevice = false }, { tun }] = await Promise.all([
+      getAppConfig(),
+      getControledMihomoConfig()
+    ])
+
+    const sysProxyEnabled = sysProxy.enable ?? false
+    const tunEnabled = tun?.enable ?? false
+
+    if (!sysProxyEnabled && !tunEnabled) {
+      return
+    }
+
+    if (sysProxyEnabled) {
+      await triggerSysProxy(false, onlyActiveDevice).catch(() => {})
+      await patchAppConfig({ sysProxy: { enable: false } })
+    }
+
+    if (tunEnabled) {
+      await patchControledMihomoConfig({ tun: { enable: false } })
+      await stopCore(true)
+      try {
+        const promises = await startCore()
+        void Promise.all(promises)
+      } catch {
+        // ignore
+      }
+    }
+
+    await updateTrayIcon()
+    ipcMain.emit('updateTrayMenu')
+    showError(
+      t('tray.coreStartError'),
+      `Renderer crashed (${reason}). TUN/system proxy was disabled to restore internet access.`
+    )
+  } finally {
+    rendererFailSafeRunning = false
+  }
 }
 
 async function scheduleLightweightMode(): Promise<void> {
@@ -605,6 +659,10 @@ export async function createWindow(appConfig?: AppConfig): Promise<void> {
     mainWindow.webContents.on('render-process-gone', (_event, details) => {
       if (details.reason === 'clean-exit') {
         return
+      }
+
+      if (details.reason === 'oom' || details.reason === 'crashed') {
+        void runRendererCrashFailSafe(details.reason)
       }
 
       scheduleMainWindowRecovery(`render-process-gone (${details.reason})`)
