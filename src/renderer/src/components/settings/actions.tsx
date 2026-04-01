@@ -61,7 +61,7 @@ const Actions: React.FC<ActionsProps> = (props) => {
     window.electron.ipcRenderer.on('update-status', handleUpdateStatus)
 
     return (): void => {
-      window.electron.ipcRenderer.removeAllListeners('update-status')
+      window.electron.ipcRenderer.removeListener('update-status', handleUpdateStatus)
     }
   }, [])
 

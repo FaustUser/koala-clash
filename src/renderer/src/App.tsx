@@ -111,10 +111,13 @@ const App: React.FC = () => {
     }
 
     return (): void => {
-      window.electron.ipcRenderer.removeAllListeners('show-quit-confirm')
-      window.electron.ipcRenderer.removeAllListeners('show-profile-install-confirm')
-      window.electron.ipcRenderer.removeAllListeners('needs-admin-setup')
-      window.electron.ipcRenderer.removeAllListeners('showError')
+      window.electron.ipcRenderer.removeListener('show-quit-confirm', handleShowQuitConfirm)
+      window.electron.ipcRenderer.removeListener(
+        'show-profile-install-confirm',
+        handleShowProfileInstallConfirm
+      )
+      window.electron.ipcRenderer.removeListener('needs-admin-setup', handleNeedsAdminSetup)
+      window.electron.ipcRenderer.removeListener('showError', handleShowError)
     }
   }, [])
 

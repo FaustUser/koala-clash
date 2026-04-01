@@ -19,6 +19,8 @@ import { Spinner } from '@renderer/components/ui/spinner'
 import { CharacterMorph } from '@renderer/components/ui/character-morph'
 import { calcTraffic } from '@renderer/utils/calc'
 
+const VPN_GROUP_NAME = 'VPN'
+
 function formatBytes(bytes: number): string {
   if (bytes <= 0) return '0 B'
   const units = ['B', 'KB', 'MB', 'GB', 'TB']
@@ -193,7 +195,10 @@ const Home: React.FC = () => {
   const daysRemaining =
     expireTimestamp > 0 ? Math.max(0, dayjs.unix(expireTimestamp).diff(dayjs(), 'day')) : 0
 
-  const firstGroup = groups?.[0]
+  const firstGroup = useMemo(
+    () => groups?.find((group) => group.name === VPN_GROUP_NAME) || groups?.[0],
+    [groups]
+  )
   const supportUrl = currentProfile?.supportUrl
   const supportLinkInfo = useMemo(() => {
     if (!supportUrl) return null

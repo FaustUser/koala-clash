@@ -54,13 +54,16 @@ const RuleProvider: React.FC = () => {
   })
 
   useEffect(() => {
-    window.electron.ipcRenderer.on('core-started', () => {
+    const handleCoreStarted = (): void => {
       mutate()
-    })
-    return (): void => {
-      window.electron.ipcRenderer.removeAllListeners('core-started')
     }
-  }, [])
+
+    window.electron.ipcRenderer.on('core-started', handleCoreStarted)
+
+    return (): void => {
+      window.electron.ipcRenderer.removeListener('core-started', handleCoreStarted)
+    }
+  }, [mutate])
 
   const providers = useMemo(() => {
     if (!data) return []

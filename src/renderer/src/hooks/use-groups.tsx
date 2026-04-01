@@ -17,17 +17,21 @@ export const GroupsProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   })
 
   React.useEffect(() => {
-    window.electron.ipcRenderer.on('groupsUpdated', () => {
+    const handleGroupsUpdated = (): void => {
       mutate()
-    })
-    window.electron.ipcRenderer.on('core-started', () => {
-      mutate()
-    })
-    return (): void => {
-      window.electron.ipcRenderer.removeAllListeners('groupsUpdated')
-      window.electron.ipcRenderer.removeAllListeners('core-started')
     }
-  }, [])
+    const handleCoreStarted = (): void => {
+      mutate()
+    }
+
+    window.electron.ipcRenderer.on('groupsUpdated', handleGroupsUpdated)
+    window.electron.ipcRenderer.on('core-started', handleCoreStarted)
+
+    return (): void => {
+      window.electron.ipcRenderer.removeListener('groupsUpdated', handleGroupsUpdated)
+      window.electron.ipcRenderer.removeListener('core-started', handleCoreStarted)
+    }
+  }, [mutate])
 
   return <GroupsContext.Provider value={{ groups, mutate }}>{children}</GroupsContext.Provider>
 }

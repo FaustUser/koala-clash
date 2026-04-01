@@ -26,8 +26,8 @@ const WindowControls: React.FC = () => {
     window.addEventListener('blur', onBlur)
 
     return () => {
-      window.electron.ipcRenderer.removeAllListeners('window-maximized')
-      window.electron.ipcRenderer.removeAllListeners('window-unmaximized')
+      window.electron.ipcRenderer.removeListener('window-maximized', onMaximize)
+      window.electron.ipcRenderer.removeListener('window-unmaximized', onUnmaximize)
       window.removeEventListener('focus', onFocus)
       window.removeEventListener('blur', onBlur)
     }
