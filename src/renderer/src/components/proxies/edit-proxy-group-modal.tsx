@@ -464,6 +464,29 @@ const EditProxyGroupModal: React.FC<Props> = ({ groupName, onClose, onSaved }) =
                       </p>
                     </div>
 
+                    {isHealthCheckType && (
+                      <div className="space-y-1.5">
+                        <div className="text-sm font-medium">
+                          {t('proxies.groupEditorExpectedStatus')}
+                        </div>
+                        <Input
+                          className="h-8"
+                          disabled={isProviderOnly || saving}
+                          value={groupConfig.expectedStatus ?? ''}
+                          placeholder={t('proxies.groupEditorExpectedStatusPlaceholder')}
+                          onChange={(event) => {
+                            setGroupConfig({
+                              ...groupConfig,
+                              expectedStatus: event.target.value
+                            })
+                          }}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          {t('proxies.groupEditorExpectedStatusHint')}
+                        </p>
+                      </div>
+                    )}
+
                     {isUrlTestType && (
                       <>
                         <div className="space-y-1.5">
@@ -494,26 +517,6 @@ const EditProxyGroupModal: React.FC<Props> = ({ groupName, onClose, onSaved }) =
                           </p>
                         </div>
 
-                        <div className="space-y-1.5">
-                          <div className="text-sm font-medium">
-                            {t('proxies.groupEditorExpectedStatus')}
-                          </div>
-                          <Input
-                            className="h-8"
-                            disabled={isProviderOnly || saving}
-                            value={groupConfig.expectedStatus ?? ''}
-                            placeholder={t('proxies.groupEditorExpectedStatusPlaceholder')}
-                            onChange={(event) => {
-                              setGroupConfig({
-                                ...groupConfig,
-                                expectedStatus: event.target.value
-                              })
-                            }}
-                          />
-                          <p className="text-xs text-muted-foreground">
-                            {t('proxies.groupEditorExpectedStatusHint')}
-                          </p>
-                        </div>
                       </>
                     )}
                   </div>

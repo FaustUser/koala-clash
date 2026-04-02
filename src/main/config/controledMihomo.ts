@@ -23,8 +23,9 @@ export async function patchControledMihomoConfig(patch: Partial<MihomoConfig>): 
   const patchToMerge = JSON.parse(JSON.stringify(patch)) as Partial<MihomoConfig>
   const { controlDns = false, controlSniff = false, controlTun = false } = await getAppConfig()
   if (!controlDns) {
-    delete controledMihomoConfig.dns
-    delete controledMihomoConfig.hosts
+    if (!controledMihomoConfig.dns && patchToMerge.dns) {
+      controledMihomoConfig.dns = defaultControledMihomoConfig.dns
+    }
   } else {
     // 从不接管状态恢复
     if (controledMihomoConfig.dns?.ipv6 === undefined) {

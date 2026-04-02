@@ -49,7 +49,7 @@ const Proxies: React.FC = () => {
   const fromHome = (location.state as { fromHome?: boolean })?.fromHome ?? false
   const { controledMihomoConfig } = useControledMihomoConfig()
   const { mode = 'rule' } = controledMihomoConfig || {}
-  const { groups = [], mutate } = useGroups()
+  const { groups = [], mutate, pauseRefresh, resumeRefresh } = useGroups()
   const { appConfig } = useAppConfig()
   const {
     proxyDisplayLayout = 'double',
@@ -266,6 +266,15 @@ const Proxies: React.FC = () => {
     },
     [isOpen, groupCounts, allProxies, runtimeGroups, cols]
   )
+
+  useEffect(() => {
+    if (!isSettingModalOpen && !editingGroupName) return
+
+    pauseRefresh()
+    return (): void => {
+      resumeRefresh()
+    }
+  }, [editingGroupName, isSettingModalOpen, pauseRefresh, resumeRefresh])
 
   useEffect(() => {
     if (proxyCols !== 'auto') {

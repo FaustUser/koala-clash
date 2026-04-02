@@ -28,6 +28,7 @@ import {
   stopMihomoLogs,
   stopMihomoMemory,
   patchMihomoConfig,
+  mihomoGroupDelay,
   mihomoGroups
 } from './mihomoApi'
 import { readFile, rm, writeFile } from 'fs/promises'
@@ -111,6 +112,12 @@ function stopCoreHealthCheck(): void {
   consecutiveCoreHealthFailures = 0
 }
 
+function getPreferredHealthCheckGroup(
+  groups: ControllerMixedGroup[]
+): ControllerMixedGroup | undefined {
+  return groups.find((group) => group.name === 'VPN' || group.name === 'GLOBAL') || groups[0]
+}
+
 async function handleUnhealthyCore(): Promise<void> {
   if (coreRecovering) {
     return
@@ -153,7 +160,7 @@ async function handleUnhealthyCore(): Promise<void> {
 
     showError(
       t('tray.coreStartError'),
-      'Mihomo stopped responding. TUN/system proxy was disabled to restore internet access.'
+      'Mihomo stopped routing traffic or responding. TUN/system proxy was disabled to restore internet access.'
     )
   } catch (error) {
     await writeFile(logPath(), `[Manager]: core recovery failed, ${error}\n`, {
@@ -172,7 +179,18 @@ async function checkCoreHealth(): Promise<void> {
   }
 
   try {
-    await mihomoGroups()
+    const [groups, { tun }, { sysProxy = { enable: false } }] = await Promise.all([
+      mihomoGroups(),
+      getControledMihomoConfig(),
+      getAppConfig()
+    ])
+    const proxyEnabled = (tun?.enable ?? false) || sysProxy.enable
+    const healthCheckGroup = proxyEnabled ? getPreferredHealthCheckGroup(groups) : undefined
+
+    if (healthCheckGroup) {
+      await mihomoGroupDelay(healthCheckGroup.name, healthCheckGroup.testUrl)
+    }
+
     consecutiveCoreHealthFailures = 0
     setCoreHealth(true)
   } catch (error) {

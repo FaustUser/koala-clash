@@ -497,6 +497,7 @@ function cleanDnsConfig(profile: MihomoConfig, controlDns: boolean): void {
     'fake-ip-range',
     'fake-ip-range6',
     'fake-ip-filter',
+    'fallback',
     'proxy-server-nameserver',
     'direct-nameserver',
     'nameserver'
@@ -514,8 +515,9 @@ function cleanDnsConfig(profile: MihomoConfig, controlDns: boolean): void {
     delete dnsConfig['nameserver-policy']
   }
 
-  delete dnsConfig.fallback
-  delete dnsConfig['fallback-filter']
+  if (dnsConfig['fallback-filter'] && Object.keys(dnsConfig['fallback-filter']).length === 0) {
+    delete dnsConfig['fallback-filter']
+  }
 }
 
 function cleanSnifferConfig(profile: MihomoConfig, controlSniff: boolean): void {

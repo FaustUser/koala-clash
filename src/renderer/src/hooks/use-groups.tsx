@@ -5,22 +5,34 @@ import { mihomoGroups } from '@renderer/utils/ipc'
 interface GroupsContextType {
   groups: ControllerMixedGroup[] | undefined
   mutate: () => void
+  pauseRefresh: () => void
+  resumeRefresh: () => void
 }
 
 const GroupsContext = createContext<GroupsContextType | undefined>(undefined)
 
 export const GroupsProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const [refreshPauseCount, setRefreshPauseCount] = React.useState(0)
+  const refreshPaused = refreshPauseCount > 0
+  const pauseRefresh = React.useCallback(() => {
+    setRefreshPauseCount((count) => count + 1)
+  }, [])
+  const resumeRefresh = React.useCallback(() => {
+    setRefreshPauseCount((count) => Math.max(0, count - 1))
+  }, [])
   const { data: groups, mutate } = useSWR<ControllerMixedGroup[]>('mihomoGroups', mihomoGroups, {
     errorRetryInterval: 200,
     errorRetryCount: 10,
-    refreshInterval: 3000
+    refreshInterval: refreshPaused ? 0 : 3000
   })
 
   React.useEffect(() => {
     const handleGroupsUpdated = (): void => {
+      if (refreshPaused) return
       mutate()
     }
     const handleCoreStarted = (): void => {
+      if (refreshPaused) return
       mutate()
     }
 
@@ -31,9 +43,19 @@ export const GroupsProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       window.electron.ipcRenderer.removeListener('groupsUpdated', handleGroupsUpdated)
       window.electron.ipcRenderer.removeListener('core-started', handleCoreStarted)
     }
-  }, [mutate])
+  }, [mutate, refreshPaused])
 
-  return <GroupsContext.Provider value={{ groups, mutate }}>{children}</GroupsContext.Provider>
+  React.useEffect(() => {
+    if (!refreshPaused) {
+      mutate()
+    }
+  }, [mutate, refreshPaused])
+
+  return (
+    <GroupsContext.Provider value={{ groups, mutate, pauseRefresh, resumeRefresh }}>
+      {children}
+    </GroupsContext.Provider>
+  )
 }
 
 export const useGroups = (): GroupsContextType => {

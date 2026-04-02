@@ -12,7 +12,7 @@ import AdvancedDnsSetting from '@renderer/components/dns/advanced-dns-setting'
 import { useControledMihomoConfig } from '@renderer/hooks/use-controled-mihomo-config'
 import { useAppConfig } from '@renderer/hooks/use-app-config'
 import { restartCore } from '@renderer/utils/ipc'
-import React, { useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import {
   isValidIPv4Cidr,
   isValidIPv6Cidr,
@@ -20,6 +20,123 @@ import {
   isValidDnsServer
 } from '@renderer/utils/validate'
 import { useTranslation } from 'react-i18next'
+
+const KNOWN_FALLBACK_FILTER_KEYS = new Set(['geoip', 'geoip-code', 'domain', 'ipcidr', 'geosite'])
+export const FALLBACK_FILTER_TEMPLATE_IDS = [
+  'docs-cn',
+  'local-ru',
+  'local-us',
+  'global-services',
+  'minimal'
+] as const
+export type FallbackFilterTemplateId = (typeof FALLBACK_FILTER_TEMPLATE_IDS)[number]
+const templateTitleKeyMap: Record<FallbackFilterTemplateId, string> = {
+  'docs-cn': 'fallbackFilterTemplateDocsCn',
+  'local-ru': 'fallbackFilterTemplateLocalRu',
+  'local-us': 'fallbackFilterTemplateLocalUs',
+  'global-services': 'fallbackFilterTemplateGlobalServices',
+  minimal: 'fallbackFilterTemplateMinimal'
+}
+const FALLBACK_FILTER_TEMPLATES = {
+  'docs-cn': {
+    fallback: ['https://1.1.1.1/dns-query', 'https://8.8.8.8/dns-query'],
+    fallbackGeoIP: true,
+    fallbackGeoIPCode: ['CN'],
+    fallbackDomain: ['+.google.com', '+.facebook.com', '+.youtube.com'],
+    fallbackIPCIDR: ['240.0.0.0/4'],
+    fallbackGeoSite: ['gfw'],
+    fallbackFilterExtra: ''
+  },
+  'local-ru': {
+    fallback: ['tls://77.88.8.8', 'tls://77.88.8.1', 'tls://94.140.14.14'],
+    fallbackGeoIP: true,
+    fallbackGeoIPCode: ['RU'],
+    fallbackDomain: [],
+    fallbackIPCIDR: ['240.0.0.0/4'],
+    fallbackGeoSite: [],
+    fallbackFilterExtra: ''
+  },
+  'local-us': {
+    fallback: ['https://1.1.1.1/dns-query', 'https://8.8.8.8/dns-query', 'https://9.9.9.9/dns-query'],
+    fallbackGeoIP: true,
+    fallbackGeoIPCode: ['US'],
+    fallbackDomain: [],
+    fallbackIPCIDR: ['240.0.0.0/4'],
+    fallbackGeoSite: [],
+    fallbackFilterExtra: ''
+  },
+  'global-services': {
+    fallback: ['https://1.1.1.1/dns-query', 'https://8.8.8.8/dns-query', 'https://9.9.9.9/dns-query'],
+    fallbackGeoIP: false,
+    fallbackGeoIPCode: [],
+    fallbackDomain: [],
+    fallbackIPCIDR: ['240.0.0.0/4'],
+    fallbackGeoSite: ['google', 'youtube', 'facebook', 'telegram', 'twitter', 'openai'],
+    fallbackFilterExtra: ''
+  },
+  minimal: {
+    fallback: ['https://1.1.1.1/dns-query'],
+    fallbackGeoIP: false,
+    fallbackGeoIPCode: [],
+    fallbackDomain: [],
+    fallbackIPCIDR: ['240.0.0.0/4'],
+    fallbackGeoSite: [],
+    fallbackFilterExtra: ''
+  }
+} satisfies Record<
+  FallbackFilterTemplateId,
+  {
+    fallback: string[]
+    fallbackGeoIP: boolean
+    fallbackGeoIPCode: string[]
+    fallbackDomain: string[]
+    fallbackIPCIDR: string[]
+    fallbackGeoSite: string[]
+    fallbackFilterExtra: string
+  }
+>
+
+function normalizeStringArray(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value.filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
+  }
+
+  if (typeof value === 'string' && value.trim()) {
+    return value
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean)
+  }
+
+  return []
+}
+
+function getExtraFallbackFilterRecord(value: Record<string, unknown>): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(value).filter(([key]) => !KNOWN_FALLBACK_FILTER_KEYS.has(key))
+  )
+}
+
+function stringifyJsonRecord(value: Record<string, unknown>): string {
+  return Object.keys(value).length > 0 ? JSON.stringify(value, null, 2) : ''
+}
+
+function parseJsonRecord(value: string): Record<string, unknown> {
+  if (!value.trim()) {
+    return {}
+  }
+
+  const parsed = JSON.parse(value) as unknown
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    throw new Error('fallback-filter extra must be a JSON object')
+  }
+
+  return parsed as Record<string, unknown>
+}
+
+function getFallbackGeoIPCodeValue(values: string[]): string | undefined {
+  return values.find((value) => value.trim().length > 0)?.trim()
+}
 
 const DNS: React.FC = () => {
   const { t } = useTranslation()
@@ -45,10 +162,14 @@ const DNS: React.FC = () => {
     'respect-rules': respectRules = false,
     'default-nameserver': defaultNameserver = ['tls://223.5.5.5'],
     nameserver = ['https://doh.pub/dns-query', 'https://dns.alidns.com/dns-query'],
+    fallback = [],
+    'fallback-filter': fallbackFilter = {},
     'proxy-server-nameserver': proxyServerNameserver = [],
     'direct-nameserver': directNameserver = [],
     'nameserver-policy': nameserverPolicy = {}
   } = dns || {}
+  const normalizedFallbackFilter: Record<string, unknown> =
+    fallbackFilter && typeof fallbackFilter === 'object' ? fallbackFilter : {}
   const [changed, setChanged] = useState(false)
   const [values, originSetValues] = useState({
     ipv6,
@@ -61,6 +182,14 @@ const DNS: React.FC = () => {
     respectRules,
     defaultNameserver,
     nameserver,
+    fallback: normalizeStringArray(fallback),
+    fallbackGeoIP:
+      normalizedFallbackFilter.geoip === true || normalizedFallbackFilter.geoip === 'true',
+    fallbackGeoIPCode: normalizeStringArray(normalizedFallbackFilter['geoip-code']),
+    fallbackDomain: normalizeStringArray(normalizedFallbackFilter.domain),
+    fallbackIPCIDR: normalizeStringArray(normalizedFallbackFilter.ipcidr),
+    fallbackGeoSite: normalizeStringArray(normalizedFallbackFilter.geosite),
+    fallbackFilterExtra: stringifyJsonRecord(getExtraFallbackFilterRecord(normalizedFallbackFilter)),
     proxyServerNameserver,
     directNameserver,
     nameserverPolicy,
@@ -90,7 +219,30 @@ const DNS: React.FC = () => {
     return firstInvalid ? (isValidDnsServer(firstInvalid).error ?? t('common.formatError')) : null
   })
   const [advancedDnsError, setAdvancedDnsError] = useState(false)
+  const [selectedFallbackTemplateId, setSelectedFallbackTemplateId] =
+    useState<FallbackFilterTemplateId>()
   const hasDnsErrors = Boolean(defaultNameserverError || nameserverError || advancedDnsError)
+
+  const fallbackTemplatePreview = useMemo(() => {
+    if (!selectedFallbackTemplateId) return undefined
+
+    const template = FALLBACK_FILTER_TEMPLATES[selectedFallbackTemplateId]
+    if (!template) return undefined
+
+    return {
+      title: t(`dns.${templateTitleKeyMap[selectedFallbackTemplateId]}`),
+      resolvers: template.fallback,
+      filter: {
+        ...(template.fallbackGeoIP ? { geoip: true } : {}),
+        ...(getFallbackGeoIPCodeValue(template.fallbackGeoIPCode)
+          ? { 'geoip-code': getFallbackGeoIPCodeValue(template.fallbackGeoIPCode) }
+          : {}),
+        ...(template.fallbackDomain.length > 0 ? { domain: template.fallbackDomain } : {}),
+        ...(template.fallbackIPCIDR.length > 0 ? { ipcidr: template.fallbackIPCIDR } : {}),
+        ...(template.fallbackGeoSite.length > 0 ? { geosite: template.fallbackGeoSite } : {})
+      }
+    }
+  }, [selectedFallbackTemplateId, t])
 
   const setValues = (v: typeof values): void => {
     originSetValues(v)
@@ -127,6 +279,16 @@ const DNS: React.FC = () => {
                 : hasDnsErrors
             }
             onClick={() => {
+              let extraFallbackFilter: Record<string, unknown>
+              try {
+                extraFallbackFilter = getExtraFallbackFilterRecord(
+                  parseJsonRecord(values.fallbackFilterExtra)
+                )
+              } catch {
+                toast.error(t('dns.fallbackFilterExtraFormatError'))
+                return
+              }
+
               const hostsObject =
                 values.useHosts && values.hosts && values.hosts.length > 0
                   ? Object.fromEntries(values.hosts.map(({ domain, value }) => [domain, value]))
@@ -142,6 +304,17 @@ const DNS: React.FC = () => {
                 'respect-rules': values.respectRules,
                 'default-nameserver': values.defaultNameserver,
                 nameserver: values.nameserver,
+                fallback: values.fallback,
+                'fallback-filter': {
+                  ...extraFallbackFilter,
+                  ...(values.fallbackGeoIP ? { geoip: true } : {}),
+                  ...(getFallbackGeoIPCodeValue(values.fallbackGeoIPCode)
+                    ? { 'geoip-code': getFallbackGeoIPCodeValue(values.fallbackGeoIPCode) }
+                    : {}),
+                  ...(values.fallbackDomain.length > 0 ? { domain: values.fallbackDomain } : {}),
+                  ...(values.fallbackIPCIDR.length > 0 ? { ipcidr: values.fallbackIPCIDR } : {}),
+                  ...(values.fallbackGeoSite.length > 0 ? { geosite: values.fallbackGeoSite } : {})
+                },
                 'proxy-server-nameserver': values.proxyServerNameserver,
                 'direct-nameserver': values.directNameserver,
                 'nameserver-policy': values.nameserverPolicy
@@ -284,6 +457,17 @@ const DNS: React.FC = () => {
       </SettingCard>
       <AdvancedDnsSetting
         respectRules={values.respectRules}
+        selectedFallbackTemplateId={selectedFallbackTemplateId}
+        fallbackTemplatePreviewTitle={fallbackTemplatePreview?.title}
+        fallbackTemplatePreviewResolvers={fallbackTemplatePreview?.resolvers ?? []}
+        fallbackTemplatePreviewFilter={fallbackTemplatePreview?.filter ?? {}}
+        fallback={values.fallback}
+        fallbackGeoIP={values.fallbackGeoIP}
+        fallbackGeoIPCode={values.fallbackGeoIPCode}
+        fallbackDomain={values.fallbackDomain}
+        fallbackIPCIDR={values.fallbackIPCIDR}
+        fallbackGeoSite={values.fallbackGeoSite}
+        fallbackFilterExtra={values.fallbackFilterExtra}
         directNameserver={values.directNameserver}
         proxyServerNameserver={values.proxyServerNameserver}
         nameserverPolicy={values.nameserverPolicy}
@@ -294,6 +478,36 @@ const DNS: React.FC = () => {
           setValues({
             ...values,
             respectRules: values.proxyServerNameserver.length === 0 ? false : v
+          })
+        }}
+        onFallbackChange={(arr) => {
+          setValues({ ...values, fallback: arr })
+        }}
+        onFallbackGeoIPChange={(v) => {
+          setValues({ ...values, fallbackGeoIP: v })
+        }}
+        onFallbackGeoIPCodeChange={(arr) => {
+          setValues({ ...values, fallbackGeoIPCode: arr })
+        }}
+        onFallbackDomainChange={(arr) => {
+          setValues({ ...values, fallbackDomain: arr })
+        }}
+        onFallbackIPCIDRChange={(arr) => {
+          setValues({ ...values, fallbackIPCIDR: arr })
+        }}
+        onFallbackGeoSiteChange={(arr) => {
+          setValues({ ...values, fallbackGeoSite: arr })
+        }}
+        onFallbackFilterExtraChange={(value) => {
+          setValues({ ...values, fallbackFilterExtra: value })
+        }}
+        onApplyFallbackFilterTemplate={(templateId) => {
+          const template = FALLBACK_FILTER_TEMPLATES[templateId as keyof typeof FALLBACK_FILTER_TEMPLATES]
+          if (!template) return
+          setSelectedFallbackTemplateId(templateId as FallbackFilterTemplateId)
+          setValues({
+            ...values,
+            ...template
           })
         }}
         onDirectNameserverChange={(arr) => {

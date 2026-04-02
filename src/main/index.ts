@@ -209,10 +209,6 @@ if (
   }
 }
 
-if (process.platform === 'win32' && is.dev) {
-  patchControledMihomoConfig({ tun: { enable: false } })
-}
-
 const gotTheLock = is.dev ? true : app.requestSingleInstanceLock()
 
 if (!gotTheLock) {
