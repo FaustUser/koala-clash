@@ -18,7 +18,7 @@ import {
   patchAppConfig,
   patchControledMihomoConfig
 } from './config'
-import { quitWithoutCore, startCore, stopCore } from './core/manager'
+import { getCoreHealth, quitWithoutCore, startCore, stopCore } from './core/manager'
 import { triggerSysProxy } from './sys/sysproxy'
 import icon from '../../resources/icon.png?asset'
 import { createTray, updateTrayIcon } from './resolve/tray'
@@ -30,7 +30,8 @@ import { execSync, spawn } from 'child_process'
 import { createElevateTaskSync } from './sys/misc'
 import { initProfileUpdater } from './core/profileUpdater'
 import { existsSync, writeFileSync } from 'fs'
-import { exePath, taskDir } from './utils/dirs'
+import { mkdir, writeFile } from 'fs/promises'
+import { exePath, logDir, logPath, rendererDiagnosticsPath, taskDir } from './utils/dirs'
 import { showFloatingWindow } from './resolve/floatingWindow'
 import { getAppConfigSync } from './config/app'
 import { t } from './utils/i18n'
@@ -51,11 +52,20 @@ function configureDevInstanceIsolation(): void {
  * Falls back to system dialog if the window is not available.
  */
 export function showError(title: string, message: string): void {
-  if (mainWindow && !mainWindow.isDestroyed()) {
-    mainWindow.webContents.send('showError', title, message)
-  } else {
-    dialog.showErrorBox(title, message)
+  if (
+    mainWindow &&
+    !mainWindow.isDestroyed() &&
+    !mainWindow.webContents.isDestroyed()
+  ) {
+    try {
+      mainWindow.webContents.send('showError', title, message)
+      return
+    } catch {
+      // fall back to system dialog
+    }
   }
+
+  dialog.showErrorBox(title, message)
 }
 let pendingDeepLink: string | null = null
 let isCreatingWindow = false
@@ -64,6 +74,245 @@ let createWindowPromiseResolve: (() => void) | null = null
 let createWindowPromise: Promise<void> | null = null
 const DEV_RENDERER_LOAD_RETRY_MS = 350
 const DEV_RENDERER_LOAD_MAX_ATTEMPTS = 30
+const MAX_RENDERER_EVENT_HISTORY = 20
+
+type RendererDiagnosticEvent = {
+  timestamp: string
+  type: string
+  details?: Record<string, unknown>
+}
+
+type RendererDiagnosticSnapshot = {
+  app: {
+    version: string
+    platform: NodeJS.Platform
+    pid: number
+    electron?: string
+    chrome?: string
+    node?: string
+  }
+  config: {
+    sysProxyEnabled: boolean
+    onlyActiveDevice: boolean
+    tunEnabled: boolean
+    readErrors: string[]
+  }
+  coreHealth: ReturnType<typeof getCoreHealth>
+  window: {
+    exists: boolean
+    destroyed: boolean
+    webContentsDestroyed: boolean
+    visible: boolean
+    focused: boolean
+    minimized: boolean
+    loading: boolean
+    waitingForResponse: boolean
+    title: string | null
+    url: string | null
+    bounds: Electron.Rectangle | null
+  }
+  rendererProcess: {
+    pid: number | null
+    memoryInfo: unknown
+    appMetrics: unknown[]
+  }
+  recovery: {
+    recoveryScheduled: boolean
+    rendererFailSafeRunning: boolean
+    windowShown: boolean
+  }
+  recentEvents: RendererDiagnosticEvent[]
+}
+
+const rendererEventHistory: RendererDiagnosticEvent[] = []
+
+function serializeDiagnosticValue(value: unknown): unknown {
+  if (value instanceof Error) {
+    return {
+      name: value.name,
+      message: value.message,
+      stack: value.stack
+    }
+  }
+
+  if (value instanceof Date) {
+    return value.toISOString()
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((item) => serializeDiagnosticValue(item))
+  }
+
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>)
+        .map(([key, item]) => [key, serializeDiagnosticValue(item)])
+        .filter(([, item]) => item !== undefined)
+    )
+  }
+
+  if (typeof value === 'bigint') {
+    return value.toString()
+  }
+
+  if (typeof value === 'function') {
+    return undefined
+  }
+
+  return value
+}
+
+function recordRendererEvent(type: string, details: Record<string, unknown> = {}): void {
+  rendererEventHistory.push({
+    timestamp: new Date().toISOString(),
+    type,
+    details: serializeDiagnosticValue(details) as Record<string, unknown>
+  })
+
+  if (rendererEventHistory.length > MAX_RENDERER_EVENT_HISTORY) {
+    rendererEventHistory.shift()
+  }
+}
+
+function formatRendererCrashMessage(reason: string): string {
+  return t('error.rendererCrashFailSafe').replace('{reason}', reason)
+}
+
+async function collectRendererDiagnosticsSnapshot(
+  window: BrowserWindow | null
+): Promise<RendererDiagnosticSnapshot> {
+  const [appConfigResult, controlledConfigResult] = await Promise.allSettled([
+    getAppConfig(),
+    getControledMihomoConfig()
+  ])
+  const readErrors: string[] = []
+  let appConfig: AppConfig | undefined
+  let controlledConfig: Partial<MihomoConfig> | undefined
+
+  if (appConfigResult.status === 'fulfilled') {
+    appConfig = appConfigResult.value
+  } else {
+    readErrors.push(`getAppConfig failed: ${String(appConfigResult.reason)}`)
+  }
+
+  if (controlledConfigResult.status === 'fulfilled') {
+    controlledConfig = controlledConfigResult.value
+  } else {
+    readErrors.push(`getControledMihomoConfig failed: ${String(controlledConfigResult.reason)}`)
+  }
+
+  const windowExists = Boolean(window)
+  const windowDestroyed = window ? window.isDestroyed() : true
+  const webContentsDestroyed = windowDestroyed || !window ? true : window.webContents.isDestroyed()
+  const canReadWindowState = Boolean(window && !windowDestroyed && !webContentsDestroyed)
+
+  let rendererPid: number | null = null
+  let rendererMemoryInfo: unknown = null
+  let rendererUrl: string | null = null
+
+  if (canReadWindowState && window) {
+    try {
+      rendererPid = window.webContents.getOSProcessId()
+    } catch (error) {
+      rendererMemoryInfo = { getOSProcessIdError: serializeDiagnosticValue(error) }
+    }
+
+    try {
+      rendererUrl = window.webContents.getURL()
+    } catch {
+      rendererUrl = null
+    }
+  }
+
+  const rendererAppMetrics = app
+    .getAppMetrics()
+    .filter((metric) => metric.pid === process.pid || metric.pid === rendererPid)
+
+  return {
+    app: {
+      version: app.getVersion(),
+      platform: process.platform,
+      pid: process.pid,
+      electron: process.versions.electron,
+      chrome: process.versions.chrome,
+      node: process.versions.node
+    },
+    config: {
+      sysProxyEnabled: appConfig?.sysProxy?.enable ?? false,
+      onlyActiveDevice: appConfig?.onlyActiveDevice ?? false,
+      tunEnabled: controlledConfig?.tun?.enable ?? false,
+      readErrors
+    },
+    coreHealth: getCoreHealth(),
+    window: {
+      exists: windowExists,
+      destroyed: windowDestroyed,
+      webContentsDestroyed,
+      visible: canReadWindowState && window ? window.isVisible() : false,
+      focused: canReadWindowState && window ? window.isFocused() : false,
+      minimized: canReadWindowState && window ? window.isMinimized() : false,
+      loading: canReadWindowState && window ? window.webContents.isLoading() : false,
+      waitingForResponse:
+        canReadWindowState && window ? window.webContents.isWaitingForResponse() : false,
+      title: canReadWindowState && window ? window.getTitle() : null,
+      url: rendererUrl,
+      bounds: canReadWindowState && window ? window.getBounds() : null
+    },
+    rendererProcess: {
+      pid: rendererPid,
+      memoryInfo:
+        rendererPid === null
+          ? serializeDiagnosticValue(rendererMemoryInfo)
+          : serializeDiagnosticValue(
+              rendererAppMetrics.find((metric) => metric.pid === rendererPid)?.memory ??
+                rendererMemoryInfo
+            ),
+      appMetrics: rendererAppMetrics.map((metric) => serializeDiagnosticValue(metric))
+    },
+    recovery: {
+      recoveryScheduled: mainWindowRecoveryTimeout !== null,
+      rendererFailSafeRunning,
+      windowShown
+    },
+    recentEvents: rendererEventHistory.slice()
+  }
+}
+
+async function appendRendererDiagnostics(
+  event: string,
+  details: Record<string, unknown>,
+  snapshot?: RendererDiagnosticSnapshot
+): Promise<void> {
+  const diagnosticsPath = rendererDiagnosticsPath()
+  const entry = {
+    timestamp: new Date().toISOString(),
+    event,
+    details: serializeDiagnosticValue(details),
+    snapshot: snapshot ?? (await collectRendererDiagnosticsSnapshot(mainWindow))
+  }
+  const reason =
+    typeof details.reason === 'string' && details.reason.length > 0 ? ` (${details.reason})` : ''
+  const payload = `===== Renderer diagnostics =====
+${JSON.stringify(entry, null, 2)}
+
+`
+
+  try {
+    await mkdir(logDir(), { recursive: true })
+    await Promise.all([
+      writeFile(diagnosticsPath, payload, { flag: 'a' }),
+      writeFile(
+        logPath(),
+        `[Renderer]: ${event}${reason}, diagnostics saved to ${diagnosticsPath}\n`,
+        {
+          flag: 'a'
+        }
+      )
+    ])
+  } catch (error) {
+    console.error('[renderer-diagnostics] Failed to write diagnostics', error)
+  }
+}
 
 configureDevInstanceIsolation()
 let mainWindowRecoveryTimeout: NodeJS.Timeout | null = null
@@ -74,6 +323,7 @@ function scheduleMainWindowRecovery(reason: string): void {
     return
   }
 
+  recordRendererEvent('main-window-recovery-scheduled', { reason })
   mainWindowRecoveryTimeout = setTimeout(() => {
     const currentWindow = mainWindow
 
@@ -83,6 +333,10 @@ function scheduleMainWindowRecovery(reason: string): void {
     }
 
     console.error(`[main-window] Recovering renderer after ${reason}`)
+    recordRendererEvent('main-window-recovery-started', {
+      reason,
+      webContentsDestroyed: currentWindow.webContents.isDestroyed()
+    })
 
     if (currentWindow.webContents.isDestroyed()) {
       currentWindow.destroy()
@@ -103,29 +357,49 @@ function scheduleMainWindowRecovery(reason: string): void {
   }, 300)
 }
 
-async function runRendererCrashFailSafe(reason: string): Promise<void> {
+async function runRendererCrashFailSafe(
+  reason: string,
+  snapshot?: RendererDiagnosticSnapshot
+): Promise<void> {
   if (rendererFailSafeRunning) {
     return
   }
 
   rendererFailSafeRunning = true
+  recordRendererEvent('renderer-fail-safe-start', { reason })
+  const activeSnapshot = snapshot ?? (await collectRendererDiagnosticsSnapshot(mainWindow))
+  let sysProxyEnabled = activeSnapshot.config.sysProxyEnabled
+  let tunEnabled = activeSnapshot.config.tunEnabled
+  let onlyActiveDevice = activeSnapshot.config.onlyActiveDevice
 
   try {
-    const [{ sysProxy, onlyActiveDevice = false }, { tun }] = await Promise.all([
-      getAppConfig(),
-      getControledMihomoConfig()
-    ])
+    if (activeSnapshot.config.readErrors.length > 0) {
+      const [appConfig, controlledConfig] = await Promise.all([
+        getAppConfig().catch(() => undefined),
+        getControledMihomoConfig().catch(() => undefined)
+      ])
 
-    const sysProxyEnabled = sysProxy.enable ?? false
-    const tunEnabled = tun?.enable ?? false
+      sysProxyEnabled = appConfig?.sysProxy?.enable ?? sysProxyEnabled
+      tunEnabled = controlledConfig?.tun?.enable ?? tunEnabled
+      onlyActiveDevice = appConfig?.onlyActiveDevice ?? onlyActiveDevice
+    }
 
     if (!sysProxyEnabled && !tunEnabled) {
+      recordRendererEvent('renderer-fail-safe-skipped', {
+        reason,
+        sysProxyEnabled,
+        tunEnabled
+      })
       return
     }
 
     if (sysProxyEnabled) {
       await triggerSysProxy(false, onlyActiveDevice).catch(() => {})
       await patchAppConfig({ sysProxy: { enable: false } })
+      recordRendererEvent('renderer-fail-safe-disabled-sysproxy', {
+        reason,
+        onlyActiveDevice
+      })
     }
 
     if (tunEnabled) {
@@ -137,13 +411,41 @@ async function runRendererCrashFailSafe(reason: string): Promise<void> {
       } catch {
         // ignore
       }
+      recordRendererEvent('renderer-fail-safe-disabled-tun', { reason })
     }
 
     await updateTrayIcon()
     ipcMain.emit('updateTrayMenu')
     showError(
-      t('tray.coreStartError'),
-      `Renderer crashed (${reason}). TUN/system proxy was disabled to restore internet access.`
+      t('dialog.rendererCrashDetected'),
+      formatRendererCrashMessage(reason)
+    )
+    recordRendererEvent('renderer-fail-safe-completed', {
+      reason,
+      sysProxyDisabled: sysProxyEnabled,
+      tunDisabled: tunEnabled
+    })
+    await appendRendererDiagnostics(
+      'renderer-fail-safe',
+      {
+        reason,
+        sysProxyDisabled: sysProxyEnabled,
+        tunDisabled: tunEnabled
+      },
+      activeSnapshot
+    )
+  } catch (error) {
+    recordRendererEvent('renderer-fail-safe-error', {
+      reason,
+      error: serializeDiagnosticValue(error)
+    })
+    await appendRendererDiagnostics(
+      'renderer-fail-safe-error',
+      {
+        reason,
+        error: serializeDiagnosticValue(error)
+      },
+      activeSnapshot
     )
   } finally {
     rendererFailSafeRunning = false
@@ -618,6 +920,7 @@ export async function createWindow(appConfig?: AppConfig): Promise<void> {
         sandbox: false
       }
     })
+    recordRendererEvent('main-window-created', { useWindowFrame })
     mainWindowState.manage(mainWindow)
     if (process.platform === 'darwin' && !useWindowFrame) {
       mainWindow.setWindowButtonVisibility(false)
@@ -626,6 +929,7 @@ export async function createWindow(appConfig?: AppConfig): Promise<void> {
       mainWindow?.webContents.send('window-maximized')
     })
     mainWindow.on('ready-to-show', async () => {
+      recordRendererEvent('main-window-ready-to-show')
       const { silentStart = false } = await getAppConfig()
       if (!silentStart) {
         if (quitTimeout) {
@@ -646,25 +950,58 @@ export async function createWindow(appConfig?: AppConfig): Promise<void> {
         return
       }
 
+      recordRendererEvent('main-window-did-fail-load', {
+        errorCode,
+        errorDescription
+      })
+      void appendRendererDiagnostics('did-fail-load', {
+        errorCode,
+        errorDescription,
+        isMainFrame
+      })
       scheduleMainWindowRecovery(`did-fail-load (${errorCode}: ${errorDescription})`)
       showError(t('dialog.appInitFailed'), `${errorDescription} (${errorCode})`)
     })
     mainWindow.on('unresponsive', () => {
+      recordRendererEvent('main-window-unresponsive')
+      void appendRendererDiagnostics('window-unresponsive', {})
       scheduleMainWindowRecovery('window-unresponsive')
+    })
+    mainWindow.on('responsive', () => {
+      recordRendererEvent('main-window-responsive')
     })
     mainWindow.webContents.on('render-process-gone', (_event, details) => {
       if (details.reason === 'clean-exit') {
         return
       }
 
-      if (details.reason === 'oom' || details.reason === 'crashed') {
-        void runRendererCrashFailSafe(details.reason)
-      }
+      recordRendererEvent('render-process-gone', {
+        reason: details.reason,
+        exitCode: details.exitCode
+      })
+      void (async () => {
+        const snapshot = await collectRendererDiagnosticsSnapshot(mainWindow)
+        await appendRendererDiagnostics(
+          'render-process-gone',
+          {
+            reason: details.reason,
+            exitCode: details.exitCode
+          },
+          snapshot
+        )
+
+        if (details.reason === 'oom' || details.reason === 'crashed') {
+          await runRendererCrashFailSafe(details.reason, snapshot)
+        }
+      })()
 
       scheduleMainWindowRecovery(`render-process-gone (${details.reason})`)
     })
 
     mainWindow.webContents.once('did-finish-load', () => {
+      recordRendererEvent('main-window-did-finish-load', {
+        url: mainWindow?.webContents.isDestroyed() ? null : mainWindow?.webContents.getURL()
+      })
       if (pendingDeepLink) {
         const url = pendingDeepLink
         pendingDeepLink = null
@@ -682,6 +1019,7 @@ export async function createWindow(appConfig?: AppConfig): Promise<void> {
     })
 
     mainWindow.on('closed', () => {
+      recordRendererEvent('main-window-closed')
       if (mainWindowRecoveryTimeout) {
         clearTimeout(mainWindowRecoveryTimeout)
         mainWindowRecoveryTimeout = null

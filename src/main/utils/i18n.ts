@@ -236,6 +236,7 @@ const enUS: LocaleTranslations = {
     firstRunAdmin: 'Please run as administrator for the first time',
     appInitFailed: 'Application initialization failed',
     coreStartError: 'Core startup error',
+    rendererCrashDetected: 'Renderer crash detected',
     profileImportFailed: 'Profile import failed',
     selectSubscriptionFile: 'Select subscription file'
   },
@@ -281,6 +282,8 @@ const enUS: LocaleTranslations = {
     downloadCancelled: 'Download cancelled',
     downloadFailed: 'Download failed',
     userCancelledDownload: 'User cancelled download',
+    rendererCrashFailSafe:
+      'Renderer crashed ({reason}). TUN/system proxy was disabled to restore internet access. See renderer diagnostics log for details.',
     scriptReturnMustBeObject: 'Script return value must be an object',
   },
   ui: {
@@ -297,6 +300,8 @@ const ruRU: LocaleTranslations = {
     userCancelled: 'Операция отменена пользователем',
     userCancelledCheck: 'Отменено пользователем',
     coreStartError: 'Ошибка запуска ядра',
+    rendererCrashDetected:
+      '\u0421\u0431\u043e\u0439 \u0438\u043d\u0442\u0435\u0440\u0444\u0435\u0439\u0441\u0430 \u043f\u0440\u0438\u043b\u043e\u0436\u0435\u043d\u0438\u044f',
     showWindow: 'Показать окно',
     hideFloatingWindow: 'Скрыть плавающее окно',
     showFloatingWindow: 'Показать плавающее окно',
@@ -422,6 +427,8 @@ const ruRU: LocaleTranslations = {
     downloadCancelled: 'Загрузка отменена',
     downloadFailed: 'Ошибка загрузки',
     userCancelledDownload: 'Пользователь отменил загрузку',
+    rendererCrashFailSafe:
+      '\u0418\u043d\u0442\u0435\u0440\u0444\u0435\u0439\u0441 \u043f\u0440\u0438\u043b\u043e\u0436\u0435\u043d\u0438\u044f \u0430\u0432\u0430\u0440\u0438\u0439\u043d\u043e \u0437\u0430\u0432\u0435\u0440\u0448\u0438\u043b\u0441\u044f ({reason}). TUN/\u0441\u0438\u0441\u0442\u0435\u043c\u043d\u044b\u0439 \u043f\u0440\u043e\u043a\u0441\u0438 \u0431\u044b\u043b\u0438 \u043e\u0442\u043a\u043b\u044e\u0447\u0435\u043d\u044b \u0434\u043b\u044f \u0432\u043e\u0441\u0441\u0442\u0430\u043d\u043e\u0432\u043b\u0435\u043d\u0438\u044f \u0434\u043e\u0441\u0442\u0443\u043f\u0430 \u0432 \u0438\u043d\u0442\u0435\u0440\u043d\u0435\u0442. \u041f\u043e\u0434\u0440\u043e\u0431\u043d\u043e\u0441\u0442\u0438 \u0441\u043e\u0445\u0440\u0430\u043d\u0435\u043d\u044b \u0432 renderer-\u043b\u043e\u0433\u0435.',
     scriptReturnMustBeObject: 'Возвращаемое значение скрипта должно быть объектом'
   },
   ui: {

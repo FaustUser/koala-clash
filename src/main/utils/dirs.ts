@@ -164,6 +164,12 @@ export function logPath(): string {
   return path.join(logDir(), `${name}.log`)
 }
 
+export function rendererDiagnosticsPath(): string {
+  const date = new Date()
+  const name = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`
+  return path.join(logDir(), `renderer-${name}.log`)
+}
+
 export function rulesDir(): string {
   return path.join(dataDir(), 'rules')
 }
