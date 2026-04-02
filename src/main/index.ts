@@ -75,11 +75,39 @@ let createWindowPromise: Promise<void> | null = null
 const DEV_RENDERER_LOAD_RETRY_MS = 350
 const DEV_RENDERER_LOAD_MAX_ATTEMPTS = 30
 const MAX_RENDERER_EVENT_HISTORY = 20
+const RENDERER_CRASH_WINDOW_MS = 2 * 60 * 1000
+const RENDERER_CRASH_THRESHOLD = 3
+const RENDERER_RECOVERY_TIMEOUT_MS = 15000
 
 type RendererDiagnosticEvent = {
   timestamp: string
   type: string
   details?: Record<string, unknown>
+}
+
+type RendererCrashRecord = {
+  timestamp: number
+  reason: string
+  exitCode?: number
+}
+
+type RendererRecoveryState = {
+  attemptId: number
+  startedAt: number
+  reason: string
+  crashCount: number
+  exitCode?: number
+  snapshot: RendererDiagnosticSnapshot
+}
+
+type RendererFailSafeTrigger = 'crash-threshold' | 'recovery-timeout'
+
+type RendererFailSafeOptions = {
+  snapshot?: RendererDiagnosticSnapshot
+  trigger: RendererFailSafeTrigger
+  crashCount: number
+  exitCode?: number
+  timedOutAfterMs?: number
 }
 
 type RendererDiagnosticSnapshot = {
@@ -120,11 +148,24 @@ type RendererDiagnosticSnapshot = {
     recoveryScheduled: boolean
     rendererFailSafeRunning: boolean
     windowShown: boolean
+    recentCrashCount: number
+    recoveryTimeoutScheduled: boolean
+    pendingRecovery: {
+      attemptId: number
+      startedAt: string
+      reason: string
+      crashCount: number
+      exitCode?: number
+    } | null
   }
   recentEvents: RendererDiagnosticEvent[]
 }
 
 const rendererEventHistory: RendererDiagnosticEvent[] = []
+let recentRendererCrashHistory: RendererCrashRecord[] = []
+let rendererRecoveryTimeout: NodeJS.Timeout | null = null
+let rendererRecoveryAttemptId = 0
+let pendingRendererRecovery: RendererRecoveryState | null = null
 
 function serializeDiagnosticValue(value: unknown): unknown {
   if (value instanceof Error) {
@@ -174,6 +215,19 @@ function recordRendererEvent(type: string, details: Record<string, unknown> = {}
   }
 }
 
+function pruneRecentRendererCrashes(now = Date.now()): void {
+  recentRendererCrashHistory = recentRendererCrashHistory.filter(
+    (crash) => now - crash.timestamp <= RENDERER_CRASH_WINDOW_MS
+  )
+}
+
+function clearRendererRecoveryTimeout(): void {
+  if (rendererRecoveryTimeout) {
+    clearTimeout(rendererRecoveryTimeout)
+    rendererRecoveryTimeout = null
+  }
+}
+
 function formatRendererCrashMessage(reason: string): string {
   return t('error.rendererCrashFailSafe').replace('{reason}', reason)
 }
@@ -181,6 +235,7 @@ function formatRendererCrashMessage(reason: string): string {
 async function collectRendererDiagnosticsSnapshot(
   window: BrowserWindow | null
 ): Promise<RendererDiagnosticSnapshot> {
+  pruneRecentRendererCrashes()
   const [appConfigResult, controlledConfigResult] = await Promise.allSettled([
     getAppConfig(),
     getControledMihomoConfig()
@@ -272,7 +327,18 @@ async function collectRendererDiagnosticsSnapshot(
     recovery: {
       recoveryScheduled: mainWindowRecoveryTimeout !== null,
       rendererFailSafeRunning,
-      windowShown
+      windowShown,
+      recentCrashCount: recentRendererCrashHistory.length,
+      recoveryTimeoutScheduled: rendererRecoveryTimeout !== null,
+      pendingRecovery: pendingRendererRecovery
+        ? {
+            attemptId: pendingRendererRecovery.attemptId,
+            startedAt: new Date(pendingRendererRecovery.startedAt).toISOString(),
+            reason: pendingRendererRecovery.reason,
+            crashCount: pendingRendererRecovery.crashCount,
+            exitCode: pendingRendererRecovery.exitCode
+          }
+        : null
     },
     recentEvents: rendererEventHistory.slice()
   }
@@ -312,6 +378,147 @@ ${JSON.stringify(entry, null, 2)}
   } catch (error) {
     console.error('[renderer-diagnostics] Failed to write diagnostics', error)
   }
+}
+
+function markRendererRecovered(source: string): void {
+  if (!pendingRendererRecovery) {
+    return
+  }
+
+  const recovery = pendingRendererRecovery
+  pendingRendererRecovery = null
+  clearRendererRecoveryTimeout()
+
+  const recoveryMs = Date.now() - recovery.startedAt
+  recordRendererEvent('renderer-recovered', {
+    source,
+    reason: recovery.reason,
+    crashCount: recovery.crashCount,
+    recoveryMs
+  })
+  void appendRendererDiagnostics(
+    'renderer-recovered',
+    {
+      source,
+      reason: recovery.reason,
+      crashCount: recovery.crashCount,
+      recoveryMs
+    },
+    recovery.snapshot
+  )
+}
+
+function beginRendererRecoveryWatch(
+  reason: string,
+  crashCount: number,
+  snapshot: RendererDiagnosticSnapshot,
+  exitCode?: number
+): void {
+  clearRendererRecoveryTimeout()
+
+  const attemptId = ++rendererRecoveryAttemptId
+  pendingRendererRecovery = {
+    attemptId,
+    startedAt: Date.now(),
+    reason,
+    crashCount,
+    exitCode,
+    snapshot
+  }
+
+  recordRendererEvent('renderer-recovery-watch-started', {
+    reason,
+    crashCount,
+    exitCode,
+    timeoutMs: RENDERER_RECOVERY_TIMEOUT_MS
+  })
+  void appendRendererDiagnostics(
+    'renderer-recovery-watch-started',
+    {
+      reason,
+      crashCount,
+      exitCode,
+      timeoutMs: RENDERER_RECOVERY_TIMEOUT_MS
+    },
+    snapshot
+  )
+
+  rendererRecoveryTimeout = setTimeout(() => {
+    const recovery = pendingRendererRecovery
+    if (!recovery || recovery.attemptId !== attemptId) {
+      return
+    }
+
+    pendingRendererRecovery = null
+    clearRendererRecoveryTimeout()
+    recordRendererEvent('renderer-recovery-timeout', {
+      reason: recovery.reason,
+      crashCount: recovery.crashCount,
+      exitCode: recovery.exitCode,
+      timeoutMs: RENDERER_RECOVERY_TIMEOUT_MS
+    })
+    void runRendererCrashFailSafe(recovery.reason, {
+      snapshot: recovery.snapshot,
+      trigger: 'recovery-timeout',
+      crashCount: recovery.crashCount,
+      exitCode: recovery.exitCode,
+      timedOutAfterMs: RENDERER_RECOVERY_TIMEOUT_MS
+    })
+  }, RENDERER_RECOVERY_TIMEOUT_MS)
+}
+
+async function handleRendererCrash(
+  reason: string,
+  exitCode?: number
+): Promise<void> {
+  const snapshot = await collectRendererDiagnosticsSnapshot(mainWindow)
+  await appendRendererDiagnostics(
+    'render-process-gone',
+    {
+      reason,
+      exitCode
+    },
+    snapshot
+  )
+  const now = Date.now()
+  pruneRecentRendererCrashes(now)
+  recentRendererCrashHistory.push({ timestamp: now, reason, exitCode })
+
+  const crashCount = recentRendererCrashHistory.length
+  const policyDetails = {
+    reason,
+    exitCode,
+    crashCount,
+    crashThreshold: RENDERER_CRASH_THRESHOLD,
+    crashWindowMs: RENDERER_CRASH_WINDOW_MS,
+    recoveryTimeoutMs: RENDERER_RECOVERY_TIMEOUT_MS
+  }
+
+  recordRendererEvent('renderer-crash-policy-evaluated', policyDetails)
+  await appendRendererDiagnostics('renderer-crash-policy-evaluated', policyDetails, snapshot)
+
+  if (crashCount >= RENDERER_CRASH_THRESHOLD) {
+    pendingRendererRecovery = null
+    clearRendererRecoveryTimeout()
+    recordRendererEvent('renderer-crash-threshold-reached', policyDetails)
+    await runRendererCrashFailSafe(reason, {
+      snapshot,
+      trigger: 'crash-threshold',
+      crashCount,
+      exitCode
+    })
+    return
+  }
+
+  beginRendererRecoveryWatch(reason, crashCount, snapshot, exitCode)
+  await appendRendererDiagnostics(
+    'renderer-crash-preserved-vpn',
+    {
+      ...policyDetails,
+      action: 'recover-ui-only'
+    },
+    snapshot
+  )
 }
 
 configureDevInstanceIsolation()
@@ -359,15 +566,24 @@ function scheduleMainWindowRecovery(reason: string): void {
 
 async function runRendererCrashFailSafe(
   reason: string,
-  snapshot?: RendererDiagnosticSnapshot
+  options: RendererFailSafeOptions
 ): Promise<void> {
   if (rendererFailSafeRunning) {
     return
   }
 
   rendererFailSafeRunning = true
-  recordRendererEvent('renderer-fail-safe-start', { reason })
-  const activeSnapshot = snapshot ?? (await collectRendererDiagnosticsSnapshot(mainWindow))
+  pendingRendererRecovery = null
+  clearRendererRecoveryTimeout()
+  const activeSnapshot =
+    options.snapshot ?? (await collectRendererDiagnosticsSnapshot(mainWindow))
+  recordRendererEvent('renderer-fail-safe-start', {
+    reason,
+    trigger: options.trigger,
+    crashCount: options.crashCount,
+    exitCode: options.exitCode,
+    timedOutAfterMs: options.timedOutAfterMs
+  })
   let sysProxyEnabled = activeSnapshot.config.sysProxyEnabled
   let tunEnabled = activeSnapshot.config.tunEnabled
   let onlyActiveDevice = activeSnapshot.config.onlyActiveDevice
@@ -387,6 +603,8 @@ async function runRendererCrashFailSafe(
     if (!sysProxyEnabled && !tunEnabled) {
       recordRendererEvent('renderer-fail-safe-skipped', {
         reason,
+        trigger: options.trigger,
+        crashCount: options.crashCount,
         sysProxyEnabled,
         tunEnabled
       })
@@ -398,6 +616,7 @@ async function runRendererCrashFailSafe(
       await patchAppConfig({ sysProxy: { enable: false } })
       recordRendererEvent('renderer-fail-safe-disabled-sysproxy', {
         reason,
+        trigger: options.trigger,
         onlyActiveDevice
       })
     }
@@ -411,7 +630,10 @@ async function runRendererCrashFailSafe(
       } catch {
         // ignore
       }
-      recordRendererEvent('renderer-fail-safe-disabled-tun', { reason })
+      recordRendererEvent('renderer-fail-safe-disabled-tun', {
+        reason,
+        trigger: options.trigger
+      })
     }
 
     await updateTrayIcon()
@@ -422,6 +644,8 @@ async function runRendererCrashFailSafe(
     )
     recordRendererEvent('renderer-fail-safe-completed', {
       reason,
+      trigger: options.trigger,
+      crashCount: options.crashCount,
       sysProxyDisabled: sysProxyEnabled,
       tunDisabled: tunEnabled
     })
@@ -429,6 +653,10 @@ async function runRendererCrashFailSafe(
       'renderer-fail-safe',
       {
         reason,
+        trigger: options.trigger,
+        crashCount: options.crashCount,
+        exitCode: options.exitCode,
+        timedOutAfterMs: options.timedOutAfterMs,
         sysProxyDisabled: sysProxyEnabled,
         tunDisabled: tunEnabled
       },
@@ -437,12 +665,18 @@ async function runRendererCrashFailSafe(
   } catch (error) {
     recordRendererEvent('renderer-fail-safe-error', {
       reason,
+      trigger: options.trigger,
+      crashCount: options.crashCount,
       error: serializeDiagnosticValue(error)
     })
     await appendRendererDiagnostics(
       'renderer-fail-safe-error',
       {
         reason,
+        trigger: options.trigger,
+        crashCount: options.crashCount,
+        exitCode: options.exitCode,
+        timedOutAfterMs: options.timedOutAfterMs,
         error: serializeDiagnosticValue(error)
       },
       activeSnapshot
@@ -637,6 +871,8 @@ app.on('before-quit', async (e) => {
         clearTimeout(quitTimeout)
         quitTimeout = null
       }
+      pendingRendererRecovery = null
+      clearRendererRecoveryTimeout()
       triggerSysProxy(false, false)
       await stopCore()
       app.exit()
@@ -652,6 +888,8 @@ app.on('before-quit', async (e) => {
         clearTimeout(quitTimeout)
         quitTimeout = null
       }
+      pendingRendererRecovery = null
+      clearRendererRecoveryTimeout()
       triggerSysProxy(false, false)
       await stopCore()
       app.exit()
@@ -662,6 +900,8 @@ app.on('before-quit', async (e) => {
       clearTimeout(quitTimeout)
       quitTimeout = null
     }
+    pendingRendererRecovery = null
+    clearRendererRecoveryTimeout()
     triggerSysProxy(false, false)
     await stopCore()
     app.exit()
@@ -673,6 +913,8 @@ powerMonitor.on('shutdown', async () => {
     clearTimeout(quitTimeout)
     quitTimeout = null
   }
+  pendingRendererRecovery = null
+  clearRendererRecoveryTimeout()
   triggerSysProxy(false, false)
   await stopCore()
   app.exit()
@@ -980,22 +1222,21 @@ export async function createWindow(appConfig?: AppConfig): Promise<void> {
         exitCode: details.exitCode
       })
       void (async () => {
-        const snapshot = await collectRendererDiagnosticsSnapshot(mainWindow)
-        await appendRendererDiagnostics(
-          'render-process-gone',
-          {
+        if (details.reason === 'oom' || details.reason === 'crashed') {
+          await handleRendererCrash(details.reason, details.exitCode)
+        } else {
+          await appendRendererDiagnostics('render-process-gone', {
             reason: details.reason,
             exitCode: details.exitCode
-          },
-          snapshot
-        )
-
-        if (details.reason === 'oom' || details.reason === 'crashed') {
-          await runRendererCrashFailSafe(details.reason, snapshot)
+          })
         }
       })()
 
       scheduleMainWindowRecovery(`render-process-gone (${details.reason})`)
+    })
+
+    mainWindow.webContents.on('did-finish-load', () => {
+      markRendererRecovered('did-finish-load')
     })
 
     mainWindow.webContents.once('did-finish-load', () => {
