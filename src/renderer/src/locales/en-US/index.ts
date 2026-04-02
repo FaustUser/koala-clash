@@ -231,7 +231,27 @@ export default {
       clearLogs: 'Clear logs'
     },
     rules: {
-      title: 'Routing Rules'
+      title: 'Routing Rules',
+      urlTest: {
+        title: 'Rule test',
+        description:
+          'Send a real request through Mihomo to see the matched rule and the actual route.',
+        placeholder: 'Enter URL, for example https://example.com',
+        action: 'Test',
+        testing: 'Testing...',
+        result: 'Last result',
+        url: 'URL',
+        host: 'Host',
+        rule: 'Matched rule',
+        target: 'Rule target',
+        outbound: 'Actual outbound',
+        chain: 'Proxy chain',
+        request: 'Request',
+        pathDirect: 'Direct',
+        pathVpn: 'Via VPN',
+        pathReject: 'Rejected',
+        pathUnknown: 'Unknown'
+      }
     },
     dns: {
       title: 'DNS Settings',
@@ -698,7 +718,8 @@ export default {
     fallbackFilterTemplateLocalUs: 'Local / US',
     fallbackFilterTemplateLocalUsDesc: 'Keeps US traffic local, fallback by US GeoIP code.',
     fallbackFilterTemplateGlobalServices: 'Global Services',
-    fallbackFilterTemplateGlobalServicesDesc: 'Targets major global platforms through fallback resolvers.',
+    fallbackFilterTemplateGlobalServicesDesc:
+      'Targets major global platforms through fallback resolvers.',
     fallbackFilterTemplateMinimal: 'Minimal',
     fallbackFilterTemplateMinimalDesc: 'Only reserved-range protection with one fallback resolver.',
     previewFallbackResolvers: 'Preview Fallback Resolvers',

@@ -305,7 +305,26 @@ export default {
       clearLogs: '清空日志'
     },
     rules: {
-      title: '分流规则'
+      title: '分流规则',
+      urlTest: {
+        title: 'URL 测试',
+        description: '通过 Mihomo 发送一次真实请求，并显示命中的规则与实际走向。',
+        placeholder: '输入 URL，例如 https://example.com',
+        action: '测试',
+        testing: '测试中...',
+        result: '最近结果',
+        url: 'URL',
+        host: '主机',
+        rule: '命中规则',
+        target: '规则目标',
+        outbound: '实际出口',
+        chain: '代理链路',
+        request: '请求结果',
+        pathDirect: '直连',
+        pathVpn: '通过 VPN',
+        pathReject: '已拒绝',
+        pathUnknown: '未知'
+      }
     },
     dns: {
       title: 'DNS 设置',
@@ -1029,10 +1048,8 @@ export default {
     groupEditorProxyListTitleUrlTest: '自动测试代理',
     groupEditorProxyListHintSelector:
       'Selector 模式不会自动切换。下面的列表只决定这个分组里哪些代理可以手动选择。',
-    groupEditorProxyListHintFallback:
-      'Mihomo 会按从上到下的顺序检查代理，并使用第一个可用的代理。',
-    groupEditorProxyListHintUrlTest:
-      'Mihomo 会定期测试这些代理，并选择当前表现最好的可用结果。',
+    groupEditorProxyListHintFallback: 'Mihomo 会按从上到下的顺序检查代理，并使用第一个可用的代理。',
+    groupEditorProxyListHintUrlTest: 'Mihomo 会定期测试这些代理，并选择当前表现最好的可用结果。',
     groupEditorAddNode: '添加代理或 DIRECT',
     groupEditorEmpty: '该分组尚未配置代理。',
     groupEditorEmptySelector: '这个分组里还没有可供手动选择的代理。',
@@ -1080,8 +1097,7 @@ export default {
     sharedVpnCardDescription: '供所有配置公共规则使用的全局 VPN 路由。',
     sharedVpnCurrentProxy: '当前目标：{{name}}',
     activeProfileGroupsTitle: '当前配置的组',
-    activeProfileGroupsDescription:
-      '这些组属于当前选中的配置，会在切换配置时一起发生变化。',
+    activeProfileGroupsDescription: '这些组属于当前选中的配置，会在切换配置时一起发生变化。',
     activeProfileGroupsReadOnly:
       '这里不编辑它们的路由模式。共享 Fallback 或 URL Test 只在上方的 VPN 区块中配置。',
     groupTypeSelector: 'Selector',

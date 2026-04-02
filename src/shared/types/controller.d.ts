@@ -203,6 +203,23 @@ interface ControllerRulesDetail {
   size: number
 }
 
+type ControllerRuleTestTrafficPath = 'direct' | 'vpn' | 'reject' | 'unknown'
+
+interface ControllerRuleTestResult {
+  input: string
+  url: string
+  matchedRuleType: string
+  matchedRulePayload: string
+  matchedRuleTarget: string
+  proxyChain: string[]
+  outbound: string
+  trafficPath: ControllerRuleTestTrafficPath
+  host: string
+  statusCode?: number
+  statusMessage?: string
+  requestError?: string
+}
+
 // ${api}/version
 interface ControllerVersion {
   version: string

@@ -43,10 +43,7 @@ import {
   setProfileConfig,
   convertMrsRuleset
 } from '../config'
-import {
-  getEditableVpnRoutingGroup,
-  updateVpnRoutingGroup
-} from '../config/proxyGroup'
+import { getEditableVpnRoutingGroup, updateVpnRoutingGroup } from '../config/proxyGroup'
 import {
   manualGrantCorePermition,
   quitWithoutCore,
@@ -88,7 +85,13 @@ import {
   getCurrentProfileStr
 } from '../core/factory'
 import { getInterfaces } from '../sys/interface'
-import { closeTrayIcon, copyEnv, setDockVisible, showTrayIcon, updateTrayIcon } from '../resolve/tray'
+import {
+  closeTrayIcon,
+  copyEnv,
+  setDockVisible,
+  showTrayIcon,
+  updateTrayIcon
+} from '../resolve/tray'
 import { registerShortcut } from '../resolve/shortcut'
 import {
   closeMainWindow,
@@ -117,6 +120,7 @@ import { getUserAgent } from './userAgent'
 import { setLanguage } from './i18n'
 import { updateApplicationMenu } from '../resolve/menu'
 import { getGeoDataEntries } from './geodata'
+import { mihomoTestRuleUrl } from '../core/ruleTester'
 
 function ipcErrorWrapper<T>( // eslint-disable-next-line @typescript-eslint/no-explicit-any
   fn: (...args: any[]) => Promise<T> // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -148,6 +152,7 @@ export function registerIpcMainHandlers(): void {
     ipcErrorWrapper(mihomoCloseAllConnections)(name)
   )
   ipcMain.handle('mihomoRules', ipcErrorWrapper(mihomoRules))
+  ipcMain.handle('mihomoTestRuleUrl', (_e, url) => ipcErrorWrapper(mihomoTestRuleUrl)(url))
   ipcMain.handle('mihomoProxies', ipcErrorWrapper(mihomoProxies))
   ipcMain.handle('mihomoGroups', ipcErrorWrapper(mihomoGroups))
   ipcMain.handle('mihomoProxyProviders', ipcErrorWrapper(mihomoProxyProviders))
@@ -338,9 +343,10 @@ export function registerIpcMainHandlers(): void {
     const args = process.argv.slice(1)
     const escapedExePath = exePath.replace(/'/g, "''")
     const argsString = args.map((a) => a.replace(/'/g, "''")).join("' '")
-    const command = args.length > 0
-      ? `powershell -NoProfile -Command "Start-Process -FilePath '${escapedExePath}' -ArgumentList '${argsString}' -Verb RunAs"`
-      : `powershell -NoProfile -Command "Start-Process -FilePath '${escapedExePath}' -Verb RunAs"`
+    const command =
+      args.length > 0
+        ? `powershell -NoProfile -Command "Start-Process -FilePath '${escapedExePath}' -ArgumentList '${argsString}' -Verb RunAs"`
+        : `powershell -NoProfile -Command "Start-Process -FilePath '${escapedExePath}' -Verb RunAs"`
     exec(command, { windowsHide: true })
     setNotQuitDialog()
     app.quit()

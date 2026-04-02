@@ -232,7 +232,27 @@ export default {
       clearLogs: 'Очистить логи'
     },
     rules: {
-      title: 'Правила'
+      title: 'Правила',
+      urlTest: {
+        title: 'Проверка URL',
+        description:
+          'Отправляет реальный запрос через Mihomo и показывает сработавшее правило и фактический маршрут.',
+        placeholder: 'Введите URL, например https://example.com',
+        action: 'Тест',
+        testing: 'Проверка...',
+        result: 'Последний результат',
+        url: 'URL',
+        host: 'Хост',
+        rule: 'Сработавшее правило',
+        target: 'Цель правила',
+        outbound: 'Фактический выход',
+        chain: 'Цепочка прокси',
+        request: 'Запрос',
+        pathDirect: 'Напрямую',
+        pathVpn: 'Через VPN',
+        pathReject: 'Отклонено',
+        pathUnknown: 'Неизвестно'
+      }
     },
     dns: {
       title: 'Настройки DNS',
