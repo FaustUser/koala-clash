@@ -2,10 +2,10 @@ import { is } from '@electron-toolkit/utils'
 import { existsSync, mkdirSync, readdirSync } from 'fs'
 import { app } from 'electron'
 import path from 'path'
-import { execSync } from 'child_process'
 import { getAppConfigSync } from '../config/app'
 import { checkCorePermissionSync } from '../core/manager'
 import { t } from './i18n'
+import { execFileSyncText, execSyncText } from './process'
 
 export const homeDir = app.getPath('home')
 
@@ -177,13 +177,30 @@ export function legacyRulePath(id: string): string {
 }
 
 function hasCommand(command: string): boolean {
+  if (process.platform === 'win32') {
+    return findWindowsPaths(command).length > 0
+  }
+
   try {
-    const isWin = process.platform === 'win32'
-    const whichCmd = isWin ? 'where' : 'which'
-    execSync(`${whichCmd} ${command}`, { encoding: 'utf8', stdio: 'pipe' })
+    execSyncText(`which ${command}`, { stdio: 'pipe' })
     return true
   } catch (error) {
     return false
+  }
+}
+
+function findWindowsPaths(command: string): string[] {
+  try {
+    const result = execFileSyncText('where.exe', [command], {
+      stdio: 'pipe',
+      windowsHide: true
+    })
+    return result
+      .split(/\r?\n/)
+      .map((p) => p.trim())
+      .filter((p) => p && existsSync(p))
+  } catch {
+    return []
   }
 }
 
@@ -196,13 +213,21 @@ export function findSystemMihomo(): string[] {
 
   for (const name of searchNames) {
     try {
-      const command = isWin ? 'where' : 'which'
-      const result = execSync(`${command} ${name}`, { encoding: 'utf8' }).trim()
-      if (result) {
-        const paths = result.split('\n').filter((p) => p && existsSync(p))
+      if (isWin) {
+        const paths = findWindowsPaths(name)
         for (const p of paths) {
           if (!foundPaths.includes(p)) {
             foundPaths.push(p)
+          }
+        }
+      } else {
+        const result = execSyncText(`which ${name}`)
+        if (result) {
+          const paths = result.split('\n').filter((p) => p && existsSync(p))
+          for (const p of paths) {
+            if (!foundPaths.includes(p)) {
+              foundPaths.push(p)
+            }
           }
         }
       }
@@ -244,9 +269,7 @@ export function findSystemMihomo(): string[] {
     if (hasCommand('brew')) {
       for (const name of searchNames) {
         try {
-          const result = execSync(`brew --prefix ${name} 2>/dev/null`, {
-            encoding: 'utf8'
-          }).trim()
+          const result = execSyncText(`brew --prefix ${name} 2>/dev/null`)
           if (result) {
             const binPath = path.join(result, 'bin', name)
             if (existsSync(binPath) && !foundPaths.includes(binPath)) {
@@ -265,9 +288,7 @@ export function findSystemMihomo(): string[] {
     if (hasCommand('dpkg')) {
       for (const name of searchNames) {
         try {
-          const result = execSync(`dpkg -L ${name} 2>/dev/null | grep bin/${name}$`, {
-            encoding: 'utf8'
-          }).trim()
+          const result = execSyncText(`dpkg -L ${name} 2>/dev/null | grep bin/${name}$`)
           if (result) {
             const paths = result.split('\n').filter((p) => p && existsSync(p))
             for (const p of paths) {
@@ -286,9 +307,7 @@ export function findSystemMihomo(): string[] {
     if (hasCommand('rpm')) {
       for (const name of searchNames) {
         try {
-          const result = execSync(`rpm -ql ${name} 2>/dev/null | grep bin/${name}$`, {
-            encoding: 'utf8'
-          }).trim()
+          const result = execSyncText(`rpm -ql ${name} 2>/dev/null | grep bin/${name}$`)
           if (result) {
             const paths = result.split('\n').filter((p) => p && existsSync(p))
             for (const p of paths) {
@@ -307,9 +326,7 @@ export function findSystemMihomo(): string[] {
     if (hasCommand('pacman')) {
       for (const name of searchNames) {
         try {
-          const result = execSync(`pacman -Ql ${name} 2>/dev/null | grep bin/${name}$`, {
-            encoding: 'utf8'
-          }).trim()
+          const result = execSyncText(`pacman -Ql ${name} 2>/dev/null | grep bin/${name}$`)
           if (result) {
             const paths = result
               .split('\n')
@@ -333,7 +350,10 @@ export function findSystemMihomo(): string[] {
     if (hasCommand('scoop')) {
       for (const name of searchNames) {
         try {
-          const result = execSync(`scoop which ${name} 2>nul`, { encoding: 'utf8' }).trim()
+          const result = execFileSyncText('scoop', ['which', name], {
+            stdio: 'pipe',
+            windowsHide: true
+          })
           if (result && existsSync(result) && !foundPaths.includes(result)) {
             foundPaths.push(result)
           }

@@ -1,8 +1,5 @@
-import { execFile } from 'child_process'
-import { promisify } from 'util'
 import { t } from './i18n'
-
-const execFilePromise = promisify(execFile)
+import { execFileText } from './process'
 
 let isAdminCached: boolean | null = null
 
@@ -12,7 +9,7 @@ async function isRunningAsAdmin(): Promise<boolean> {
   }
 
   try {
-    await execFilePromise('net', ['session'], { timeout: 2000 })
+    await execFileText('net', ['session'], { timeout: 2000 })
     isAdminCached = true
     return true
   } catch {
@@ -25,7 +22,7 @@ export async function execWithElevation(command: string, args: string[]): Promis
   if (process.platform === 'win32') {
     try {
       if (await isRunningAsAdmin()) {
-        await execFilePromise(command, args, { timeout: 30000 })
+        await execFileText(command, args, { timeout: 30000 })
       } else {
         const psArgs = args
           .map((arg) => {
@@ -33,7 +30,7 @@ export async function execWithElevation(command: string, args: string[]): Promis
             return `'${escaped}'`
           })
           .join(',')
-        await execFilePromise(
+        await execFileText(
           'powershell.exe',
           [
             '-NoProfile',
@@ -52,7 +49,7 @@ export async function execWithElevation(command: string, args: string[]): Promis
     }
   } else if (process.platform === 'linux') {
     try {
-      await execFilePromise('pkexec', [command, ...args])
+      await execFileText('pkexec', [command, ...args])
     } catch (error) {
       throw new Error(
         `${t('error.linuxElevationFailed')}：${error instanceof Error ? error.message : String(error)}`
@@ -61,7 +58,7 @@ export async function execWithElevation(command: string, args: string[]): Promis
   } else if (process.platform === 'darwin') {
     const cmd = `${command} ${args.join(' ')}`
     try {
-      await execFilePromise('osascript', [
+      await execFileText('osascript', [
         '-e',
         `do shell script "${cmd}" with administrator privileges`
       ])

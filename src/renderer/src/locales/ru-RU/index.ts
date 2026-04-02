@@ -702,8 +702,10 @@ export default {
     fallbackFilterTemplateGlobalServicesDesc: 'Ориентирован на крупные глобальные платформы.',
     fallbackFilterTemplateMinimal: 'Минимальный',
     fallbackFilterTemplateMinimalDesc: 'Только защита reserved-range и один fallback resolver.',
-    previewFallbackResolvers: '???????????? ????????? ??????????',
-    previewFallbackFilter: '???????????? fallback-???????',
+    previewFallbackResolvers:
+      '\u041f\u0440\u0435\u0434\u043f\u0440\u043e\u0441\u043c\u043e\u0442\u0440 \u0440\u0435\u0437\u0435\u0440\u0432\u043d\u044b\u0445 \u0440\u0435\u0437\u043e\u043b\u0432\u0435\u0440\u043e\u0432',
+    previewFallbackFilter:
+      '\u041f\u0440\u0435\u0434\u043f\u0440\u043e\u0441\u043c\u043e\u0442\u0440 fallback-\u0444\u0438\u043b\u044c\u0442\u0440\u0430',
     directResolver: 'Прямой резолвер',
     proxyNodeResolver: 'Резолвер узла прокси',
     domainResolutionPolicy: 'Политика разрешения доменов',

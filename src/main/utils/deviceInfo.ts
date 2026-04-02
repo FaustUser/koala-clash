@@ -1,6 +1,6 @@
 import crypto from 'crypto'
 import os from 'os'
-import { execSync } from 'child_process'
+import { execSyncText } from './process'
 
 let cachedHWID: string | null = null
 let cachedDeviceOS: string | null = null
@@ -9,7 +9,7 @@ let cachedDeviceModel: string | null = null
 
 function execCommand(command: string): string {
   try {
-    return execSync(command, { encoding: 'utf-8', timeout: 3000 }).trim()
+    return execSyncText(command, { timeout: 3000 })
   } catch {
     return ''
   }

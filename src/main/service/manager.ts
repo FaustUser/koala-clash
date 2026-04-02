@@ -4,8 +4,7 @@ import { t } from '../utils/i18n'
 import { KeyManager } from './key'
 import { initServiceAPI, getServiceAxios, ping, test } from './api'
 import { getAppConfig, patchAppConfig } from '../config'
-import { execFile } from 'child_process'
-import { promisify } from 'util'
+import { execFileText } from '../utils/process'
 
 let keyManager: KeyManager | null = null
 
@@ -178,10 +177,8 @@ export async function serviceStatus(): Promise<
   'running' | 'stopped' | 'not-installed' | 'paused' | 'unknown' | 'need-init'
 > {
   const execPath = servicePath()
-  const execFilePromise = promisify(execFile)
-
   try {
-    const { stderr } = await execFilePromise(execPath, ['service', 'status'])
+    const { stderr } = await execFileText(execPath, ['service', 'status'])
     if (stderr.includes('the service is not installed')) {
       return 'not-installed'
     } else {

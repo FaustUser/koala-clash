@@ -1,4 +1,4 @@
-import { ChildProcess, execFile, execFileSync, spawn } from 'child_process'
+import { ChildProcess, execFileSync, spawn } from 'child_process'
 import {
   dataDir,
   logPath,
@@ -32,7 +32,6 @@ import {
   mihomoGroups
 } from './mihomoApi'
 import { readFile, rm, writeFile } from 'fs/promises'
-import { promisify } from 'util'
 import { mainWindow, showError } from '..'
 import path from 'path'
 import os from 'os'
@@ -42,6 +41,7 @@ import { getAxios } from './mihomoApi'
 import { setSysDns } from '../service/api'
 import { t } from '../utils/i18n'
 import { updateTrayIcon } from '../resolve/tray'
+import { decodeProcessOutput, execFileText } from '../utils/process'
 
 const ctlParam = process.platform === 'win32' ? '-ext-ctl-pipe' : '-ext-ctl-unix'
 
@@ -317,11 +317,15 @@ export async function startCore(detached = false): Promise<Promise<void>[]> {
       await stopCore()
     }
   })
-  child.stdout?.pipe(stdout)
-  child.stderr?.pipe(stderr)
+  child.stdout?.on('data', (data) => {
+    stdout.write(decodeProcessOutput(data))
+  })
+  child.stderr?.on('data', (data) => {
+    stderr.write(decodeProcessOutput(data))
+  })
   return new Promise((resolve, reject) => {
     child.stdout?.on('data', async (data) => {
-      const str = data.toString()
+      const str = decodeProcessOutput(data)
       if (
         (process.platform !== 'win32' && str.includes('External controller unix listen error')) ||
         (process.platform === 'win32' && str.includes('External controller pipe listen error'))
@@ -400,7 +404,7 @@ export async function startCore(detached = false): Promise<Promise<void>[]> {
             }
             child.stdout?.on('data', (data) => {
               if (!initialized) {
-                handleProviderInitialization(data.toString())
+                handleProviderInitialization(decodeProcessOutput(data))
               }
             })
           })
@@ -564,12 +568,11 @@ async function checkProfile(): Promise<void> {
   const { core = 'mihomo', diffWorkDir = false, safePaths = [] } = await getAppConfig()
   const { current } = await getProfileConfig()
   const corePath = mihomoCorePath(core)
-  const execFilePromise = promisify(execFile)
   const env = {
     SAFE_PATHS: safePaths.join(path.delimiter)
   }
   try {
-    await execFilePromise(
+    await execFileText(
       corePath,
       [
         '-t',
@@ -581,24 +584,22 @@ async function checkProfile(): Promise<void> {
       { env }
     )
   } catch (error) {
-    if (error instanceof Error && 'stdout' in error) {
-      const { stdout } = error as { stdout: string }
-      const errorLines = stdout
+    if (error instanceof Error) {
+      const errorLines = error.message
         .split('\n')
         .filter((line) => line.includes('level=error'))
-        .map((line) => line.split('level=error')[1])
-      throw new Error(`Profile Check Failed:\n${errorLines.join('\n')}`)
-    } else {
-      throw error
+        .map((line) => line.split('level=error')[1] || line)
+      if (errorLines.length > 0) {
+        throw new Error(`Profile Check Failed:\n${errorLines.join('\n')}`)
+      }
     }
+    throw error
   }
 }
 
 export async function manualGrantCorePermition(
   cores?: ('mihomo' | 'mihomo-alpha')[]
 ): Promise<void> {
-  const execFilePromise = promisify(execFile)
-
   const grantPermission = async (coreName: 'mihomo' | 'mihomo-alpha'): Promise<void> => {
     const corePath = mihomoCorePath(coreName)
     try {
@@ -606,10 +607,10 @@ export async function manualGrantCorePermition(
         const escapedPath = corePath.replace(/"/g, '\\"')
         const shell = `chown root:admin \\"${escapedPath}\\" && chmod +sx \\"${escapedPath}\\"`
         const command = `do shell script "${shell}" with administrator privileges`
-        await execFilePromise('osascript', ['-e', command])
+        await execFileText('osascript', ['-e', command])
       }
       if (process.platform === 'linux') {
-        await execFilePromise('pkexec', [
+        await execFileText('pkexec', [
           'bash',
           '-c',
           `chown root:root "${corePath}" && chmod +sx "${corePath}"`
@@ -640,12 +641,10 @@ export function checkCorePermissionSync(coreName: 'mihomo' | 'mihomo-alpha'): bo
 }
 
 export async function checkCorePermission(): Promise<{ mihomo: boolean; 'mihomo-alpha': boolean }> {
-  const execFilePromise = promisify(execFile)
-
   const checkPermission = async (coreName: 'mihomo' | 'mihomo-alpha'): Promise<boolean> => {
     try {
       const corePath = mihomoCorePath(coreName)
-      const { stdout } = await execFilePromise('ls', ['-l', corePath])
+      const { stdout } = await execFileText('ls', ['-l', corePath])
       const permissions = stdout.trim().split(/\s+/)[0]
       return permissions.includes('s') || permissions.includes('S')
     } catch (error) {
@@ -665,8 +664,6 @@ export async function checkCorePermission(): Promise<{ mihomo: boolean; 'mihomo-
 }
 
 export async function revokeCorePermission(cores?: ('mihomo' | 'mihomo-alpha')[]): Promise<void> {
-  const execFilePromise = promisify(execFile)
-
   const revokePermission = async (coreName: 'mihomo' | 'mihomo-alpha'): Promise<void> => {
     const corePath = mihomoCorePath(coreName)
     try {
@@ -674,10 +671,10 @@ export async function revokeCorePermission(cores?: ('mihomo' | 'mihomo-alpha')[]
         const escapedPath = corePath.replace(/"/g, '\\"')
         const shell = `chmod a-s \\"${escapedPath}\\"`
         const command = `do shell script "${shell}" with administrator privileges`
-        await execFilePromise('osascript', ['-e', command])
+        await execFileText('osascript', ['-e', command])
       }
       if (process.platform === 'linux') {
-        await execFilePromise('pkexec', ['bash', '-c', `chmod a-s "${corePath}"`])
+        await execFileText('pkexec', ['bash', '-c', `chmod a-s "${corePath}"`])
       }
     } catch (error) {
       if (isUserCancelledError(error)) {
@@ -692,8 +689,7 @@ export async function revokeCorePermission(cores?: ('mihomo' | 'mihomo-alpha')[]
 }
 
 export async function getDefaultDevice(): Promise<string> {
-  const execFilePromise = promisify(execFile)
-  const { stdout: deviceOut } = await execFilePromise('route', ['-n', 'get', 'default'])
+  const { stdout: deviceOut } = await execFileText('route', ['-n', 'get', 'default'])
   let device = deviceOut.split('\n').find((s) => s.includes('interface:'))
   device = device?.trim().split(' ').slice(1).join(' ')
   if (!device) throw new Error('Get device failed')
@@ -701,9 +697,8 @@ export async function getDefaultDevice(): Promise<string> {
 }
 
 async function getDefaultService(): Promise<string> {
-  const execFilePromise = promisify(execFile)
   const device = await getDefaultDevice()
-  const { stdout: order } = await execFilePromise('networksetup', ['-listnetworkserviceorder'])
+  const { stdout: order } = await execFileText('networksetup', ['-listnetworkserviceorder'])
   const block = order.split('\n\n').find((s) => s.includes(`Device: ${device}`))
   if (!block) throw new Error('Get networkservice failed')
   for (const line of block.split('\n')) {
@@ -715,9 +710,8 @@ async function getDefaultService(): Promise<string> {
 }
 
 async function getOriginDNS(): Promise<void> {
-  const execFilePromise = promisify(execFile)
   const service = await getDefaultService()
-  const { stdout: dns } = await execFilePromise('networksetup', ['-getdnsservers', service])
+  const { stdout: dns } = await execFileText('networksetup', ['-getdnsservers', service])
   if (dns.startsWith("There aren't any DNS Servers set on")) {
     await patchAppConfig({ originDNS: 'Empty' })
   } else {
@@ -729,8 +723,7 @@ async function setDNS(dns: string, mode: 'none' | 'exec' | 'service'): Promise<v
   const service = await getDefaultService()
   const dnsServers = dns.split(' ')
   if (mode === 'exec') {
-    const execFilePromise = promisify(execFile)
-    await execFilePromise('networksetup', ['-setdnsservers', service, ...dnsServers])
+    await execFileText('networksetup', ['-setdnsservers', service, ...dnsServers])
     return
   }
   if (mode === 'service') {

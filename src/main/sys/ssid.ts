@@ -1,10 +1,9 @@
-import { exec } from 'child_process'
-import { promisify } from 'util'
 import { getAppConfig, patchControledMihomoConfig } from '../config'
 import { patchMihomoConfig } from '../core/mihomoApi'
 import { mainWindow } from '..'
 import { ipcMain, net } from 'electron'
 import { getDefaultDevice } from '../core/manager'
+import { execText } from '../utils/process'
 
 export async function getCurrentSSID(): Promise<string | undefined> {
   if (process.platform === 'win32') {
@@ -61,8 +60,7 @@ export async function startSSIDCheck(): Promise<void> {
 }
 
 async function getSSIDByAirport(): Promise<string | undefined> {
-  const execPromise = promisify(exec)
-  const { stdout } = await execPromise(
+  const { stdout } = await execText(
     '/System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport -I'
   )
   if (stdout.trim().startsWith('WARNING')) {
@@ -77,10 +75,9 @@ async function getSSIDByAirport(): Promise<string | undefined> {
 }
 
 async function getSSIDByNetworksetup(): Promise<string | undefined> {
-  const execPromise = promisify(exec)
   if (net.isOnline()) {
     const service = await getDefaultDevice()
-    const { stdout } = await execPromise(`networksetup -listpreferredwirelessnetworks ${service}`)
+    const { stdout } = await execText(`networksetup -listpreferredwirelessnetworks ${service}`)
     if (stdout.trim().startsWith('Preferred networks on')) {
       if (stdout.split('\n').length > 1) {
         return stdout.split('\n')[1].trim()
@@ -91,8 +88,7 @@ async function getSSIDByNetworksetup(): Promise<string | undefined> {
 }
 
 async function getSSIDByNetsh(): Promise<string | undefined> {
-  const execPromise = promisify(exec)
-  const { stdout } = await execPromise('netsh wlan show interfaces')
+  const { stdout } = await execText('netsh wlan show interfaces')
   for (const line of stdout.split('\n')) {
     if (line.trim().startsWith('SSID')) {
       return line.split(': ')[1].trim()
@@ -102,8 +98,7 @@ async function getSSIDByNetsh(): Promise<string | undefined> {
 }
 
 async function getSSIDByIwconfig(): Promise<string | undefined> {
-  const execPromise = promisify(exec)
-  const { stdout } = await execPromise(
+  const { stdout } = await execText(
     `iwconfig 2>/dev/null | grep 'ESSID' | awk -F'"' '{print $2}'`
   )
   if (stdout.trim() !== '') {

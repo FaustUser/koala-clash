@@ -2,34 +2,107 @@ import React, { useEffect, useState } from 'react'
 import { platform } from '@renderer/utils/init'
 import { useAppConfig } from '@renderer/hooks/use-app-config'
 
+type WindowStateListener = (value: boolean) => void
+
+interface WindowStateStore {
+  initialized: boolean
+  windowMaximized: boolean
+  windowFocused: boolean
+  maximizedListeners: Set<WindowStateListener>
+  focusedListeners: Set<WindowStateListener>
+}
+
+type WindowWithStateStore = Window & {
+  __koalaWindowControlsState?: WindowStateStore
+}
+
+const getWindowStateStore = (): WindowStateStore => {
+  const currentWindow = window as WindowWithStateStore
+
+  if (!currentWindow.__koalaWindowControlsState) {
+    currentWindow.__koalaWindowControlsState = {
+      initialized: false,
+      windowMaximized: false,
+      windowFocused: document.hasFocus(),
+      maximizedListeners: new Set<WindowStateListener>(),
+      focusedListeners: new Set<WindowStateListener>()
+    }
+  }
+
+  return currentWindow.__koalaWindowControlsState
+}
+
+const emitMaximized = (value: boolean): void => {
+  const store = getWindowStateStore()
+  store.windowMaximized = value
+  store.maximizedListeners.forEach((listener) => listener(value))
+}
+
+const emitFocused = (value: boolean): void => {
+  const store = getWindowStateStore()
+  store.windowFocused = value
+  store.focusedListeners.forEach((listener) => listener(value))
+}
+
+const ensureWindowState = (): void => {
+  const store = getWindowStateStore()
+  if (store.initialized) return
+
+  store.initialized = true
+
+  window.electron.ipcRenderer
+    .invoke('windowIsMaximized')
+    .then((value) => emitMaximized(Boolean(value)))
+    .catch(() => {
+      // Keep the last known state if the window is already closing.
+    })
+
+  window.electron.ipcRenderer.on('window-maximized', () => emitMaximized(true))
+  window.electron.ipcRenderer.on('window-unmaximized', () => emitMaximized(false))
+
+  window.addEventListener('focus', () => emitFocused(true))
+  window.addEventListener('blur', () => emitFocused(false))
+}
+
+const subscribeMaximized = (listener: WindowStateListener): (() => void) => {
+  const store = getWindowStateStore()
+  ensureWindowState()
+  store.maximizedListeners.add(listener)
+  listener(store.windowMaximized)
+
+  return () => {
+    store.maximizedListeners.delete(listener)
+  }
+}
+
+const subscribeFocused = (listener: WindowStateListener): (() => void) => {
+  const store = getWindowStateStore()
+  ensureWindowState()
+  store.focusedListeners.add(listener)
+  listener(store.windowFocused)
+
+  return () => {
+    store.focusedListeners.delete(listener)
+  }
+}
+
 const WindowControls: React.FC = () => {
   const { appConfig } = useAppConfig()
   const { useWindowFrame = false } = appConfig || {}
-  const [isMaximized, setIsMaximized] = useState(false)
-  const [isFocused, setIsFocused] = useState(document.hasFocus())
+  const store = getWindowStateStore()
+  const [isMaximized, setIsMaximized] = useState(store.windowMaximized)
+  const [isFocused, setIsFocused] = useState(store.windowFocused)
   const isMac = platform === 'darwin'
 
   useEffect(() => {
     if (useWindowFrame) return
 
-    window.electron.ipcRenderer.invoke('windowIsMaximized').then(setIsMaximized)
-
-    const onMaximize = (): void => setIsMaximized(true)
-    const onUnmaximize = (): void => setIsMaximized(false)
-
-    window.electron.ipcRenderer.on('window-maximized', onMaximize)
-    window.electron.ipcRenderer.on('window-unmaximized', onUnmaximize)
-
-    const onFocus = (): void => setIsFocused(true)
-    const onBlur = (): void => setIsFocused(false)
-    window.addEventListener('focus', onFocus)
-    window.addEventListener('blur', onBlur)
+    const unsubscribeMaximized = subscribeMaximized(setIsMaximized)
+    const unsubscribeFocused = subscribeFocused(setIsFocused)
 
     return () => {
-      window.electron.ipcRenderer.removeListener('window-maximized', onMaximize)
-      window.electron.ipcRenderer.removeListener('window-unmaximized', onUnmaximize)
-      window.removeEventListener('focus', onFocus)
-      window.removeEventListener('blur', onBlur)
+      unsubscribeMaximized()
+      unsubscribeFocused()
     }
   }, [useWindowFrame])
 
