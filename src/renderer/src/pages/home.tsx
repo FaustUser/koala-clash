@@ -4,7 +4,7 @@ import { useAppConfig } from '@renderer/hooks/use-app-config'
 import { useControledMihomoConfig } from '@renderer/hooks/use-controled-mihomo-config'
 import { useProfileConfig } from '@renderer/hooks/use-profile-config'
 import { useGroups } from '@renderer/hooks/use-groups'
-import { getCoreHealth, restartCore, triggerSysProxy, updateTrayIcon } from '@renderer/utils/ipc'
+import { restartCore, triggerSysProxy, updateTrayIcon } from '@renderer/utils/ipc'
 import NumberFlow from '@number-flow/react'
 import { useTranslation } from 'react-i18next'
 import { useEffect, useMemo, useState } from 'react'
@@ -12,12 +12,22 @@ import { useNavigate } from 'react-router-dom'
 import dayjs from 'dayjs'
 import Power from '@renderer/assets/on_icon.svg'
 import Pause from '@renderer/assets/pause_icon.svg'
-import { InfinityIcon, WifiOff, PlusCircle, ChevronRight, Globe, ArrowUp, ArrowDown, RefreshCcw } from 'lucide-react'
+import {
+  InfinityIcon,
+  WifiOff,
+  PlusCircle,
+  ChevronRight,
+  Globe,
+  ArrowUp,
+  ArrowDown,
+  RefreshCcw
+} from 'lucide-react'
 import { SiTelegram } from 'react-icons/si'
 import EditInfoModal from '@renderer/components/profiles/edit-info-modal'
 import { Spinner } from '@renderer/components/ui/spinner'
 import { CharacterMorph } from '@renderer/components/ui/character-morph'
 import { calcTraffic } from '@renderer/utils/calc'
+import { useCoreHealth } from '@renderer/hooks/use-core-health'
 
 const VPN_GROUP_NAME = 'VPN'
 
@@ -34,11 +44,7 @@ let connectionStartTime: number | null = null
 const Home: React.FC = () => {
   const { t } = useTranslation()
   const { appConfig, patchAppConfig } = useAppConfig()
-  const {
-    mainSwitchMode = 'tun',
-    sysProxy,
-    onlyActiveDevice = false,
-  } = appConfig || {}
+  const { mainSwitchMode = 'tun', sysProxy, onlyActiveDevice = false } = appConfig || {}
   const { enable: sysProxyEnable, mode } = sysProxy || {}
   const { controledMihomoConfig, patchControledMihomoConfig } = useControledMihomoConfig()
   const { tun } = controledMihomoConfig || {}
@@ -67,41 +73,7 @@ const Home: React.FC = () => {
   }
 
   const [connectionsInfo, setConnectionsInfo] = useState<ControllerConnections>()
-  const [coreAlive, setCoreAlive] = useState(false)
-  const [coreRecovering, setCoreRecovering] = useState(false)
-
-  useEffect(() => {
-    let mounted = true
-
-    const syncCoreHealth = async (): Promise<void> => {
-      try {
-        const health = await getCoreHealth()
-        if (!mounted) return
-        setCoreAlive(health.alive)
-        setCoreRecovering(health.recovering)
-      } catch {
-        if (!mounted) return
-        setCoreAlive(false)
-        setCoreRecovering(false)
-      }
-    }
-
-    const handleCoreHealthChanged = (
-      _e: unknown,
-      health: { alive: boolean; recovering: boolean }
-    ): void => {
-      setCoreAlive(health.alive)
-      setCoreRecovering(health.recovering)
-    }
-
-    void syncCoreHealth()
-    window.electron.ipcRenderer.on('core-health-changed', handleCoreHealthChanged)
-
-    return (): void => {
-      mounted = false
-      window.electron.ipcRenderer.removeListener('core-health-changed', handleCoreHealthChanged)
-    }
-  }, [])
+  const { coreHealth } = useCoreHealth()
 
   useEffect(() => {
     const handleConnections = (_e: unknown, info: ControllerConnections): void => {
@@ -125,10 +97,17 @@ const Home: React.FC = () => {
     return 0
   })
 
+  const coreHealthReady = coreHealth !== undefined
+  const coreAlive = coreHealth?.alive ?? false
+  const coreRecovering = coreHealth?.recovering ?? false
   const isEnabled = (tun?.enable ?? false) || (sysProxyEnable ?? false)
   const isSelected = isEnabled && coreAlive
 
   useEffect(() => {
+    if (!coreHealthReady) {
+      return
+    }
+
     if (isSelected) {
       if (connectionStartTime === null) {
         connectionStartTime = Date.now()
@@ -143,27 +122,28 @@ const Home: React.FC = () => {
       setElapsed(0)
       return undefined
     }
-  }, [isSelected])
+  }, [coreHealthReady, isSelected])
 
   const isDisabled =
     loading || (mainSwitchMode === 'sysproxy' && mode == 'manual' && sysProxyDisabled)
 
+  const isCheckingCoreHealth = isEnabled && !coreHealthReady
   const status = loading
     ? loadingDirection === 'connecting'
       ? t('pages.home.connecting')
       : t('pages.home.disconnecting')
-    : coreRecovering
+    : coreRecovering || isCheckingCoreHealth
       ? t('pages.home.connecting')
       : isSelected
-      ? t('pages.home.connected')
-      : t('pages.home.disconnected')
+        ? t('pages.home.connected')
+        : t('pages.home.disconnected')
   const statusWidthTexts = [
     t('pages.home.connecting'),
     t('pages.home.disconnecting'),
     t('pages.home.connected'),
     t('pages.home.disconnected')
   ]
-  const showConnectedTimer = !loading && isSelected
+  const showConnectedTimer = !loading && coreHealthReady && isSelected
   const elapsedHours = Math.floor(elapsed / 3600)
   const elapsedMinutes = Math.floor((elapsed % 3600) / 60)
   const elapsedSeconds = elapsed % 60
@@ -191,7 +171,8 @@ const Home: React.FC = () => {
   const trafficTotal = subscription?.total ?? 0
   const trafficRemaining = trafficTotal > 0 ? trafficTotal - trafficUsed : 0
   const expireTimestamp = subscription?.expire ?? 0
-  const expireDate = expireTimestamp > 0 ? dayjs.unix(expireTimestamp).format('L') : t('pages.home.never')
+  const expireDate =
+    expireTimestamp > 0 ? dayjs.unix(expireTimestamp).format('L') : t('pages.home.never')
   const daysRemaining =
     expireTimestamp > 0 ? Math.max(0, dayjs.unix(expireTimestamp).diff(dayjs(), 'day')) : 0
 
@@ -208,7 +189,9 @@ const Home: React.FC = () => {
       return {
         href: parsed.toString(),
         isTelegram:
-          parsed.protocol === 'tg:' || normalized.includes('t.me') || normalized.includes('telegram')
+          parsed.protocol === 'tg:' ||
+          normalized.includes('t.me') ||
+          normalized.includes('telegram')
       }
     } catch {
       return null

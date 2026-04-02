@@ -13,6 +13,7 @@ import { ControledMihomoConfigProvider } from './hooks/use-controled-mihomo-conf
 import { ProfileConfigProvider } from './hooks/use-profile-config'
 import { RulesProvider } from './hooks/use-rules'
 import { GroupsProvider } from './hooks/use-groups'
+import { CoreHealthProvider } from './hooks/use-core-health'
 
 let F12Count = 0
 
@@ -40,22 +41,24 @@ init().then(() => {
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <React.StrictMode>
     <NextThemesProvider attribute="class" enableSystem defaultTheme="dark">
-        <BaseErrorBoundary>
-          <HashRouter>
-            <AppConfigProvider>
-              <ControledMihomoConfigProvider>
-                <ProfileConfigProvider>
-                  <GroupsProvider>
+      <BaseErrorBoundary>
+        <HashRouter>
+          <AppConfigProvider>
+            <ControledMihomoConfigProvider>
+              <ProfileConfigProvider>
+                <GroupsProvider>
+                  <CoreHealthProvider>
                     <RulesProvider>
                       <App />
                       <Toaster richColors position="bottom-right" />
                     </RulesProvider>
-                  </GroupsProvider>
-                </ProfileConfigProvider>
-              </ControledMihomoConfigProvider>
-            </AppConfigProvider>
-          </HashRouter>
-        </BaseErrorBoundary>
-      </NextThemesProvider>
+                  </CoreHealthProvider>
+                </GroupsProvider>
+              </ProfileConfigProvider>
+            </ControledMihomoConfigProvider>
+          </AppConfigProvider>
+        </HashRouter>
+      </BaseErrorBoundary>
+    </NextThemesProvider>
   </React.StrictMode>
 )
