@@ -543,6 +543,9 @@ export async function restartCore(): Promise<void> {
     await stopCore()
     const promises = await startCore()
     await Promise.all(promises)
+    mainWindow?.webContents.send('core-started')
+    mainWindow?.webContents.send('rulesUpdated')
+    mainWindow?.webContents.send('groupsUpdated')
   } catch (e) {
     showError(t('tray.coreStartError'), `${e}`)
   }
