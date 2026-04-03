@@ -194,6 +194,13 @@ function prepareSharedRulesForProfile(
     })
 }
 
+interface SharedRuleFileData {
+  rules?: string[]
+  prepend?: string[]
+  append?: string[]
+  delete?: string[]
+}
+
 export async function generateProfile(): Promise<void> {
   const { current } = await getProfileConfig()
   const {
@@ -251,11 +258,7 @@ export async function generateProfile(): Promise<void> {
   const availableRuleTargets = getAvailableRuleTargets(currentProfile, mergedProfileProxies)
   const ruleFileContent = await getRuleStr(current || 'default')
   if (ruleFileContent.trim()) {
-    const ruleData = parseYaml(ruleFileContent) as {
-      prepend?: string[]
-      append?: string[]
-      delete?: string[]
-    } | null
+    const ruleData = parseYaml(ruleFileContent) as SharedRuleFileData | null
 
     if (ruleData && typeof ruleData === 'object') {
       // 确保 rules 数组存在
@@ -263,51 +266,59 @@ export async function generateProfile(): Promise<void> {
         currentProfile.rules = [] as unknown as []
       }
 
-      let rules = [...currentProfile.rules] as unknown as string[]
-
-      // 处理前置规则
-      if (ruleData.prepend?.length) {
-        const prependRuleStrings = prepareSharedRulesForProfile(
-          ruleData.prepend,
+      if (Array.isArray(ruleData.rules)) {
+        currentProfile.rules = prepareSharedRulesForProfile(
+          ruleData.rules,
           availableRuleTargets,
           defaultRuleTarget
-        )
-        const { normalRules: prependRules, insertRules } = processRulesWithOffset(
-          prependRuleStrings,
-          rules
-        )
-        rules = [...prependRules, ...insertRules]
-      }
+        ) as unknown as []
+      } else {
+        let rules = [...currentProfile.rules] as unknown as string[]
 
-      // 处理后置规则
-      if (ruleData.append?.length) {
-        const appendRuleStrings = prepareSharedRulesForProfile(
-          ruleData.append,
-          availableRuleTargets,
-          defaultRuleTarget
-        )
-        const { normalRules: appendRules, insertRules } = processRulesWithOffset(
-          appendRuleStrings,
-          rules,
-          true
-        )
-        rules = [...insertRules]
-        appendRules.forEach((rule) => {
-          const insertPosition = getDefaultAppendInsertPosition(rules)
-          rules.splice(insertPosition, 0, rule)
-        })
-      }
+        // 处理前置规则
+        if (ruleData.prepend?.length) {
+          const prependRuleStrings = prepareSharedRulesForProfile(
+            ruleData.prepend,
+            availableRuleTargets,
+            defaultRuleTarget
+          )
+          const { normalRules: prependRules, insertRules } = processRulesWithOffset(
+            prependRuleStrings,
+            rules
+          )
+          rules = [...prependRules, ...insertRules]
+        }
 
-      // 处理删除规则
-      if (ruleData.delete?.length) {
-        const deleteSet = new Set(ruleData.delete)
-        rules = rules.filter((rule) => {
-          const ruleStr = Array.isArray(rule) ? rule.join(',') : rule
-          return !deleteSet.has(ruleStr)
-        })
-      }
+        // 处理后置规则
+        if (ruleData.append?.length) {
+          const appendRuleStrings = prepareSharedRulesForProfile(
+            ruleData.append,
+            availableRuleTargets,
+            defaultRuleTarget
+          )
+          const { normalRules: appendRules, insertRules } = processRulesWithOffset(
+            appendRuleStrings,
+            rules,
+            true
+          )
+          rules = [...insertRules]
+          appendRules.forEach((rule) => {
+            const insertPosition = getDefaultAppendInsertPosition(rules)
+            rules.splice(insertPosition, 0, rule)
+          })
+        }
 
-      currentProfile.rules = rules as unknown as []
+        // 处理删除规则
+        if (ruleData.delete?.length) {
+          const deleteSet = new Set(ruleData.delete)
+          rules = rules.filter((rule) => {
+            const ruleStr = Array.isArray(rule) ? rule.join(',') : rule
+            return !deleteSet.has(ruleStr)
+          })
+        }
+
+        currentProfile.rules = rules as unknown as []
+      }
     }
   }
 

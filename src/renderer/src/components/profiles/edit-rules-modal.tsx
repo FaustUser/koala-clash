@@ -155,6 +155,13 @@ const splitByTopLevelCommas = (value: string): string[] => {
   return parts
 }
 
+interface RuleFileData {
+  rules?: string[]
+  prepend?: string[]
+  append?: string[]
+  delete?: string[]
+}
+
 const isFullyWrappedByParentheses = (value: string): boolean => {
   if (!value.startsWith('(') || !value.endsWith(')')) return false
 
@@ -1518,13 +1525,17 @@ const EditRulesModal: React.FC<Props> = (props) => {
 
         try {
           const ruleContent = await getRuleStr(id)
-          const ruleData = yaml.load(ruleContent) as {
-            prepend?: string[]
-            append?: string[]
-            delete?: string[]
-          }
+          const ruleData = yaml.load(ruleContent) as RuleFileData | null
 
-          if (ruleData) {
+          if (ruleData && typeof ruleData === 'object') {
+            if (Array.isArray(ruleData.rules)) {
+              setRules(ruleData.rules.map((ruleStr) => parseRuleString(ruleStr)))
+              setPrependRules(new Set())
+              setAppendRules(new Set())
+              setDeletedRules(new Set())
+              return
+            }
+
             let allRules = [...initialRules]
             const newPrependRules = new Set<number>()
             const newAppendRules = new Set<number>()
@@ -1703,7 +1714,7 @@ const EditRulesModal: React.FC<Props> = (props) => {
     dialogCloseRef.current?.click()
   }
 
-  const serializeRule = useCallback((rule: RuleItem): string => {
+  const serializeRule = useCallback((rule: RuleItem, options?: { includeOffset?: boolean }): string => {
     const parts = [rule.type]
     if (rule.payload) parts.push(rule.payload)
     if (rule.proxy) parts.push(rule.proxy)
@@ -1711,31 +1722,31 @@ const EditRulesModal: React.FC<Props> = (props) => {
       parts.push(...rule.additionalParams)
     }
 
-    if (rule.offset !== undefined && rule.offset > 0) {
+    if (options?.includeOffset && rule.offset !== undefined && rule.offset > 0) {
       parts.unshift(rule.offset.toString())
     }
     return parts.join(',')
   }, [])
 
-  const handleSave = useCallback(async (): Promise<boolean> => {
+  const legacyHandleSave = useCallback(async (): Promise<boolean> => {
     try {
       // 保存规则到文件
       const prependRuleStrings = Array.from(prependRules)
         .filter((index) => !deletedRules.has(index) && index < rules.length)
         .sort((left, right) => left - right)
-        .map((index) => serializeRule(rules[index]))
+        .map((index) => serializeRule(rules[index], { includeOffset: true }))
 
       const appendRuleStrings = Array.from(appendRules)
         .filter((index) => !deletedRules.has(index) && index < rules.length)
         .sort((left, right) => left - right)
-        .map((index) => serializeRule(rules[index]))
+        .map((index) => serializeRule(rules[index], { includeOffset: true }))
 
       // 保存删除的规则
       const deletedRuleStrings = Array.from(deletedRules)
         .filter(
           (index) => index < rules.length && !prependRules.has(index) && !appendRules.has(index)
         )
-        .map((index) => serializeRule(rules[index]))
+        .map((index) => serializeRule(rules[index], { includeOffset: true }))
 
       // 创建规则数据对象
       const ruleData = {
@@ -1755,6 +1766,24 @@ const EditRulesModal: React.FC<Props> = (props) => {
       return false
     }
   }, [prependRules, deletedRules, rules, appendRules, id, t, serializeRule])
+
+  const handleSave = useCallback(async (): Promise<boolean> => {
+    try {
+      const orderedRuleStrings = rules
+        .filter((_, index) => !deletedRules.has(index))
+        .map((rule) => serializeRule(rule))
+
+      const ruleData: RuleFileData = {
+        rules: orderedRuleStrings
+      }
+
+      const ruleYaml = yaml.dump(ruleData)
+      await setRuleStr(id, ruleYaml)
+      return true
+    } catch (e) {
+      return await legacyHandleSave()
+    }
+  }, [deletedRules, rules, id, serializeRule, legacyHandleSave])
 
   const handleRuleTypeChange = (selected: string): void => {
     const noResolveSupported = isRuleSupportsNoResolve(selected)
