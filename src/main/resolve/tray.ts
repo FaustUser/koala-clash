@@ -33,10 +33,10 @@ import {
 import { triggerSysProxy } from '../sys/sysproxy'
 import { quitWithoutCore, restartCore } from '../core/manager'
 import { floatingWindow } from './floatingWindow'
-import { is } from '@electron-toolkit/utils'
 import { join } from 'path'
 import { applyTheme } from './theme'
 import { t } from '../utils/i18n'
+import { loadRendererEntry } from '../utils/rendererLoader'
 
 export let tray: Tray | null = null
 let customTrayWindow: BrowserWindow | null = null
@@ -110,11 +110,11 @@ async function showCustomTray(): Promise<void> {
       applyTheme(customTheme)
     })
 
-    if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
-      await customTrayWindow.loadURL(`${process.env['ELECTRON_RENDERER_URL']}/traymenu.html`)
-    } else {
-      await customTrayWindow.loadFile(join(__dirname, '../renderer/traymenu.html'))
-    }
+    await loadRendererEntry(customTrayWindow, {
+      entryHtml: 'traymenu.html',
+      devPath: '/traymenu.html',
+      windowLabel: 'Tray menu'
+    })
   }
 
   positionCustomTrayWindow(customTrayWindow)

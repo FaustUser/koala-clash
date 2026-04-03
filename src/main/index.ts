@@ -35,6 +35,11 @@ import { exePath, logDir, logPath, rendererDiagnosticsPath, taskDir } from './ut
 import { showFloatingWindow } from './resolve/floatingWindow'
 import { getAppConfigSync } from './config/app'
 import { t } from './utils/i18n'
+import {
+  hasConfiguredDevRenderer,
+  isRecoverableDevRendererFailure,
+  loadRendererEntry
+} from './utils/rendererLoader'
 
 let quitTimeout: NodeJS.Timeout | null = null
 export let mainWindow: BrowserWindow | null = null
@@ -72,8 +77,6 @@ let isCreatingWindow = false
 let windowShown = false
 let createWindowPromiseResolve: (() => void) | null = null
 let createWindowPromise: Promise<void> | null = null
-const DEV_RENDERER_LOAD_RETRY_MS = 350
-const DEV_RENDERER_LOAD_MAX_ATTEMPTS = 30
 const MAX_RENDERER_EVENT_HISTORY = 20
 const RENDERER_CRASH_WINDOW_MS = 2 * 60 * 1000
 const RENDERER_CRASH_THRESHOLD = 3
@@ -539,28 +542,46 @@ function scheduleMainWindowRecovery(reason: string): void {
       return
     }
 
-    console.error(`[main-window] Recovering renderer after ${reason}`)
-    recordRendererEvent('main-window-recovery-started', {
-      reason,
-      webContentsDestroyed: currentWindow.webContents.isDestroyed()
-    })
+    void (async () => {
+      try {
+        console.error(`[main-window] Recovering renderer after ${reason}`)
+        recordRendererEvent('main-window-recovery-started', {
+          reason,
+          webContentsDestroyed: currentWindow.webContents.isDestroyed()
+        })
 
-    if (currentWindow.webContents.isDestroyed()) {
-      currentWindow.destroy()
-      mainWindow = null
-      void createWindow().then(() => {
-        if (windowShown) {
-          void showMainWindow()
+        if (currentWindow.webContents.isDestroyed()) {
+          currentWindow.destroy()
+          mainWindow = null
+          await createWindow()
+          if (windowShown) {
+            await showMainWindow()
+          }
+          return
         }
-      })
-    } else {
-      currentWindow.webContents.reloadIgnoringCache()
-      if (windowShown && !currentWindow.isVisible()) {
-        currentWindow.show()
-      }
-    }
 
-    mainWindowRecoveryTimeout = null
+        if (hasConfiguredDevRenderer()) {
+          let routeHash: string | undefined
+          try {
+            routeHash = new URL(currentWindow.webContents.getURL()).hash || undefined
+          } catch {
+            routeHash = undefined
+          }
+          await loadRendererWindow(currentWindow, routeHash)
+        } else {
+          currentWindow.webContents.reloadIgnoringCache()
+        }
+
+        if (windowShown && !currentWindow.isVisible()) {
+          currentWindow.show()
+        }
+      } catch (error) {
+        console.error('[main-window] Renderer recovery failed', error)
+        showError(t('dialog.appInitFailed'), `${error}`)
+      } finally {
+        mainWindowRecoveryTimeout = null
+      }
+    })()
   }, 300)
 }
 
@@ -1094,25 +1115,15 @@ function parseFilename(str: string): string {
   }
 }
 
-async function loadRendererWindow(window: BrowserWindow): Promise<void> {
-  const devRendererUrl = process.env['ELECTRON_RENDERER_URL']
-  if (is.dev && devRendererUrl) {
-    let lastError: unknown
-
-    for (let attempt = 1; attempt <= DEV_RENDERER_LOAD_MAX_ATTEMPTS; attempt++) {
-      try {
-        await window.loadURL(devRendererUrl)
-        return
-      } catch (error) {
-        lastError = error
-        await new Promise((resolve) => setTimeout(resolve, DEV_RENDERER_LOAD_RETRY_MS))
-      }
-    }
-
-    throw lastError
-  }
-
-  await window.loadFile(join(__dirname, '../renderer/index.html'))
+async function loadRendererWindow(
+  window: BrowserWindow,
+  routeHash?: string | null
+): Promise<void> {
+  await loadRendererEntry(window, {
+    entryHtml: 'index.html',
+    routeHash,
+    windowLabel: 'Main window'
+  })
 }
 
 export async function createWindow(appConfig?: AppConfig): Promise<void> {
@@ -1184,7 +1195,7 @@ export async function createWindow(appConfig?: AppConfig): Promise<void> {
         await scheduleLightweightMode()
       }
     })
-    mainWindow.webContents.on('did-fail-load', (_event, errorCode, errorDescription, _url, isMainFrame) => {
+    mainWindow.webContents.on('did-fail-load', (_event, errorCode, errorDescription, failedUrl, isMainFrame) => {
       if (!isMainFrame) {
         return
       }
@@ -1192,17 +1203,27 @@ export async function createWindow(appConfig?: AppConfig): Promise<void> {
         return
       }
 
+      const recoverableDevRendererFailure = isRecoverableDevRendererFailure(
+        failedUrl,
+        errorCode
+      )
       recordRendererEvent('main-window-did-fail-load', {
         errorCode,
-        errorDescription
+        errorDescription,
+        url: failedUrl,
+        recoverableDevRendererFailure
       })
       void appendRendererDiagnostics('did-fail-load', {
         errorCode,
         errorDescription,
+        url: failedUrl,
+        recoverableDevRendererFailure,
         isMainFrame
       })
       scheduleMainWindowRecovery(`did-fail-load (${errorCode}: ${errorDescription})`)
-      showError(t('dialog.appInitFailed'), `${errorDescription} (${errorCode})`)
+      if (!recoverableDevRendererFailure) {
+        showError(t('dialog.appInitFailed'), `${errorDescription} (${errorCode})`)
+      }
     })
     mainWindow.on('unresponsive', () => {
       recordRendererEvent('main-window-unresponsive')
