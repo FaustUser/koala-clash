@@ -28,7 +28,20 @@ function canSendToWindow(window: BrowserWindow | null): boolean {
     return false
   }
 
-  return !window.isDestroyed() && !window.webContents.isDestroyed()
+  if (window.isDestroyed()) {
+    return false
+  }
+
+  const { webContents } = window
+  if (webContents.isDestroyed() || webContents.isLoadingMainFrame()) {
+    return false
+  }
+
+  try {
+    return !webContents.mainFrame.isDestroyed()
+  } catch {
+    return false
+  }
 }
 
 function sendToWindow<T>(window: BrowserWindow | null, channel: string, payload: T): void {
