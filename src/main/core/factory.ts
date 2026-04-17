@@ -57,6 +57,9 @@ function getDefaultAppendInsertPosition(rules: string[]): number {
 
 const VPN_RULE_TARGET = 'VPN'
 const LEGACY_VPN_RULE_TARGETS = new Set(['__VPN_ROUTE__', '__ACTIVE_VPN__'])
+const BUILTIN_GROUP_TARGETS = new Set(['DIRECT', 'REJECT', 'REJECT-DROP', 'PASS', 'COMPATIBLE'])
+const DIRECT_GROUP_TARGET = 'DIRECT'
+const SAFE_PROXY_GROUP_TYPES = new Set(['select', 'selector', 'fallback', 'url-test', 'urltest'])
 
 function getRuleTarget(ruleStr: string): string | undefined {
   const parts = ruleStr.split(',').map((part) => part.trim())
@@ -104,6 +107,67 @@ interface MihomoProxyGroupRecord extends Record<string, unknown> {
 
 function isProxyGroupRecord(group: unknown): group is MihomoProxyGroupRecord {
   return !!group && typeof group === 'object'
+}
+
+function getUniqueTrimmedStrings(values: unknown): string[] {
+  if (!Array.isArray(values)) return []
+
+  return [...new Set(values.filter((value): value is string => typeof value === 'string').map((value) => value.trim()))]
+    .filter(Boolean)
+}
+
+function sanitizeProxyGroups(
+  groups: unknown[],
+  mergedProxies: Array<{ name?: unknown }>
+): MihomoProxyGroupRecord[] {
+  const validProxyNames = new Set(
+    mergedProxies
+      .map((proxy) => (typeof proxy?.name === 'string' ? proxy.name.trim() : ''))
+      .filter(Boolean)
+  )
+  const sanitizedGroups = groups.filter(isProxyGroupRecord).map((group) => ({ ...group }))
+  const validGroupNames = new Set(
+    sanitizedGroups
+      .map((group) => (typeof group.name === 'string' ? group.name.trim() : ''))
+      .filter(Boolean)
+  )
+
+  return sanitizedGroups.map((group) => {
+    const groupName = typeof group.name === 'string' ? group.name.trim() : ''
+    const type = typeof group.type === 'string' ? group.type.toLowerCase() : ''
+    const providers = getUniqueTrimmedStrings(group.use)
+    const proxies = getUniqueTrimmedStrings(group.proxies).filter((proxyName) => {
+      if (proxyName === groupName) return false
+      return (
+        BUILTIN_GROUP_TARGETS.has(proxyName) ||
+        validProxyNames.has(proxyName) ||
+        validGroupNames.has(proxyName)
+      )
+    })
+
+    if (providers.length > 0) {
+      group.use = providers
+      if (proxies.length > 0) {
+        group.proxies = proxies
+      } else {
+        delete group.proxies
+      }
+      return group
+    }
+
+    if (proxies.length > 0) {
+      group.proxies = proxies
+      return group
+    }
+
+    if (SAFE_PROXY_GROUP_TYPES.has(type)) {
+      group.proxies = [DIRECT_GROUP_TARGET]
+    } else {
+      delete group.proxies
+    }
+
+    return group
+  })
 }
 
 function buildVpnRouteGroup(
@@ -254,6 +318,12 @@ export async function generateProfile(): Promise<void> {
     currentProfile['proxy-groups'] = [...existingProxyGroups, vpnRouteGroup] as unknown as []
   } else if (existingProxyGroups.length > 0) {
     currentProfile['proxy-groups'] = existingProxyGroups as unknown as []
+  }
+  if (Array.isArray(currentProfile['proxy-groups'])) {
+    currentProfile['proxy-groups'] = sanitizeProxyGroups(
+      currentProfile['proxy-groups'] as unknown[],
+      mergedProfileProxies as Array<{ name?: unknown }>
+    ) as unknown as []
   }
   const availableRuleTargets = getAvailableRuleTargets(currentProfile, mergedProfileProxies)
   const ruleFileContent = await getRuleStr(current || 'default')

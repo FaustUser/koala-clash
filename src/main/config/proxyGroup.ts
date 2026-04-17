@@ -46,6 +46,11 @@ function getUniqueStrings(values: string[]): string[] {
   return [...new Set(values.map((value) => value.trim()).filter((value) => value.length > 0))]
 }
 
+function sanitizeProxySelections(selections: string[], candidates: string[]): string[] {
+  const validCandidates = new Set(candidates)
+  return getUniqueStrings(selections).filter((selection) => validCandidates.has(selection))
+}
+
 function parseGroupType(value: unknown): EditableProxyGroupType {
   if (typeof value !== 'string') return 'Selector'
   return RAW_TO_EDITABLE_GROUP_TYPE[value.toLowerCase()] ?? 'Selector'
@@ -108,13 +113,23 @@ async function getEditableRuntimeProxyGroups(): Promise<EditableProxyGroupConfig
 
   const editableGroups = proxyGroups
     .filter((group) => isEditableGroupType(group.type))
-    .map((group) => buildEditableGroupConfig(group, proxyNames, groupNames))
+    .map((group) => {
+      const config = buildEditableGroupConfig(group, proxyNames, groupNames)
+      return {
+        ...config,
+        proxies: sanitizeProxySelections(config.proxies, config.candidates)
+      }
+    })
 
   const vpnRoutingGroup = appConfig.vpnRoutingGroup
+  const vpnCandidates = getUniqueStrings(proxyNames.concat(groupNames, BUILTIN_PROXY_CANDIDATES))
   const generatedVpnGroup: MihomoProxyGroupRecord = {
     name: VPN_RULE_TARGET,
     type: EDITABLE_TO_RAW_GROUP_TYPE[vpnRoutingGroup?.type ?? 'Fallback'],
-    proxies: getUniqueStrings(vpnRoutingGroup?.proxies?.length ? vpnRoutingGroup.proxies : proxyNames),
+    proxies: sanitizeProxySelections(
+      vpnRoutingGroup?.proxies?.length ? vpnRoutingGroup.proxies : proxyNames,
+      vpnCandidates
+    ),
     url: vpnRoutingGroup?.url,
     interval: vpnRoutingGroup?.interval,
     timeout: vpnRoutingGroup?.timeout,
