@@ -3,6 +3,7 @@ import {
   mihomoUpdateRuleProviders,
   getRuntimeConfig
 } from '@renderer/utils/ipc'
+import { subscribeIpcEvent } from '@renderer/utils/ipc-events'
 import { getHash } from '@renderer/utils/hash'
 import Viewer from './viewer'
 import { Fragment, useEffect, useMemo, useState } from 'react'
@@ -58,11 +59,7 @@ const RuleProvider: React.FC = () => {
       mutate()
     }
 
-    window.electron.ipcRenderer.on('core-started', handleCoreStarted)
-
-    return (): void => {
-      window.electron.ipcRenderer.removeListener('core-started', handleCoreStarted)
-    }
+    return subscribeIpcEvent('core-started', handleCoreStarted)
   }, [mutate])
 
   const providers = useMemo(() => {

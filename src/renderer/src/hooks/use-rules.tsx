@@ -1,6 +1,7 @@
 import React, { createContext, useContext, type ReactNode } from 'react'
 import useSWR from 'swr'
 import { getRuntimeConfig } from '@renderer/utils/ipc'
+import { subscribeIpcEvent } from '@renderer/utils/ipc-events'
 
 interface RulesContextType {
   rules: ControllerRules | undefined
@@ -73,12 +74,12 @@ export const RulesProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       mutate()
     }
 
-    window.electron.ipcRenderer.on('rulesUpdated', handleRulesUpdated)
-    window.electron.ipcRenderer.on('core-started', handleCoreStarted)
+    const unsubscribeRulesUpdated = subscribeIpcEvent('rulesUpdated', handleRulesUpdated)
+    const unsubscribeCoreStarted = subscribeIpcEvent('core-started', handleCoreStarted)
 
     return (): void => {
-      window.electron.ipcRenderer.removeListener('rulesUpdated', handleRulesUpdated)
-      window.electron.ipcRenderer.removeListener('core-started', handleCoreStarted)
+      unsubscribeRulesUpdated()
+      unsubscribeCoreStarted()
     }
   }, [mutate])
 

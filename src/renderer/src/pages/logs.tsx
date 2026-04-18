@@ -10,13 +10,16 @@ import { useTranslation } from 'react-i18next'
 import dayjs from 'dayjs'
 
 import { includesIgnoreCase } from '@renderer/utils/includes'
+import { subscribeIpcEvent } from '@renderer/utils/ipc-events'
 import { MapPin, Trash2 } from 'lucide-react'
 
 const cachedLogs: {
+  initialized: boolean
   log: ControllerLog[]
   trigger: ((i: ControllerLog[]) => void) | null
   clean: () => void
 } = {
+  initialized: false,
   log: [],
   trigger: null,
   clean(): void {
@@ -27,16 +30,22 @@ const cachedLogs: {
   }
 }
 
-window.electron.ipcRenderer.on('mihomoLogs', (_e, log: ControllerLog) => {
-  log.time = dayjs().format('L LTS')
-  cachedLogs.log.push(log)
-  if (cachedLogs.log.length >= 500) {
-    cachedLogs.log.shift()
-  }
-  if (cachedLogs.trigger !== null) {
-    cachedLogs.trigger(cachedLogs.log)
-  }
-})
+if (!cachedLogs.initialized) {
+  cachedLogs.initialized = true
+  subscribeIpcEvent('mihomoLogs', (_e, incomingLog: ControllerLog) => {
+    const log = {
+      ...incomingLog,
+      time: dayjs().format('L LTS')
+    }
+    cachedLogs.log.push(log)
+    if (cachedLogs.log.length >= 500) {
+      cachedLogs.log.shift()
+    }
+    if (cachedLogs.trigger !== null) {
+      cachedLogs.trigger(cachedLogs.log)
+    }
+  })
+}
 
 const Logs: React.FC = () => {
   const { t } = useTranslation()

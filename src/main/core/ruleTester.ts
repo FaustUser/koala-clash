@@ -5,10 +5,10 @@ import { mihomoConfig, mihomoGetConnections, mihomoRules } from './mihomoApi'
 
 const PROXY_HOST = '127.0.0.1'
 const REQUEST_TIMEOUT_MS = 5000
-const CONNECTION_POLL_INTERVAL_MS = 150
-const CONNECTION_POLL_TIMEOUT_MS = 7000
-const POST_REQUEST_GRACE_MS = 1000
-const RESPONSE_HOLD_MS = 350
+const CONNECTION_POLL_INTERVAL_MS = 50
+const CONNECTION_POLL_TIMEOUT_MS = 9000
+const POST_REQUEST_GRACE_MS = 1500
+const RESPONSE_HOLD_MS = 1000
 const TEST_USER_AGENT = 'Koala Clash Rule Tester'
 
 interface ProbeResult {
@@ -125,7 +125,7 @@ async function performHttpProxyProbe(
       {
         host: PROXY_HOST,
         port: proxyPort,
-        method: 'HEAD',
+        method: 'GET',
         path: url.toString(),
         headers: {
           Host: url.host,
@@ -136,13 +136,15 @@ async function performHttpProxyProbe(
         }
       },
       (response) => {
-        response.resume()
+        response.pause()
         setTimeout(
-          () =>
+          () => {
+            response.destroy()
             finish({
               statusCode: response.statusCode,
               statusMessage: response.statusMessage
-            }),
+            })
+          },
           RESPONSE_HOLD_MS
         )
       }
@@ -235,7 +237,7 @@ async function performHttpsProxyProbe(
       tlsSocket.on('secureConnect', () => {
         tlsSocket?.write(
           [
-            `HEAD ${getRequestPath(url)} HTTP/1.1`,
+            `GET ${getRequestPath(url)} HTTP/1.1`,
             `Host: ${url.host}`,
             'Accept: */*',
             'Connection: close',

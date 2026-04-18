@@ -3,6 +3,7 @@ import {
   mihomoUpdateProxyProviders,
   getRuntimeConfig
 } from '@renderer/utils/ipc'
+import { subscribeIpcEvent } from '@renderer/utils/ipc-events'
 import { useTranslation } from 'react-i18next'
 import { Fragment, useEffect, useMemo, useState } from 'react'
 import Viewer from './viewer'
@@ -56,11 +57,7 @@ const ProxyProvider: React.FC = () => {
       mutate()
     }
 
-    window.electron.ipcRenderer.on('core-started', handleCoreStarted)
-
-    return (): void => {
-      window.electron.ipcRenderer.removeListener('core-started', handleCoreStarted)
-    }
+    return subscribeIpcEvent('core-started', handleCoreStarted)
   }, [mutate])
 
   const providers = useMemo(() => {

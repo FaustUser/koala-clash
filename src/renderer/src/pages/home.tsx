@@ -28,6 +28,7 @@ import { Spinner } from '@renderer/components/ui/spinner'
 import { CharacterMorph } from '@renderer/components/ui/character-morph'
 import { calcTraffic } from '@renderer/utils/calc'
 import { useCoreHealth } from '@renderer/hooks/use-core-health'
+import { subscribeIpcEvent } from '@renderer/utils/ipc-events'
 
 const VPN_GROUP_NAME = 'VPN'
 
@@ -79,10 +80,7 @@ const Home: React.FC = () => {
     const handleConnections = (_e: unknown, info: ControllerConnections): void => {
       setConnectionsInfo(info)
     }
-    window.electron.ipcRenderer.on('mihomoConnections', handleConnections)
-    return (): void => {
-      window.electron.ipcRenderer.removeListener('mihomoConnections', handleConnections)
-    }
+    return subscribeIpcEvent('mihomoConnections', handleConnections)
   }, [])
 
   const [loading, setLoading] = useState(false)

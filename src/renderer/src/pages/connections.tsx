@@ -34,6 +34,7 @@ import ConnectionSettingModal from '@renderer/components/connections/connection-
 import { useAppConfig } from '@renderer/hooks/use-app-config'
 import { includesIgnoreCase } from '@renderer/utils/includes'
 import { getIconDataURL, getAppName } from '@renderer/utils/ipc'
+import { subscribeIpcEvent } from '@renderer/utils/ipc-events'
 import { cropAndPadTransparent } from '@renderer/utils/image'
 import { platform } from '@renderer/utils/init'
 import { useControledMihomoConfig } from '@renderer/hooks/use-controled-mihomo-config'
@@ -53,6 +54,17 @@ import {
 
 let cachedConnections: ControllerConnectionDetail[] = []
 const MAX_CLOSED_CONNECTIONS = 200
+const MAX_ICON_CACHE_ENTRIES = 200
+const MAX_APP_NAME_CACHE_ENTRIES = 400
+
+function trimRecord<T>(record: Record<string, T>, limit: number): Record<string, T> {
+  const entries = Object.entries(record)
+  if (entries.length <= limit) {
+    return record
+  }
+
+  return Object.fromEntries(entries.slice(entries.length - limit))
+}
 
 const Connections: React.FC = () => {
   const { t } = useTranslation()
@@ -140,6 +152,7 @@ const Connections: React.FC = () => {
   const iconRequestQueue = useRef(new Set<string>())
   const processingIcons = useRef(new Set<string>())
   const processIconTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const loadOtherPathsTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const appNameRequestQueue = useRef(new Set<string>())
   const processingAppNames = useRef(new Set<string>())
@@ -418,11 +431,7 @@ const Connections: React.FC = () => {
 
     if (isPaused) return
 
-    window.electron.ipcRenderer.on('mihomoConnections', handleConnections)
-
-    return (): void => {
-      window.electron.ipcRenderer.removeListener('mihomoConnections', handleConnections)
-    }
+    return subscribeIpcEvent('mihomoConnections', handleConnections)
   }, [isPaused])
   const togglePause = useCallback(() => {
     setIsPaused((prev) => !prev)
@@ -458,7 +467,9 @@ const Connections: React.FC = () => {
       try {
         const appName = await getAppName(path)
         if (appName) {
-          setAppNameCache((prev) => ({ ...prev, [path]: appName }))
+          setAppNameCache((prev) =>
+            trimRecord({ ...prev, [path]: appName }, MAX_APP_NAME_CACHE_ENTRIES)
+          )
         }
       } catch {
         // ignore
@@ -503,7 +514,9 @@ const Connections: React.FC = () => {
           // ignore
         }
 
-        setIconMap((prev) => ({ ...prev, [path]: processedDataURL }))
+        setIconMap((prev) =>
+          trimRecord({ ...prev, [path]: processedDataURL }, MAX_ICON_CACHE_ENTRIES)
+        )
 
         const firstConnection = filteredConnections[0]
         if (firstConnection?.metadata.processPath === path) {
@@ -552,7 +565,7 @@ const Connections: React.FC = () => {
 
       const fromStorage = localStorage.getItem(path)
       if (fromStorage) {
-        setIconMap((prev) => ({ ...prev, [path]: fromStorage }))
+        setIconMap((prev) => trimRecord({ ...prev, [path]: fromStorage }, MAX_ICON_CACHE_ENTRIES))
         if (isVisible && filteredConnections[0]?.metadata.processPath === path) {
           setFirstItemRefreshTrigger((prev) => prev + 1)
         }
@@ -580,7 +593,7 @@ const Connections: React.FC = () => {
         })
       }
 
-      setTimeout(loadOtherPaths, 100)
+      loadOtherPathsTimer.current = setTimeout(loadOtherPaths, 100)
     }
 
     if (processIconTimer.current) clearTimeout(processIconTimer.current)
@@ -592,6 +605,7 @@ const Connections: React.FC = () => {
     }
 
     return (): void => {
+      if (loadOtherPathsTimer.current) clearTimeout(loadOtherPathsTimer.current)
       if (processIconTimer.current) clearTimeout(processIconTimer.current)
       if (processAppNameTimer.current) clearTimeout(processAppNameTimer.current)
     }
