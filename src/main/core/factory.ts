@@ -112,8 +112,13 @@ function isProxyGroupRecord(group: unknown): group is MihomoProxyGroupRecord {
 function getUniqueTrimmedStrings(values: unknown): string[] {
   if (!Array.isArray(values)) return []
 
-  return [...new Set(values.filter((value): value is string => typeof value === 'string').map((value) => value.trim()))]
-    .filter(Boolean)
+  return [
+    ...new Set(
+      values
+        .filter((value): value is string => typeof value === 'string')
+        .map((value) => value.trim())
+    )
+  ].filter(Boolean)
 }
 
 function sanitizeProxyGroups(
@@ -186,29 +191,37 @@ function buildVpnRouteGroup(
     return null
   }
 
+  const groupType =
+    vpnRoutingGroup?.type === 'URLTest'
+      ? 'url-test'
+      : vpnRoutingGroup?.type === 'Selector'
+        ? 'select'
+        : 'fallback'
+  const configuredProxies = getUniqueTrimmedStrings(vpnRoutingGroup?.proxies)
+
   const vpnGroup: MihomoProxyGroupRecord = {
     name: VPN_RULE_TARGET,
-    type:
-      vpnRoutingGroup?.type === 'URLTest'
-        ? 'url-test'
-        : vpnRoutingGroup?.type === 'Selector'
-          ? 'select'
-          : 'fallback',
-    proxies: vpnRoutingGroup?.proxies?.length ? vpnRoutingGroup.proxies : proxyNames
+    type: groupType,
+    proxies:
+      groupType === 'select' || configuredProxies.length === 0 ? proxyNames : configuredProxies
   }
 
-  vpnGroup.url = vpnRoutingGroup?.url
-  vpnGroup.interval = vpnRoutingGroup?.interval
-  vpnGroup.timeout = vpnRoutingGroup?.timeout
-  vpnGroup.lazy = vpnRoutingGroup?.lazy
-  vpnGroup['max-failed-times'] = vpnRoutingGroup?.maxFailedTimes
-  vpnGroup.tolerance = vpnRoutingGroup?.tolerance
-  vpnGroup['expected-status'] = vpnRoutingGroup?.expectedStatus
+  if (['fallback', 'url-test'].includes(groupType)) {
+    vpnGroup.url = vpnRoutingGroup?.url
+    vpnGroup.interval = vpnRoutingGroup?.interval
+    vpnGroup.timeout = vpnRoutingGroup?.timeout
+    vpnGroup.lazy = vpnRoutingGroup?.lazy
+    vpnGroup['max-failed-times'] = vpnRoutingGroup?.maxFailedTimes
+    vpnGroup['expected-status'] = vpnRoutingGroup?.expectedStatus
+  }
+  if (groupType === 'url-test') {
+    vpnGroup.tolerance = vpnRoutingGroup?.tolerance
+  }
 
-  if (!vpnGroup.url && ['fallback', 'url-test'].includes(String(vpnGroup.type))) {
+  if (!vpnGroup.url && ['fallback', 'url-test'].includes(groupType)) {
     vpnGroup.url = 'https://www.gstatic.com/generate_204'
   }
-  if (vpnGroup.interval === undefined && ['fallback', 'url-test'].includes(String(vpnGroup.type))) {
+  if (vpnGroup.interval === undefined && ['fallback', 'url-test'].includes(groupType)) {
     vpnGroup.interval = 300
   }
 

@@ -81,7 +81,11 @@ function buildEditableGroupConfig(
     type: parseGroupType(group.type),
     proxies,
     candidates: getUniqueStrings(
-      proxies.concat(proxyNames, groupNames.filter((name) => name !== group.name), BUILTIN_PROXY_CANDIDATES)
+      proxies.concat(
+        proxyNames,
+        groupNames.filter((name) => name !== group.name),
+        BUILTIN_PROXY_CANDIDATES
+      )
     ),
     usesProviders: providers.length > 0,
     providerOnly: providers.length > 0 && proxies.length === 0,
@@ -99,6 +103,21 @@ function buildEditableGroupConfig(
   }
 }
 
+function getVpnRoutingGroupProxies(
+  vpnRoutingGroup: GlobalVpnRoutingGroupConfig | undefined,
+  proxyNames: string[],
+  candidates: string[]
+): string[] {
+  if (vpnRoutingGroup?.type === 'Selector') {
+    return proxyNames
+  }
+
+  return sanitizeProxySelections(
+    vpnRoutingGroup?.proxies?.length ? vpnRoutingGroup.proxies : proxyNames,
+    candidates
+  )
+}
+
 async function getEditableRuntimeProxyGroups(): Promise<EditableProxyGroupConfig[]> {
   const { current } = await getProfileConfig()
   const profile = await getProfile(current)
@@ -106,7 +125,9 @@ async function getEditableRuntimeProxyGroups(): Promise<EditableProxyGroupConfig
   const rawProxyGroups = Array.isArray(profile['proxy-groups'])
     ? (profile['proxy-groups'] as unknown[])
     : []
-  const proxyNames = getUniqueStrings((await getMergedProfileProxies(current)).map((proxy) => proxy.name!))
+  const proxyNames = getUniqueStrings(
+    (await getMergedProfileProxies(current)).map((proxy) => proxy.name!)
+  )
 
   const proxyGroups = rawProxyGroups.filter(isProxyGroupRecord)
   const groupNames = getUniqueStrings(proxyGroups.map((group) => group.name!))
@@ -126,10 +147,7 @@ async function getEditableRuntimeProxyGroups(): Promise<EditableProxyGroupConfig
   const generatedVpnGroup: MihomoProxyGroupRecord = {
     name: VPN_RULE_TARGET,
     type: EDITABLE_TO_RAW_GROUP_TYPE[vpnRoutingGroup?.type ?? 'Fallback'],
-    proxies: sanitizeProxySelections(
-      vpnRoutingGroup?.proxies?.length ? vpnRoutingGroup.proxies : proxyNames,
-      vpnCandidates
-    ),
+    proxies: getVpnRoutingGroupProxies(vpnRoutingGroup, proxyNames, vpnCandidates),
     url: vpnRoutingGroup?.url,
     interval: vpnRoutingGroup?.interval,
     timeout: vpnRoutingGroup?.timeout,
@@ -142,9 +160,9 @@ async function getEditableRuntimeProxyGroups(): Promise<EditableProxyGroupConfig
   return editableGroups
     .filter((group) => group.name !== VPN_RULE_TARGET)
     .concat(
-    buildEditableGroupConfig(generatedVpnGroup, proxyNames, groupNames, {
-      generated: true
-    })
+      buildEditableGroupConfig(generatedVpnGroup, proxyNames, groupNames, {
+        generated: true
+      })
     )
 }
 
@@ -165,7 +183,7 @@ export async function updateVpnRoutingGroup(patch: EditableProxyGroupPatch): Pro
   await patchAppConfig({
     vpnRoutingGroup: {
       type: patch.type,
-      proxies: getUniqueStrings(patch.proxies),
+      proxies: patch.type === 'Selector' ? [] : getUniqueStrings(patch.proxies),
       url: patch.url?.trim() || undefined,
       interval: toOptionalPositiveNumber(patch.interval),
       timeout: toOptionalPositiveNumber(patch.timeout),

@@ -31,12 +31,66 @@ import { useCoreHealth } from '@renderer/hooks/use-core-health'
 import { subscribeIpcEvent } from '@renderer/utils/ipc-events'
 
 const VPN_GROUP_NAME = 'VPN'
+const BUILTIN_CHAIN_TARGETS = new Set(['DIRECT', 'REJECT', 'REJECT-DROP', 'PASS', 'COMPATIBLE'])
 
 function formatBytes(bytes: number): string {
   if (bytes <= 0) return '0 B'
   const units = ['B', 'KB', 'MB', 'GB', 'TB']
   const i = Math.floor(Math.log(bytes) / Math.log(1024))
   return `${(bytes / Math.pow(1024, i)).toFixed(i > 1 ? 1 : 0)} ${units[i]}`
+}
+
+function getLastProxyDelay(
+  proxy: ControllerProxiesDetail | ControllerGroupDetail
+): number | undefined {
+  return proxy.history.length > 0 ? proxy.history[proxy.history.length - 1].delay : undefined
+}
+
+function isAvailableProxy(proxy: ControllerProxiesDetail | ControllerGroupDetail): boolean {
+  const delay = getLastProxyDelay(proxy)
+  return proxy.alive !== false && delay !== 0
+}
+
+function getAutomaticGroupProxyName(group: ControllerMixedGroup): string | undefined {
+  const availableProxies = group.all.filter(isAvailableProxy)
+
+  if (group.type === 'Fallback') {
+    return availableProxies[0]?.name
+  }
+
+  if (group.type === 'URLTest') {
+    return availableProxies
+      .filter((proxy) => getLastProxyDelay(proxy) !== undefined)
+      .sort((a, b) => (getLastProxyDelay(a) ?? Infinity) - (getLastProxyDelay(b) ?? Infinity))[0]
+      ?.name
+  }
+
+  return undefined
+}
+
+function getLatestConnectionOutbound(
+  connections: ControllerConnectionDetail[] | undefined
+): string | undefined {
+  if (!connections?.length) {
+    return undefined
+  }
+
+  const routedConnections = [...connections]
+    .filter((connection) => connection.chains?.length)
+    .sort((a, b) => new Date(b.start).getTime() - new Date(a.start).getTime())
+  const vpnConnection =
+    routedConnections.find((connection) => connection.chains.includes(VPN_GROUP_NAME)) ??
+    routedConnections.find((connection) => {
+      const outbound = connection.chains[0]?.toUpperCase()
+      return outbound && !BUILTIN_CHAIN_TARGETS.has(outbound)
+    })
+  const outbound = vpnConnection?.chains[0]?.trim()
+
+  if (!outbound || BUILTIN_CHAIN_TARGETS.has(outbound.toUpperCase())) {
+    return undefined
+  }
+
+  return outbound
 }
 
 // Module-level variable: persists across component mounts/unmounts
@@ -74,11 +128,16 @@ const Home: React.FC = () => {
   }
 
   const [connectionsInfo, setConnectionsInfo] = useState<ControllerConnections>()
+  const [lastObservedOutbound, setLastObservedOutbound] = useState<string>()
   const { coreHealth } = useCoreHealth()
 
   useEffect(() => {
     const handleConnections = (_e: unknown, info: ControllerConnections): void => {
       setConnectionsInfo(info)
+      const outbound = getLatestConnectionOutbound(info.connections)
+      if (outbound) {
+        setLastObservedOutbound(outbound)
+      }
     }
     return subscribeIpcEvent('mihomoConnections', handleConnections)
   }, [])
@@ -118,6 +177,7 @@ const Home: React.FC = () => {
     } else {
       connectionStartTime = null
       setElapsed(0)
+      setLastObservedOutbound(undefined)
       return undefined
     }
   }, [coreHealthReady, isSelected])
@@ -178,6 +238,17 @@ const Home: React.FC = () => {
     () => groups?.find((group) => group.name === VPN_GROUP_NAME) || groups?.[0],
     [groups]
   )
+  const currentProxyName = useMemo(() => {
+    if (!firstGroup) return undefined
+
+    return (
+      (isSelected ? getLatestConnectionOutbound(connectionsInfo?.connections) : undefined) ||
+      (isSelected ? lastObservedOutbound : undefined) ||
+      getAutomaticGroupProxyName(firstGroup) ||
+      firstGroup.now ||
+      firstGroup.name
+    )
+  }, [connectionsInfo, firstGroup, isSelected, lastObservedOutbound])
   const supportUrl = currentProfile?.supportUrl
   const supportLinkInfo = useMemo(() => {
     if (!supportUrl) return null
@@ -419,9 +490,7 @@ const Home: React.FC = () => {
                 onClick={() => navigate('/proxies', { state: { fromHome: true } })}
               >
                 <div className="flex items-center justify-between h-9 rounded-2xl border border-stroke pl-3 pr-1 py-3 backdrop-blur-xl bg-card/50">
-                  <div className="flag-emoji text-sm truncate max-w-52">
-                    {firstGroup.now || firstGroup.name}
-                  </div>
+                  <div className="flag-emoji text-sm truncate max-w-52">{currentProxyName}</div>
                   <ChevronRight />
                 </div>
               </div>
