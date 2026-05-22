@@ -96,6 +96,12 @@ function getLatestConnectionOutbound(
 // Module-level variable: persists across component mounts/unmounts
 let connectionStartTime: number | null = null
 
+type HomeConnectionSummary = {
+  uploadTotal: number
+  downloadTotal: number
+  latestOutbound?: string
+}
+
 const Home: React.FC = () => {
   const { t } = useTranslation()
   const { appConfig, patchAppConfig } = useAppConfig()
@@ -127,14 +133,21 @@ const Home: React.FC = () => {
     setShowEditModal(true)
   }
 
-  const [connectionsInfo, setConnectionsInfo] = useState<ControllerConnections>()
+  const [connectionSummary, setConnectionSummary] = useState<HomeConnectionSummary>({
+    uploadTotal: 0,
+    downloadTotal: 0
+  })
   const [lastObservedOutbound, setLastObservedOutbound] = useState<string>()
   const { coreHealth } = useCoreHealth()
 
   useEffect(() => {
     const handleConnections = (_e: unknown, info: ControllerConnections): void => {
-      setConnectionsInfo(info)
       const outbound = getLatestConnectionOutbound(info.connections)
+      setConnectionSummary({
+        uploadTotal: info.uploadTotal,
+        downloadTotal: info.downloadTotal,
+        latestOutbound: outbound
+      })
       if (outbound) {
         setLastObservedOutbound(outbound)
       }
@@ -242,13 +255,13 @@ const Home: React.FC = () => {
     if (!firstGroup) return undefined
 
     return (
-      (isSelected ? getLatestConnectionOutbound(connectionsInfo?.connections) : undefined) ||
+      (isSelected ? connectionSummary.latestOutbound : undefined) ||
       (isSelected ? lastObservedOutbound : undefined) ||
       getAutomaticGroupProxyName(firstGroup) ||
       firstGroup.now ||
       firstGroup.name
     )
-  }, [connectionsInfo, firstGroup, isSelected, lastObservedOutbound])
+  }, [connectionSummary.latestOutbound, firstGroup, isSelected, lastObservedOutbound])
   const supportUrl = currentProfile?.supportUrl
   const supportLinkInfo = useMemo(() => {
     if (!supportUrl) return null
@@ -471,12 +484,12 @@ const Home: React.FC = () => {
             >
               <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
                 <ArrowUp className="size-3.5 text-stroke-power-on" />
-                <span>{calcTraffic(connectionsInfo?.uploadTotal ?? 0)}</span>
+                <span>{calcTraffic(connectionSummary.uploadTotal)}</span>
               </div>
               <div className="h-3 w-px bg-stroke" />
               <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
                 <ArrowDown className="size-3.5 text-stroke-power-on" />
-                <span>{calcTraffic(connectionsInfo?.downloadTotal ?? 0)}</span>
+                <span>{calcTraffic(connectionSummary.downloadTotal)}</span>
               </div>
             </div>
           </div>

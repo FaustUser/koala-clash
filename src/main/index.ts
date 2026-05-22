@@ -790,17 +790,15 @@ if (process.platform === 'linux') {
   app.relaunch = customRelaunch
 }
 
-if (process.platform === 'win32' && !exePath().startsWith('C')) {
-  // https://github.com/electron/electron/issues/43278
-  // https://github.com/electron/electron/issues/36698
-  app.commandLine.appendSwitch('in-process-gpu')
+if (syncConfig.disableGPU || (process.platform === 'win32' && !exePath().startsWith('C'))) {
+  app.disableHardwareAcceleration()
+  if (process.platform === 'win32') {
+    app.commandLine.appendSwitch('disable-gpu-compositing')
+    app.commandLine.appendSwitch('disable-direct-composition')
+  }
 }
 
 const initPromise = init()
-
-if (syncConfig.disableGPU) {
-  app.disableHardwareAcceleration()
-}
 
 function getDeepLinkFromArgs(argv: string[]): string | undefined {
   return argv.find(
