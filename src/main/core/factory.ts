@@ -13,6 +13,7 @@ import { copyFile, mkdir, writeFile } from 'fs/promises'
 import { deepMerge } from '../utils/merge'
 import { existsSync } from 'fs'
 import path from 'path'
+import { alignDnsWithDirectRules } from './dnsRouting'
 
 let runtimeConfigStr: string,
   rawProfileStr: string,
@@ -409,6 +410,7 @@ export async function generateProfile(): Promise<void> {
 
   const profile = deepMerge(JSON.parse(JSON.stringify(currentProfile)), configToMerge)
 
+  alignDnsWithDirectRules(profile)
   await cleanProfile(profile, controlDns, controlSniff, controlTun)
 
   runtimeConfig = profile
