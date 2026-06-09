@@ -1,7 +1,6 @@
 import http from 'http'
 import type { Socket } from 'net'
 import tls from 'tls'
-import { mihomoConfig, mihomoGetConnections, mihomoRules } from './mihomoApi'
 
 const PROXY_HOST = '127.0.0.1'
 const REQUEST_TIMEOUT_MS = 5000
@@ -21,6 +20,21 @@ interface TestRequestState {
   done: boolean
   doneAt: number | null
   proxySourcePort?: string
+}
+
+async function getMihomoConfig(): Promise<ControllerConfigs> {
+  const { mihomoConfig } = await import('./mihomoApi')
+  return await mihomoConfig()
+}
+
+async function getMihomoConnections(): Promise<ControllerConnections> {
+  const { mihomoGetConnections } = await import('./mihomoApi')
+  return await mihomoGetConnections()
+}
+
+async function getMihomoRules(): Promise<ControllerRules> {
+  const { mihomoRules } = await import('./mihomoApi')
+  return await mihomoRules()
 }
 
 function delay(ms: number): Promise<void> {
@@ -317,10 +331,11 @@ function getConnectionMatchScore(
   const remoteDestination = connection.metadata.remoteDestination?.toLowerCase() || ''
   let score = 0
 
-  if (
+  const matchedSourcePort =
     requestState.proxySourcePort &&
     connection.metadata.sourcePort === requestState.proxySourcePort
-  ) {
+
+  if (matchedSourcePort) {
     score += 100
   }
 
@@ -328,12 +343,12 @@ function getConnectionMatchScore(
   if (sniffHost === targetHost) score += 50
   if (remoteDestination.includes(`${targetHost}:`)) score += 40
   if (remoteDestination.includes(targetHost)) score += 30
-  if (connection.metadata.destinationPort === targetPort) score += 10
+  if (score > 0 && connection.metadata.destinationPort === targetPort) score += 10
 
   return score
 }
 
-function findMatchingConnection(
+export function findMatchingConnection(
   connections: ControllerConnectionDetail[],
   beforeIds: Set<string>,
   url: URL,
@@ -364,7 +379,7 @@ function findMatchingConnection(
     return scoredConnections[0].connection
   }
 
-  return freshConnections.length === 1 ? freshConnections[0] : null
+  return null
 }
 
 async function waitForMatchingConnection(
@@ -375,7 +390,7 @@ async function waitForMatchingConnection(
   const deadline = Date.now() + CONNECTION_POLL_TIMEOUT_MS
 
   while (Date.now() < deadline) {
-    const snapshot = await mihomoGetConnections()
+    const snapshot = await getMihomoConnections()
     const matchedConnection = findMatchingConnection(
       snapshot.connections || [],
       beforeIds,
@@ -450,9 +465,9 @@ function getTrafficPath(
 
 export async function mihomoTestRuleUrl(input: string): Promise<ControllerRuleTestResult> {
   const url = normalizeTestUrl(input)
-  const config = await mihomoConfig()
+  const config = await getMihomoConfig()
   const proxyPort = getTestProxyPort(config)
-  const existingConnections = await mihomoGetConnections()
+  const existingConnections = await getMihomoConnections()
   const beforeIds = new Set(
     (existingConnections.connections || []).map((connection) => connection.id)
   )
@@ -462,7 +477,7 @@ export async function mihomoTestRuleUrl(input: string): Promise<ControllerRuleTe
     requestState.doneAt = Date.now()
   })
   const connectionPromise = waitForMatchingConnection(beforeIds, url, requestState)
-  const rulesPromise = mihomoRules().catch(() => undefined)
+  const rulesPromise = getMihomoRules().catch(() => undefined)
 
   const [probeResult, matchedConnection, rules] = await Promise.all([
     requestPromise,
