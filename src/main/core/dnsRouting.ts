@@ -1,5 +1,4 @@
 const DIRECT_RULE_TARGET = 'DIRECT'
-const VPN_RULE_TARGET = 'VPN'
 const SYSTEM_DNS_RESOLVER = 'system'
 const FALLBACK_PROXY_SERVER_NAMESERVER = ['tls://1.1.1.1']
 
@@ -29,6 +28,10 @@ function splitByTopLevelCommas(value: string): string[] {
 }
 
 function getStringArray(value: unknown): string[] {
+  if (typeof value === 'string' && value.trim().length > 0) {
+    return [value.trim()]
+  }
+
   return Array.isArray(value)
     ? value.filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
     : []
@@ -36,6 +39,10 @@ function getStringArray(value: unknown): string[] {
 
 function getRuleTarget(ruleStr: string): string | undefined {
   const parts = splitByTopLevelCommas(ruleStr).map((part) => part.trim())
+  return getRulePartsTarget(parts)
+}
+
+function getRulePartsTarget(parts: string[]): string | undefined {
   const firstPartIsNumber = !Number.isNaN(Number(parts[0])) && parts[0] !== '' && parts.length >= 3
   const ruleParts = firstPartIsNumber ? parts.slice(1) : parts
   const [type = '', payloadOrTarget = '', proxy = ''] = ruleParts
@@ -47,7 +54,25 @@ function getRuleTarget(ruleStr: string): string | undefined {
 function hasRuleTarget(rules: unknown, target: string): boolean {
   if (!Array.isArray(rules)) return false
 
-  return rules.some((rule) => typeof rule === 'string' && getRuleTarget(rule) === target)
+  const normalizedTarget = target.toUpperCase()
+
+  return rules.some((rule) => {
+    if (typeof rule === 'string') {
+      return getRuleTarget(rule)?.toUpperCase() === normalizedTarget
+    }
+
+    if (Array.isArray(rule)) {
+      const parts = rule
+        .filter(
+          (part): part is string | number =>
+            typeof part === 'string' || typeof part === 'number'
+        )
+        .map((part) => String(part).trim())
+      return getRulePartsTarget(parts)?.toUpperCase() === normalizedTarget
+    }
+
+    return false
+  })
 }
 
 export function alignDnsWithDirectRules(profile: MihomoConfig): void {
@@ -55,7 +80,6 @@ export function alignDnsWithDirectRules(profile: MihomoConfig): void {
 
   if (!dns?.enable) return
   if (!hasRuleTarget(profile.rules, DIRECT_RULE_TARGET)) return
-  if (!hasRuleTarget(profile.rules, VPN_RULE_TARGET)) return
 
   dns['respect-rules'] = true
 

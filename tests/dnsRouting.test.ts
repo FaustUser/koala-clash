@@ -45,6 +45,77 @@ describe('alignDnsWithDirectRules', () => {
     assert.equal(profile.dns['direct-nameserver-follow-policy'], true)
   })
 
+  it('preserves string-form DNS settings', () => {
+    const profile = {
+      dns: {
+        enable: true,
+        'respect-rules': false,
+        'default-nameserver': 'tls://9.9.9.9',
+        'proxy-server-nameserver': 'https://dns.example/dns-query',
+        'direct-nameserver': 'system'
+      },
+      rules: ['DOMAIN-SUFFIX,example.com,DIRECT', 'MATCH,VPN']
+    } as unknown as MihomoConfig
+
+    alignDnsWithDirectRules(profile)
+
+    assert.equal(profile.dns['respect-rules'], true)
+    assert.equal(profile.dns['direct-nameserver'], 'system')
+    assert.equal(profile.dns['proxy-server-nameserver'], 'https://dns.example/dns-query')
+  })
+
+  it('applies direct DNS even when the fallback route uses a non-VPN group', () => {
+    const profile = {
+      dns: {
+        enable: true,
+        'respect-rules': false,
+        'default-nameserver': ['tls://1.1.1.1'],
+        nameserver: ['https://1.1.1.1/dns-query']
+      },
+      rules: ['DOMAIN-SUFFIX,example.com,DIRECT', 'MATCH,PROXY']
+    } as unknown as MihomoConfig
+
+    alignDnsWithDirectRules(profile)
+
+    assert.equal(profile.dns['respect-rules'], true)
+    assert.deepEqual(profile.dns['direct-nameserver'], ['system'])
+  })
+
+  it('detects DIRECT targets in array-form rules', () => {
+    const profile = {
+      dns: {
+        enable: true,
+        'respect-rules': false,
+        'default-nameserver': ['tls://1.1.1.1']
+      },
+      rules: [
+        ['DOMAIN-SUFFIX', 'example.com', 'DIRECT'],
+        ['MATCH', 'VPN']
+      ]
+    } as unknown as MihomoConfig
+
+    alignDnsWithDirectRules(profile)
+
+    assert.equal(profile.dns['respect-rules'], true)
+    assert.deepEqual(profile.dns['direct-nameserver'], ['system'])
+  })
+
+  it('matches DIRECT targets case-insensitively', () => {
+    const profile = {
+      dns: {
+        enable: true,
+        'respect-rules': false,
+        'default-nameserver': ['tls://1.1.1.1']
+      },
+      rules: ['DOMAIN-SUFFIX,example.com,direct', 'MATCH,PROXY']
+    } as unknown as MihomoConfig
+
+    alignDnsWithDirectRules(profile)
+
+    assert.equal(profile.dns['respect-rules'], true)
+    assert.deepEqual(profile.dns['direct-nameserver'], ['system'])
+  })
+
   it('leaves profiles without DIRECT rules unchanged', () => {
     const profile = {
       dns: {
