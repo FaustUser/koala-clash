@@ -8,6 +8,7 @@ import { getRuntimeConfig } from './factory'
 import { floatingWindow } from '../resolve/floatingWindow'
 import { mihomoIpcPath } from '../utils/dirs'
 import type { BrowserWindow } from 'electron'
+import { getRuntimeProfileProxies } from './proxyList'
 
 let axiosIns: AxiosInstance = null!
 let mihomoTrafficWs: WebSocket | null = null
@@ -148,6 +149,15 @@ export const mihomoRules = async (): Promise<ControllerRules> => {
 export const mihomoProxies = async (): Promise<ControllerProxies> => {
   const instance = await getAxios()
   return await instance.get('/proxies')
+}
+
+export const mihomoProfileProxies = async (): Promise<ControllerProxiesDetail[]> => {
+  const proxies = await mihomoProxies()
+  const runtime = await getRuntimeConfig()
+  return getRuntimeProfileProxies(
+    proxies,
+    runtime?.proxies as { name?: unknown; serverDescription?: unknown }[] | undefined
+  )
 }
 
 export const mihomoGroups = async (): Promise<ControllerMixedGroup[]> => {

@@ -8,6 +8,7 @@ import {
   DialogTitle
 } from '@renderer/components/ui/dialog'
 import { Button } from '@renderer/components/ui/button'
+import { Badge } from '@renderer/components/ui/badge'
 import { Input } from '@renderer/components/ui/input'
 import {
   Select,
@@ -48,6 +49,7 @@ interface Props {
 
 interface SortableProxyItemProps {
   id: string
+  profile?: string
   disabled: boolean
   onRemove: () => void
 }
@@ -59,7 +61,12 @@ const parseNonNegativeNumber = (value: string): number | undefined => {
   return Math.max(0, nextValue)
 }
 
-const SortableProxyItem: React.FC<SortableProxyItemProps> = ({ id, disabled, onRemove }) => {
+const SortableProxyItem: React.FC<SortableProxyItemProps> = ({
+  id,
+  profile,
+  disabled,
+  onRemove
+}) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id,
     disabled
@@ -89,7 +96,14 @@ const SortableProxyItem: React.FC<SortableProxyItemProps> = ({ id, disabled, onR
         >
           <GripVertical className="size-4" />
         </Button>
-        <span className="truncate text-sm">{id}</span>
+        <div className="flex min-w-0 items-center gap-2">
+          <span className="truncate text-sm">{id}</span>
+          {profile && (
+            <Badge variant="secondary" className="max-w-40">
+              <span className="truncate">{profile}</span>
+            </Badge>
+          )}
+        </div>
       </div>
       <Button size="icon-sm" variant="ghost" disabled={disabled} onClick={onRemove}>
         <Trash2 className="size-4" />
@@ -281,7 +295,7 @@ const EditProxyGroupModal: React.FC<Props> = ({ groupName, onClose, onSaved }) =
           <div className="py-2 flex flex-col gap-1 overflow-y-auto min-h-0">
             <div className="rounded-2xl border border-stroke bg-card/40 p-4 space-y-4">
               <div className="flex items-start justify-between gap-4">
-                  <div className="space-y-1">
+                <div className="space-y-1">
                   <div className="text-sm font-medium">
                     {groupName === 'VPN'
                       ? t('proxies.groupEditorTypeVpn')
@@ -326,9 +340,7 @@ const EditProxyGroupModal: React.FC<Props> = ({ groupName, onClose, onSaved }) =
                     <p className="text-muted-foreground">{t(groupTypeDescriptionKey)}</p>
                     <p className="text-muted-foreground">{t('proxies.groupEditorSaveHint')}</p>
                     {groupConfig.generated && groupConfig.name === 'VPN' && (
-                      <p className="text-muted-foreground">
-                        {t('proxies.groupEditorVpnHint')}
-                      </p>
+                      <p className="text-muted-foreground">{t('proxies.groupEditorVpnHint')}</p>
                     )}
                   </div>
                 </div>
@@ -516,7 +528,6 @@ const EditProxyGroupModal: React.FC<Props> = ({ groupName, onClose, onSaved }) =
                             {t('proxies.groupEditorToleranceHint')}
                           </p>
                         </div>
-
                       </>
                     )}
                   </div>
@@ -565,7 +576,14 @@ const EditProxyGroupModal: React.FC<Props> = ({ groupName, onClose, onSaved }) =
                       <SelectContent position="popper">
                         {availableCandidates.map((candidate) => (
                           <SelectItem key={candidate} value={candidate}>
-                            {candidate}
+                            <span className="truncate">{candidate}</span>
+                            {groupConfig.candidateProfiles?.[candidate] && (
+                              <Badge variant="secondary" className="max-w-40">
+                                <span className="truncate">
+                                  {groupConfig.candidateProfiles[candidate]}
+                                </span>
+                              </Badge>
+                            )}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -603,6 +621,7 @@ const EditProxyGroupModal: React.FC<Props> = ({ groupName, onClose, onSaved }) =
                           <SortableProxyItem
                             key={proxy}
                             id={proxy}
+                            profile={groupConfig.candidateProfiles?.[proxy]}
                             disabled={saving || isProviderOnly}
                             onRemove={() => removeProxy(proxy)}
                           />
@@ -615,7 +634,7 @@ const EditProxyGroupModal: React.FC<Props> = ({ groupName, onClose, onSaved }) =
             )}
           </div>
         )}
-      <DialogFooter>
+        <DialogFooter>
           <DialogClose asChild>
             <Button size="sm" variant="ghost" disabled={saving}>
               {t('common.cancel')}

@@ -1043,6 +1043,17 @@ export default {
     groupEditorVpnHint:
       'VPN - это глобальная группа маршрутизации для общих правил. Ее режим и порядок fallback общие для всех профилей.',
     groupRuntimeSharedBadge: 'Общие правила',
+    profileDashboardTitle: 'Все доступные серверы',
+    profileDashboardDescription:
+      'Сравнивайте и тестируйте серверы из всех профилей без переключения активного профиля.',
+    profileFilter: 'Профиль',
+    allProfiles: 'Все профили',
+    activeProfile: 'Активный профиль',
+    testVisible: 'Тест видимых',
+    selectFastest: 'Выбрать быстрый',
+    fastest: 'Лучший',
+    noTestedProxy: 'Нет замера',
+    notInRoutingGroup: 'Не входит в текущую группу маршрутизации',
     runtimeGroupsTitle: 'Runtime-группы активного профиля',
     runtimeGroupsDescription:
       'Здесь показаны группы прокси, с которыми Mihomo работает сейчас для текущего профиля. При смене профиля этот runtime-список пересобирается.',
@@ -1050,7 +1061,7 @@ export default {
       'Группа VPN особая: это общая группа маршрутизации для общих правил, и ее режим, health check и порядок fallback общие для всех профилей.',
     sharedVpnCardDescription: 'Глобальная VPN-маршрутизация для общих правил во всех профилях.',
     sharedVpnCurrentProxy: 'Текущая цель: {{name}}',
-    activeProfileGroupsTitle: 'Группы активного профиля',
+    activeProfileGroupsTitle: 'Маршрутизация текущего профиля',
     activeProfileGroupsDescription:
       'Эти группы относятся к текущему выбранному профилю и меняются при его переключении.',
     activeProfileGroupsReadOnly:

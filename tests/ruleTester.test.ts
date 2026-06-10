@@ -1,6 +1,8 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
-import { findMatchingConnection } from '../src/main/core/ruleTester'
+import http from 'node:http'
+import type { Socket } from 'node:net'
+import { findMatchingConnection, performHttpsProxyProbe } from '../src/main/core/ruleTester'
 
 const makeConnection = (
   patch: Partial<ControllerConnectionDetail>
@@ -67,5 +69,49 @@ describe('findMatchingConnection', () => {
     )
 
     assert.equal(result, null)
+  })
+})
+
+describe('performHttpsProxyProbe', () => {
+  it('treats a successful CONNECT response as enough for HTTPS rule capture', async () => {
+    const server = http.createServer()
+    const sockets: Socket[] = []
+
+    server.on('connect', (_request, socket) => {
+      sockets.push(socket)
+      socket.write('HTTP/1.1 200 Connection Established\r\n\r\n')
+    })
+
+    await new Promise<void>((resolve) => {
+      server.listen(0, '127.0.0.1', resolve)
+    })
+
+    try {
+      const address = server.address()
+      assert.ok(address && typeof address === 'object')
+
+      const requestState = { done: false, doneAt: null }
+      const result = await performHttpsProxyProbe(
+        new URL('https://air.1688.com/app/ctf-page/trade-order-list/buyer-order-list.html'),
+        address.port,
+        requestState
+      )
+
+      assert.equal(result.statusCode, 200)
+      assert.equal(result.statusMessage, 'Connection Established')
+      assert.ok(requestState.proxySourcePort)
+    } finally {
+      sockets.forEach((socket) => socket.destroy())
+      await new Promise<void>((resolve, reject) => {
+        server.close((error) => {
+          if (error) {
+            reject(error)
+            return
+          }
+
+          resolve()
+        })
+      })
+    }
   })
 })

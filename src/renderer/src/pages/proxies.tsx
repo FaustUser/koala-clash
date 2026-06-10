@@ -3,18 +3,27 @@ import { Badge } from '@renderer/components/ui/badge'
 import { Button } from '@renderer/components/ui/button'
 import { Card, CardContent } from '@renderer/components/ui/card'
 import { Spinner } from '@renderer/components/ui/spinner'
-import { Separator } from '@renderer/components/ui/separator'
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@renderer/components/ui/select'
 import BasePage from '@renderer/components/base/base-page'
 import { useAppConfig } from '@renderer/hooks/use-app-config'
 import {
   getImageDataURL,
   mihomoChangeProxy,
   mihomoCloseAllConnections,
+  mihomoProfileProxies,
   mihomoProxyDelay
 } from '@renderer/utils/ipc'
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react'
 import { useLocation } from 'react-router-dom'
 import { GroupedVirtuoso, GroupedVirtuosoHandle } from 'react-virtuoso'
+import useSWR from 'swr'
 import ProxyItem from '@renderer/components/proxies/proxy-item'
 import ProxySettingModal from '@renderer/components/proxies/proxy-setting-modal'
 import EditProxyGroupModal from '@renderer/components/proxies/edit-proxy-group-modal'
@@ -22,6 +31,16 @@ import { useGroups } from '@renderer/hooks/use-groups'
 import CollapseInput from '@renderer/components/base/collapse-input'
 import { includesIgnoreCase } from '@renderer/utils/includes'
 import { useControledMihomoConfig } from '@renderer/hooks/use-controled-mihomo-config'
+import { useProfileConfig } from '@renderer/hooks/use-profile-config'
+import {
+  ACTIVE_PROFILE_KEY,
+  ALL_PROFILES_KEY,
+  buildProfileProxyItems,
+  buildProfileOptions,
+  getFastestProxy,
+  getProxyDelay,
+  sortProfileProxies
+} from '@renderer/utils/proxyProfile'
 import { useTranslation } from 'react-i18next'
 import {
   ChevronDown,
@@ -31,7 +50,8 @@ import {
   Gauge,
   LocateFixed,
   Pencil,
-  SlidersHorizontal
+  SlidersHorizontal,
+  Trophy
 } from 'lucide-react'
 
 const groupTypeColor: Record<string, string> = {
@@ -42,6 +62,19 @@ const groupTypeColor: Record<string, string> = {
   Relay: 'bg-rose-500/15 text-rose-600 dark:text-rose-400'
 }
 const VPN_GROUP_NAME = 'VPN'
+
+function getDelayText(delay: number | undefined, testText: string, timeoutText: string): string {
+  if (delay === undefined) return testText
+  if (delay === 0) return timeoutText
+  return delay.toString()
+}
+
+function getDelayClassName(delay: number | undefined): string {
+  if (delay === undefined) return 'text-primary'
+  if (delay === 0) return 'text-destructive'
+  if (delay < 500) return 'text-success'
+  return 'text-warning'
+}
 
 function getLastProxyDelay(
   proxy: ControllerProxiesDetail | ControllerGroupDetail
@@ -82,6 +115,7 @@ const Proxies: React.FC = () => {
   const { controledMihomoConfig } = useControledMihomoConfig()
   const { mode = 'rule' } = controledMihomoConfig || {}
   const { groups = [], mutate, pauseRefresh, resumeRefresh } = useGroups()
+  const { profileConfig } = useProfileConfig()
   const { appConfig } = useAppConfig()
   const {
     proxyDisplayLayout = 'double',
@@ -103,9 +137,52 @@ const Proxies: React.FC = () => {
   const [searchValue, setSearchValue] = useState(Array(runtimeGroups.length).fill(''))
   const [vpnSearchValue, setVpnSearchValue] = useState('')
   const [vpnDelaying, setVpnDelaying] = useState(false)
+  const [profileFilter, setProfileFilter] = useState(ALL_PROFILES_KEY)
+  const [profileDelaying, setProfileDelaying] = useState(false)
+  const [profileProxyDelaying, setProfileProxyDelaying] = useState<Record<string, boolean>>({})
   const [isSettingModalOpen, setIsSettingModalOpen] = useState(false)
   const [editingGroupName, setEditingGroupName] = useState<string>()
   const virtuosoRef = useRef<GroupedVirtuosoHandle>(null)
+  const { data: profileProxyDetails = [], mutate: mutateProfileProxyDetails } = useSWR<
+    ControllerProxiesDetail[]
+  >('mihomoProfileProxies', mihomoProfileProxies, {
+    errorRetryInterval: 200,
+    errorRetryCount: 10,
+    refreshInterval: 3000
+  })
+  const currentProfileName = useMemo(() => {
+    const currentItem = profileConfig?.items?.find((item) => item.id === profileConfig.current)
+    return currentItem?.name?.trim() || t('proxies.activeProfile')
+  }, [profileConfig, t])
+  const profileProxies = useMemo(
+    () => buildProfileProxyItems(profileProxyDetails, currentProfileName),
+    [profileProxyDetails, currentProfileName]
+  )
+  const profileOptions = useMemo(
+    () => buildProfileOptions(profileProxies, t('proxies.allProfiles')),
+    [profileProxies, t]
+  )
+  const filteredProfileProxies = useMemo(() => {
+    const filtered =
+      profileFilter === ALL_PROFILES_KEY
+        ? profileProxies
+        : profileProxies.filter((item) => item.profileKey === profileFilter)
+    return sortProfileProxies(filtered, proxyDisplayOrder)
+  }, [profileFilter, profileProxies, proxyDisplayOrder])
+  const fastestProfileProxy = useMemo(
+    () => getFastestProxy(filteredProfileProxies),
+    [filteredProfileProxies]
+  )
+  const bestByProfile = useMemo(
+    () =>
+      profileOptions
+        .filter((option) => option.key !== ALL_PROFILES_KEY)
+        .map((option) => ({
+          option,
+          best: getFastestProxy(profileProxies.filter((item) => item.profileKey === option.key))
+        })),
+    [profileOptions, profileProxies]
+  )
   const { groupCounts, allProxies } = useMemo(() => {
     const groupCounts: number[] = []
     const allProxies: (ControllerProxiesDetail | ControllerGroupDetail)[][] = []
@@ -165,15 +242,20 @@ const Proxies: React.FC = () => {
     return runtimeGroups.length > 0 && isOpen.every(Boolean)
   }, [runtimeGroups, isOpen])
 
+  const mutateAllProxies = useCallback(() => {
+    mutate()
+    void mutateProfileProxyDetails()
+  }, [mutate, mutateProfileProxyDetails])
+
   const onChangeProxy = useCallback(
     async (group: string, proxy: string): Promise<void> => {
       await mihomoChangeProxy(group, proxy)
       if (autoCloseConnection) {
         await mihomoCloseAllConnections(group)
       }
-      mutate()
+      mutateAllProxies()
     },
-    [autoCloseConnection, mutate]
+    [autoCloseConnection, mutateAllProxies]
   )
 
   const onProxyDelay = useCallback(
@@ -206,7 +288,7 @@ const Proxies: React.FC = () => {
           } catch {
             // ignore
           } finally {
-            mutate()
+            mutateAllProxies()
           }
         })
         result.push(promise)
@@ -225,8 +307,74 @@ const Proxies: React.FC = () => {
         return newDelaying
       })
     },
-    [allProxies, runtimeGroups, delayTestConcurrency, mutate]
+    [allProxies, runtimeGroups, delayTestConcurrency, mutateAllProxies]
   )
+
+  const getProfileProxyGroup = useCallback(
+    (proxyName: string): ControllerMixedGroup | undefined => {
+      if (vpnGroup?.all.some((proxy) => proxy.name === proxyName)) {
+        return vpnGroup
+      }
+
+      return runtimeGroups.find((group) => group.all.some((proxy) => proxy.name === proxyName))
+    },
+    [runtimeGroups, vpnGroup]
+  )
+
+  const onProfileDelay = useCallback(async (): Promise<void> => {
+    setProfileDelaying(true)
+    try {
+      const result: Promise<void>[] = []
+      const runningList: Promise<void>[] = []
+
+      for (const item of filteredProfileProxies) {
+        const group = getProfileProxyGroup(item.proxy.name)
+        const promise = Promise.resolve().then(async () => {
+          try {
+            await mihomoProxyDelay(item.proxy.name, group?.testUrl)
+          } catch {
+            // ignore
+          } finally {
+            mutateAllProxies()
+          }
+        })
+        result.push(promise)
+        const running = promise.then(() => {
+          runningList.splice(runningList.indexOf(running), 1)
+        })
+        runningList.push(running)
+        if (runningList.length >= (delayTestConcurrency || 50)) {
+          await Promise.race(runningList)
+        }
+      }
+
+      await Promise.all(result)
+    } finally {
+      setProfileDelaying(false)
+    }
+  }, [delayTestConcurrency, filteredProfileProxies, getProfileProxyGroup, mutateAllProxies])
+
+  const onDashboardProxyDelay = useCallback(
+    async (proxyName: string, url?: string): Promise<void> => {
+      setProfileProxyDelaying((prev) => ({ ...prev, [proxyName]: true }))
+      try {
+        await mihomoProxyDelay(proxyName, url)
+      } catch {
+        // ignore
+      } finally {
+        mutateAllProxies()
+        setProfileProxyDelaying((prev) => ({ ...prev, [proxyName]: false }))
+      }
+    },
+    [mutateAllProxies]
+  )
+
+  const onSelectFastestProfileProxy = useCallback(async (): Promise<void> => {
+    if (!fastestProfileProxy) return
+    const group = getProfileProxyGroup(fastestProfileProxy.proxy.name)
+    if (!group) return
+    await onChangeProxy(group.name, fastestProfileProxy.proxy.name)
+  }, [fastestProfileProxy, getProfileProxyGroup, onChangeProxy])
 
   const calcCols = useCallback((): number => {
     if (window.matchMedia('(min-width: 1536px)').matches) {
@@ -268,7 +416,7 @@ const Proxies: React.FC = () => {
           } catch {
             // ignore
           } finally {
-            mutate()
+            mutateAllProxies()
           }
         })
         result.push(promise)
@@ -284,7 +432,7 @@ const Proxies: React.FC = () => {
     } finally {
       setVpnDelaying(false)
     }
-  }, [vpnGroup, delayTestConcurrency, mutate])
+  }, [vpnGroup, delayTestConcurrency, mutateAllProxies])
 
   const updateSearchValue = useCallback((index: number, value: string) => {
     setSearchValue((prev) => {
@@ -326,6 +474,11 @@ const Proxies: React.FC = () => {
       resumeRefresh()
     }
   }, [editingGroupName, isSettingModalOpen, pauseRefresh, resumeRefresh])
+
+  useEffect(() => {
+    if (profileOptions.some((option) => option.key === profileFilter)) return
+    setProfileFilter(ALL_PROFILES_KEY)
+  }, [profileFilter, profileOptions])
 
   useEffect(() => {
     if (proxyCols !== 'auto') {
@@ -572,20 +725,167 @@ const Proxies: React.FC = () => {
       ) : (
         <div className="h-[calc(100vh-58px)]">
           <div className="px-2 pb-2">
-            <Card className="border-stroke bg-card/50">
-              <CardContent className="px-4 py-3">
-                <div className="flex flex-col gap-2 text-sm">
-                  <div className="font-medium">{t('proxies.runtimeGroupsTitle')}</div>
-                  <div className="text-muted-foreground">
-                    {t('proxies.runtimeGroupsDescription')}
-                  </div>
-                  <Separator />
-                  <div className="text-muted-foreground">
-                    {t('proxies.runtimeGroupsVpnDescription')}
+            <div className="px-2 py-1">
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="text-sm font-medium">{t('proxies.profileDashboardTitle')}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {t('proxies.profileDashboardDescription')}
                   </div>
                 </div>
-              </CardContent>
-            </Card>
+                <Badge variant="outline" className="shrink-0">
+                  {profileProxies.length} {t('pages.proxies.nodes')}
+                </Badge>
+              </div>
+            </div>
+            <div className="flex flex-col gap-2 rounded-lg border border-stroke bg-card/50 p-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <Select value={profileFilter} onValueChange={setProfileFilter}>
+                  <SelectTrigger size="sm" className="max-w-full min-w-44">
+                    <SelectValue placeholder={t('proxies.profileFilter')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      {profileOptions.map((option) => (
+                        <SelectItem key={option.key} value={option.key}>
+                          {option.label} - {option.count}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={profileDelaying || filteredProfileProxies.length === 0}
+                  aria-busy={profileDelaying}
+                  onClick={() => void onProfileDelay()}
+                >
+                  {profileDelaying ? <Spinner /> : <Gauge />}
+                  {t('proxies.testVisible')}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={
+                    !fastestProfileProxy || !getProfileProxyGroup(fastestProfileProxy.proxy.name)
+                  }
+                  onClick={() => void onSelectFastestProfileProxy()}
+                >
+                  <Trophy />
+                  {t('proxies.selectFastest')}
+                </Button>
+              </div>
+              {bestByProfile.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {bestByProfile.map(({ option, best }) => {
+                    const delay = best ? getProxyDelay(best.proxy) : undefined
+                    return (
+                      <Badge key={option.key} variant="ghost" className="max-w-full">
+                        <span className="truncate">{option.label}</span>
+                        <span className="text-muted-foreground">
+                          {best && delay
+                            ? `${best.proxy.name} - ${delay}`
+                            : t('proxies.noTestedProxy')}
+                        </span>
+                      </Badge>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+            {filteredProfileProxies.length > 0 && (
+              <div
+                style={
+                  proxyCols !== 'auto'
+                    ? { gridTemplateColumns: `repeat(${proxyCols}, minmax(0, 1fr))` }
+                    : {}
+                }
+                className={`grid ${proxyCols === 'auto' ? 'sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5' : ''} gap-2 pt-2`}
+              >
+                {filteredProfileProxies.map((item) => {
+                  const group = getProfileProxyGroup(item.proxy.name)
+                  const selected = group
+                    ? item.proxy.name === getCurrentGroupProxyName(group)
+                    : false
+                  const delay = getProxyDelay(item.proxy)
+                  const delaying = profileProxyDelaying[item.proxy.name] || profileDelaying
+
+                  return (
+                    <div key={item.proxy.name} className="flex min-w-0 flex-col gap-1">
+                      <div className="flex items-center justify-between gap-2 px-1">
+                        <Badge
+                          variant={item.profileKey === ACTIVE_PROFILE_KEY ? 'outline' : 'secondary'}
+                          className="max-w-full"
+                        >
+                          <span className="truncate">{item.profileName}</span>
+                        </Badge>
+                        {fastestProfileProxy?.proxy.name === item.proxy.name && (
+                          <Badge variant="ghost">
+                            <Trophy />
+                            {t('proxies.fastest')}
+                          </Badge>
+                        )}
+                      </div>
+                      {group ? (
+                        <ProxyItem
+                          mutateProxies={mutateAllProxies}
+                          onProxyDelay={onProxyDelay}
+                          onSelect={onChangeProxy}
+                          proxy={item.proxy}
+                          group={group}
+                          proxyDisplayLayout={proxyDisplayLayout}
+                          selected={selected}
+                        />
+                      ) : (
+                        <Card className="w-full gap-0 py-0 transition-all duration-150">
+                          <CardContent className="pl-4 pr-3 py-2">
+                            <div
+                              className={`flex ${proxyDisplayLayout === 'double' ? 'gap-1' : 'justify-between items-center'}`}
+                            >
+                              <div className="flex min-w-0 flex-1 flex-col gap-0">
+                                <span
+                                  className="flag-emoji truncate text-sm"
+                                  title={item.proxy.name}
+                                >
+                                  {item.proxy.name}
+                                </span>
+                                {proxyDisplayLayout !== 'hidden' && (
+                                  <span className="mt-0.5 truncate text-[11px] leading-none text-muted-foreground">
+                                    {item.proxy.type}
+                                  </span>
+                                )}
+                              </div>
+                              <Button
+                                variant="ghost"
+                                title={item.proxy.type}
+                                disabled={delaying}
+                                onClick={() => void onDashboardProxyDelay(item.proxy.name)}
+                                className={`h-7 px-1.5 text-xs font-medium whitespace-nowrap ${getDelayClassName(delay)}`}
+                              >
+                                <span className="relative inline-flex items-center justify-center">
+                                  {delaying && <Spinner className="absolute size-3" />}
+                                  <span className={delaying ? 'invisible' : ''}>
+                                    {getDelayText(
+                                      delay,
+                                      t('proxies.delayTest'),
+                                      t('proxies.timeout')
+                                    )}
+                                  </span>
+                                </span>
+                              </Button>
+                            </div>
+                            <div className="mt-1 truncate text-[11px] text-muted-foreground">
+                              {t('proxies.notInRoutingGroup')}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            )}
           </div>
           {vpnGroup && (
             <div className="px-2 pb-2">

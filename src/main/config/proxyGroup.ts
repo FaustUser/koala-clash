@@ -1,6 +1,7 @@
 import { getAppConfig, patchAppConfig } from './app'
 import { getProfile, getProfileConfig } from './profile'
 import { getMergedProfileProxies } from './profileMerge'
+import { buildCandidateProfileLabels } from './proxyGroupLabels'
 
 const BUILTIN_PROXY_CANDIDATES = ['DIRECT']
 const VPN_RULE_TARGET = 'VPN'
@@ -119,25 +120,28 @@ function getVpnRoutingGroupProxies(
 }
 
 async function getEditableRuntimeProxyGroups(): Promise<EditableProxyGroupConfig[]> {
-  const { current } = await getProfileConfig()
+  const { current, items = [] } = await getProfileConfig()
+  const activeProfileLabel =
+    items.find((item) => item.id === current)?.name?.trim() || current || 'Active profile'
   const profile = await getProfile(current)
   const appConfig = await getAppConfig()
   const rawProxyGroups = Array.isArray(profile['proxy-groups'])
     ? (profile['proxy-groups'] as unknown[])
     : []
-  const proxyNames = getUniqueStrings(
-    (await getMergedProfileProxies(current)).map((proxy) => proxy.name!)
-  )
+  const mergedProfileProxies = await getMergedProfileProxies(current)
+  const proxyNames = getUniqueStrings(mergedProfileProxies.map((proxy) => proxy.name!))
+  const candidateProfiles = buildCandidateProfileLabels(mergedProfileProxies, activeProfileLabel)
 
   const proxyGroups = rawProxyGroups.filter(isProxyGroupRecord)
   const groupNames = getUniqueStrings(proxyGroups.map((group) => group.name!))
 
-  const editableGroups = proxyGroups
+  const editableGroups: EditableProxyGroupConfig[] = proxyGroups
     .filter((group) => isEditableGroupType(group.type))
     .map((group) => {
       const config = buildEditableGroupConfig(group, proxyNames, groupNames)
       return {
         ...config,
+        candidateProfiles,
         proxies: sanitizeProxySelections(config.proxies, config.candidates)
       }
     })
@@ -161,7 +165,8 @@ async function getEditableRuntimeProxyGroups(): Promise<EditableProxyGroupConfig
     .filter((group) => group.name !== VPN_RULE_TARGET)
     .concat(
       buildEditableGroupConfig(generatedVpnGroup, proxyNames, groupNames, {
-        generated: true
+        generated: true,
+        candidateProfiles
       })
     )
 }

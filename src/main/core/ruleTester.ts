@@ -1,6 +1,5 @@
 import http from 'http'
 import type { Socket } from 'net'
-import tls from 'tls'
 
 const PROXY_HOST = '127.0.0.1'
 const REQUEST_TIMEOUT_MS = 5000
@@ -92,24 +91,6 @@ function getTargetPort(url: URL): number {
   return url.protocol === 'https:' ? 443 : 80
 }
 
-function getRequestPath(url: URL): string {
-  const pathname = url.pathname || '/'
-  return `${pathname}${url.search}`
-}
-
-function parseStatusLine(line: string): { statusCode?: number; statusMessage?: string } {
-  const match = line.match(/^HTTP\/\d\.\d\s+(\d{3})\s*(.*)$/i)
-
-  if (!match) {
-    return {}
-  }
-
-  return {
-    statusCode: Number(match[1]),
-    statusMessage: match[2]?.trim() || undefined
-  }
-}
-
 function bindProxySourcePort(request: http.ClientRequest, requestState: TestRequestState): void {
   request.on('socket', (socket) => {
     const assignLocalPort = (): void => {
@@ -184,7 +165,7 @@ async function performHttpProxyProbe(
   })
 }
 
-async function performHttpsProxyProbe(
+export async function performHttpsProxyProbe(
   url: URL,
   proxyPort: number,
   requestState: TestRequestState
@@ -192,13 +173,15 @@ async function performHttpsProxyProbe(
   return await new Promise((resolve) => {
     let timeout: NodeJS.Timeout | null = null
     let tunnelSocket: Socket | null = null
-    let tlsSocket: tls.TLSSocket | null = null
+    let holdTimer: NodeJS.Timeout | null = null
 
     const finish = finishOnce(resolve, () => {
       if (timeout) {
         clearTimeout(timeout)
       }
-      tlsSocket?.destroy()
+      if (holdTimer) {
+        clearTimeout(holdTimer)
+      }
       tunnelSocket?.destroy()
     })
 
@@ -218,7 +201,7 @@ async function performHttpsProxyProbe(
 
     timeout = setTimeout(() => {
       request.destroy(new Error('Test request timed out'))
-      tlsSocket?.destroy(new Error('Test request timed out'))
+      tunnelSocket?.destroy(new Error('Test request timed out'))
     }, REQUEST_TIMEOUT_MS)
 
     request.on('connect', (response, socket, head) => {
@@ -237,58 +220,13 @@ async function performHttpsProxyProbe(
         socket.unshift(head)
       }
 
-      tlsSocket = tls.connect({
-        socket,
-        host: url.hostname,
-        servername: url.hostname,
-        port: getTargetPort(url),
-        rejectUnauthorized: false
-      })
-
-      let headerBuffer = ''
-      let responseCaptured = false
-
-      tlsSocket.on('secureConnect', () => {
-        tlsSocket?.write(
-          [
-            `GET ${getRequestPath(url)} HTTP/1.1`,
-            `Host: ${url.host}`,
-            'Accept: */*',
-            'Connection: close',
-            `User-Agent: ${TEST_USER_AGENT}`,
-            '',
-            ''
-          ].join('\r\n')
-        )
-      })
-
-      // We only need the response line to confirm that the request reached the target.
-      tlsSocket.on('data', (chunk) => {
-        if (responseCaptured) return
-
-        headerBuffer += chunk.toString('utf8')
-
-        const headerEndIndex = headerBuffer.indexOf('\r\n\r\n')
-        if (headerEndIndex === -1) return
-
-        responseCaptured = true
-        const statusLine = headerBuffer.slice(0, headerEndIndex).split('\r\n')[0] || ''
-        const { statusCode, statusMessage } = parseStatusLine(statusLine)
-
-        setTimeout(() => {
-          finish({ statusCode, statusMessage })
-        }, RESPONSE_HOLD_MS)
-      })
-
-      tlsSocket.on('end', () => {
-        if (!responseCaptured) {
-          finish({})
-        }
-      })
-
-      tlsSocket.on('error', (error) => {
-        finish({ requestError: error.message })
-      })
+      socket.pause()
+      holdTimer = setTimeout(() => {
+        finish({
+          statusCode: response.statusCode,
+          statusMessage: response.statusMessage
+        })
+      }, RESPONSE_HOLD_MS)
     })
 
     request.on('response', (response) => {

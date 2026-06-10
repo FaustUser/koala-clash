@@ -1043,6 +1043,17 @@ export default {
     groupEditorVpnHint:
       'VPN is a global routing group for shared rules. Its mode and failover order are shared across profiles.',
     groupRuntimeSharedBadge: 'Shared rules',
+    profileDashboardTitle: 'All available servers',
+    profileDashboardDescription:
+      'Compare and test servers from every profile without switching the active profile.',
+    profileFilter: 'Profile',
+    allProfiles: 'All profiles',
+    activeProfile: 'Active profile',
+    testVisible: 'Test visible',
+    selectFastest: 'Select fastest',
+    fastest: 'Fastest',
+    noTestedProxy: 'No test',
+    notInRoutingGroup: 'Not in the current routing group',
     runtimeGroupsTitle: 'Runtime groups of the active profile',
     runtimeGroupsDescription:
       'This page shows the proxy groups that Mihomo is using right now for the current profile. Switching the active profile rebuilds this runtime list.',
@@ -1050,7 +1061,7 @@ export default {
       'The VPN group is special: it is a shared routing group for common rules and its mode, health checks, and fallback order are global across profiles.',
     sharedVpnCardDescription: 'Global VPN routing used by shared rules across profiles.',
     sharedVpnCurrentProxy: 'Current target: {{name}}',
-    activeProfileGroupsTitle: 'Groups of the active profile',
+    activeProfileGroupsTitle: 'Routing groups of the current profile',
     activeProfileGroupsDescription:
       'These groups belong to the currently selected profile and change when you switch profiles.',
     activeProfileGroupsReadOnly:

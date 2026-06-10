@@ -81,6 +81,7 @@ interface EditableProxyGroupConfig {
   type: EditableProxyGroupType
   proxies: string[]
   candidates: string[]
+  candidateProfiles?: Record<string, string>
   usesProviders: boolean
   providerOnly: boolean
   providers: string[]

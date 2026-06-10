@@ -1089,6 +1089,16 @@ export default {
     groupEditorVpnHint:
       'VPN 是供公共规则使用的全局路由组，其模式和 fallback 顺序在所有配置之间共享。',
     groupRuntimeSharedBadge: '公共规则',
+    profileDashboardTitle: '所有可用服务器',
+    profileDashboardDescription: '无需切换当前配置，即可比较和测试所有配置中的服务器。',
+    profileFilter: '配置',
+    allProfiles: '所有配置',
+    activeProfile: '当前配置',
+    testVisible: '测试当前列表',
+    selectFastest: '选择最快',
+    fastest: '最快',
+    noTestedProxy: '未测试',
+    notInRoutingGroup: '不在当前路由组中',
     runtimeGroupsTitle: '当前配置的 Runtime 组',
     runtimeGroupsDescription:
       '这个页面显示 Mihomo 当前正在使用的代理组。切换当前配置时，这个 runtime 列表会重新构建。',
@@ -1096,7 +1106,7 @@ export default {
       'VPN 组是特殊的：它是公共规则使用的共享路由组，其模式、health check 和 fallback 顺序在所有配置之间共享。',
     sharedVpnCardDescription: '供所有配置公共规则使用的全局 VPN 路由。',
     sharedVpnCurrentProxy: '当前目标：{{name}}',
-    activeProfileGroupsTitle: '当前配置的组',
+    activeProfileGroupsTitle: '当前配置的路由组',
     activeProfileGroupsDescription: '这些组属于当前选中的配置，会在切换配置时一起发生变化。',
     activeProfileGroupsReadOnly:
       '这里不编辑它们的路由模式。共享 Fallback 或 URL Test 只在上方的 VPN 区块中配置。',
