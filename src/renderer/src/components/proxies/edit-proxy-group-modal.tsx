@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import {
   Dialog,
   DialogClose,
@@ -40,6 +40,7 @@ import { CSS } from '@dnd-kit/utilities'
 import { cn } from '@renderer/lib/utils'
 import { GripVertical, Info, Plus, Trash2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { getProxyGroupEditorLoadKey } from '@renderer/utils/proxyGroupEditor'
 
 interface Props {
   groupName: string
@@ -114,6 +115,8 @@ const SortableProxyItem: React.FC<SortableProxyItemProps> = ({
 
 const EditProxyGroupModal: React.FC<Props> = ({ groupName, onClose, onSaved }) => {
   const { t } = useTranslation()
+  const onCloseRef = useRef(onClose)
+  const tRef = useRef(t)
   const [groupConfig, setGroupConfig] = useState<EditableProxyGroupConfig>()
   const [currentProfileId, setCurrentProfileId] = useState<string>()
   const [openProfileYamlEditor, setOpenProfileYamlEditor] = useState(false)
@@ -127,6 +130,12 @@ const EditProxyGroupModal: React.FC<Props> = ({ groupName, onClose, onSaved }) =
       }
     })
   )
+  const loadKey = getProxyGroupEditorLoadKey({ groupName, onClose, onSaved })
+
+  useEffect(() => {
+    onCloseRef.current = onClose
+    tRef.current = t
+  }, [onClose, t])
 
   useEffect(() => {
     const load = async (): Promise<void> => {
@@ -136,19 +145,19 @@ const EditProxyGroupModal: React.FC<Props> = ({ groupName, onClose, onSaved }) =
         setCurrentProfileId(profileConfig.current || 'default')
         const vpnGroup = await getEditableVpnRoutingGroup()
         if (vpnGroup.name !== groupName) {
-          throw new Error(t('proxies.groupEditorNotFound'))
+          throw new Error(tRef.current('proxies.groupEditorNotFound'))
         }
         setGroupConfig(vpnGroup)
       } catch (error) {
         toast.error(`${error}`)
-        onClose()
+        onCloseRef.current()
       } finally {
         setLoading(false)
       }
     }
 
     void load()
-  }, [groupName, onClose, t])
+  }, [loadKey, groupName])
 
   const availableCandidates = useMemo(() => {
     if (!groupConfig) return []
