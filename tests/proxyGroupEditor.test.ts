@@ -1,6 +1,9 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
-import { getProxyGroupEditorLoadKey } from '../src/renderer/src/utils/proxyGroupEditor'
+import {
+  getProxyGroupEditorLoadKey,
+  getProxyGroupEditorScrollClassName
+} from '../src/renderer/src/utils/proxyGroupEditor'
 
 describe('proxy group editor load key', () => {
   it('does not change when parent callbacks are recreated', () => {
@@ -31,5 +34,13 @@ describe('proxy group editor load key', () => {
       getProxyGroupEditorLoadKey({ groupName: 'VPN', onClose, onSaved }),
       getProxyGroupEditorLoadKey({ groupName: 'Manual', onClose, onSaved })
     )
+  })
+
+  it('keeps scrollable content away from the vertical scrollbar', () => {
+    const className = getProxyGroupEditorScrollClassName()
+
+    assert.match(className, /overflow-y-auto/)
+    assert.match(className, /scrollbar-gutter:stable/)
+    assert.match(className, /\bpr-\d+/)
   })
 })

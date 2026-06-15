@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Dialog,
   DialogClose,
@@ -19,11 +19,14 @@ import {
 } from '@renderer/components/ui/select'
 import { Switch } from '@renderer/components/ui/switch'
 import { Separator } from '@renderer/components/ui/separator'
+import { Spinner } from '@renderer/components/ui/spinner'
 import EditFileModal from '../profiles/edit-file-modal'
 import { toast } from 'sonner'
 import {
   getEditableVpnRoutingGroup,
   getProfileConfig,
+  mihomoProxies,
+  mihomoProxyDelay,
   restartCore,
   updateVpnRoutingGroup
 } from '@renderer/utils/ipc'
@@ -38,9 +41,19 @@ import {
 import { SortableContext, useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { cn } from '@renderer/lib/utils'
-import { GripVertical, Info, Plus, Trash2 } from 'lucide-react'
+import { Gauge, GripVertical, Info, Plus, Trash2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { getProxyGroupEditorLoadKey } from '@renderer/utils/proxyGroupEditor'
+import {
+  getProxyGroupEditorLoadKey,
+  getProxyGroupEditorScrollClassName
+} from '@renderer/utils/proxyGroupEditor'
+import {
+  buildProxyPingResults,
+  proxyPingToneClassName,
+  ProxyPingResult,
+  toProxyPingError,
+  toProxyPingResult
+} from '@renderer/utils/proxyGroupPing'
 
 interface Props {
   groupName: string
@@ -52,6 +65,9 @@ interface SortableProxyItemProps {
   id: string
   profile?: string
   disabled: boolean
+  pingResult?: ProxyPingResult
+  pingDisabled: boolean
+  onPing: () => void
   onRemove: () => void
 }
 
@@ -66,12 +82,24 @@ const SortableProxyItem: React.FC<SortableProxyItemProps> = ({
   id,
   profile,
   disabled,
+  pingResult,
+  pingDisabled,
+  onPing,
   onRemove
 }) => {
+  const { t } = useTranslation()
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id,
     disabled
   })
+  const isTesting = pingResult?.status === 'testing'
+  const pingText = (() => {
+    if (isTesting) return t('common.loading')
+    if (!pingResult || pingResult.status === 'idle') return t('proxies.delayTest')
+    if (pingResult.status === 'timeout') return t('proxies.timeout')
+    if (pingResult.status === 'error') return '--'
+    return `${pingResult.delay} ms`
+  })()
 
   return (
     <div
@@ -106,9 +134,28 @@ const SortableProxyItem: React.FC<SortableProxyItemProps> = ({
           )}
         </div>
       </div>
-      <Button size="icon-sm" variant="ghost" disabled={disabled} onClick={onRemove}>
-        <Trash2 className="size-4" />
-      </Button>
+      <div className="flex shrink-0 items-center gap-1">
+        <Button
+          size="sm"
+          variant="ghost"
+          className={cn(
+            'h-7 min-w-20 px-2 text-xs font-medium',
+            proxyPingToneClassName(pingResult)
+          )}
+          disabled={disabled || pingDisabled}
+          aria-busy={isTesting}
+          title={pingResult?.message || t('proxies.delayTest')}
+          onClick={onPing}
+        >
+          <span className="relative inline-flex min-w-14 items-center justify-center">
+            {isTesting && <Spinner className="absolute" />}
+            <span className={cn(isTesting && 'invisible')}>{pingText}</span>
+          </span>
+        </Button>
+        <Button size="icon-sm" variant="ghost" disabled={disabled} onClick={onRemove}>
+          <Trash2 className="size-4" />
+        </Button>
+      </div>
     </div>
   )
 }
@@ -121,6 +168,8 @@ const EditProxyGroupModal: React.FC<Props> = ({ groupName, onClose, onSaved }) =
   const [currentProfileId, setCurrentProfileId] = useState<string>()
   const [openProfileYamlEditor, setOpenProfileYamlEditor] = useState(false)
   const [selectedCandidate, setSelectedCandidate] = useState<string>()
+  const [proxyPingResults, setProxyPingResults] = useState<Record<string, ProxyPingResult>>({})
+  const [groupPingTesting, setGroupPingTesting] = useState(false)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const sensors = useSensors(
@@ -140,6 +189,7 @@ const EditProxyGroupModal: React.FC<Props> = ({ groupName, onClose, onSaved }) =
   useEffect(() => {
     const load = async (): Promise<void> => {
       setLoading(true)
+      setProxyPingResults({})
       try {
         const profileConfig = await getProfileConfig()
         setCurrentProfileId(profileConfig.current || 'default')
@@ -148,6 +198,12 @@ const EditProxyGroupModal: React.FC<Props> = ({ groupName, onClose, onSaved }) =
           throw new Error(tRef.current('proxies.groupEditorNotFound'))
         }
         setGroupConfig(vpnGroup)
+        try {
+          const runtimeProxies = await mihomoProxies()
+          setProxyPingResults(buildProxyPingResults(vpnGroup.proxies, runtimeProxies))
+        } catch {
+          setProxyPingResults(buildProxyPingResults(vpnGroup.proxies, undefined))
+        }
       } catch (error) {
         toast.error(`${error}`)
         onCloseRef.current()
@@ -254,6 +310,30 @@ const EditProxyGroupModal: React.FC<Props> = ({ groupName, onClose, onSaved }) =
     })
   }
 
+  const testProxyPing = useCallback(
+    async (proxyName: string): Promise<void> => {
+      const testUrl = groupConfig?.url
+      setProxyPingResults((prev) => ({ ...prev, [proxyName]: { status: 'testing' } }))
+      try {
+        const result = await mihomoProxyDelay(proxyName, testUrl)
+        setProxyPingResults((prev) => ({ ...prev, [proxyName]: toProxyPingResult(result) }))
+      } catch (error) {
+        setProxyPingResults((prev) => ({ ...prev, [proxyName]: toProxyPingError(error) }))
+      }
+    },
+    [groupConfig?.url]
+  )
+
+  const testAllProxyPings = useCallback(async (): Promise<void> => {
+    if (!groupConfig || groupConfig.proxies.length === 0) return
+    setGroupPingTesting(true)
+    try {
+      await Promise.all(groupConfig.proxies.map((proxy) => testProxyPing(proxy)))
+    } finally {
+      setGroupPingTesting(false)
+    }
+  }, [groupConfig, testProxyPing])
+
   const save = async (): Promise<void> => {
     if (!groupConfig) return
     if (groupConfig.proxies.length === 0) {
@@ -301,7 +381,7 @@ const EditProxyGroupModal: React.FC<Props> = ({ groupName, onClose, onSaved }) =
         {loading || !groupConfig ? (
           <div className="py-6 text-sm text-muted-foreground">{t('common.loading')}</div>
         ) : (
-          <div className="py-2 flex flex-col gap-1 overflow-y-auto min-h-0">
+          <div className={getProxyGroupEditorScrollClassName()}>
             <div className="rounded-2xl border border-stroke bg-card/40 p-4 space-y-4">
               <div className="flex items-start justify-between gap-4">
                 <div className="space-y-1">
@@ -571,8 +651,28 @@ const EditProxyGroupModal: React.FC<Props> = ({ groupName, onClose, onSaved }) =
             {!isSelectorType && (
               <div className="space-y-3">
                 <div className="space-y-2">
-                  <div className="text-md leading-8">{t(proxyListTitleKey)}</div>
-                  <p className="text-sm text-muted-foreground">{t(proxyListHintKey)}</p>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="text-md leading-8">{t(proxyListTitleKey)}</div>
+                      <p className="text-sm text-muted-foreground">{t(proxyListHintKey)}</p>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="shrink-0"
+                      disabled={
+                        groupConfig.proxies.length === 0 ||
+                        groupPingTesting ||
+                        isProviderOnly ||
+                        saving
+                      }
+                      aria-busy={groupPingTesting}
+                      onClick={() => void testAllProxyPings()}
+                    >
+                      {groupPingTesting ? <Spinner /> : <Gauge />}
+                      {t('proxies.testVisible')}
+                    </Button>
+                  </div>
                   <div className="flex w-full items-center gap-2">
                     <Select
                       value={selectedCandidate}
@@ -632,6 +732,11 @@ const EditProxyGroupModal: React.FC<Props> = ({ groupName, onClose, onSaved }) =
                             id={proxy}
                             profile={groupConfig.candidateProfiles?.[proxy]}
                             disabled={saving || isProviderOnly}
+                            pingResult={proxyPingResults[proxy]}
+                            pingDisabled={
+                              groupPingTesting || proxyPingResults[proxy]?.status === 'testing'
+                            }
+                            onPing={() => void testProxyPing(proxy)}
                             onRemove={() => removeProxy(proxy)}
                           />
                         ))}
