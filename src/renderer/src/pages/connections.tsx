@@ -56,6 +56,7 @@ let cachedConnections: ControllerConnectionDetail[] = []
 const MAX_CLOSED_CONNECTIONS = 200
 const MAX_ICON_CACHE_ENTRIES = 200
 const MAX_APP_NAME_CACHE_ENTRIES = 400
+const MAX_DELETED_IDS = 1000
 
 function trimRecord<T>(record: Record<string, T>, limit: number): Record<string, T> {
   const entries = Object.entries(record)
@@ -64,6 +65,24 @@ function trimRecord<T>(record: Record<string, T>, limit: number): Record<string,
   }
 
   return Object.fromEntries(entries.slice(entries.length - limit))
+}
+
+function trimSet<T>(set: Set<T>, limit: number): Set<T> {
+  if (set.size <= limit) {
+    return set
+  }
+
+  const overflow = set.size - limit
+  const trimmed = new Set<T>()
+  let skipped = 0
+  for (const value of set) {
+    if (skipped < overflow) {
+      skipped++
+      continue
+    }
+    trimmed.add(value)
+  }
+  return trimmed
 }
 
 const Connections: React.FC = () => {
@@ -106,9 +125,35 @@ const Connections: React.FC = () => {
   const [isSettingModalOpen, setIsSettingModalOpen] = useState(false)
   const [selected, setSelected] = useState<ControllerConnectionDetail>()
 
-  const [iconMap, setIconMap] = useState<Record<string, string>>({})
-  const [appNameCache, setAppNameCache] = useState<Record<string, string>>({})
+  const [iconMap, setIconMapState] = useState<Record<string, string>>({})
+  const [appNameCache, setAppNameCacheState] = useState<Record<string, string>>({})
   const [firstItemRefreshTrigger, setFirstItemRefreshTrigger] = useState(0)
+  // Mirror refs so icon/appname loading can read current values without depending
+  // on the state in effects (which causes a re-trigger feedback loop -> renderer OOM).
+  const iconMapRef = useRef<Record<string, string>>({})
+  const appNameCacheRef = useRef<Record<string, string>>({})
+  const setIconMap = useCallback(
+    (updater: Record<string, string> | ((prev: Record<string, string>) => Record<string, string>)) => {
+      setIconMapState((prev) => {
+        const next = typeof updater === 'function' ? updater(prev) : updater
+        iconMapRef.current = next
+        return next
+      })
+    },
+    []
+  )
+  const setAppNameCache = useCallback(
+    (
+      updater: Record<string, string> | ((prev: Record<string, string>) => Record<string, string>)
+    ) => {
+      setAppNameCacheState((prev) => {
+        const next = typeof updater === 'function' ? updater(prev) : updater
+        appNameCacheRef.current = next
+        return next
+      })
+    },
+    []
+  )
 
   const [tab, setTab] = useState('active')
   const [isPaused, setIsPaused] = useState(false)
@@ -157,6 +202,10 @@ const Connections: React.FC = () => {
   const appNameRequestQueue = useRef(new Set<string>())
   const processingAppNames = useRef(new Set<string>())
   const processAppNameTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Tracks the first visible connection's processPath so async icon loads can
+  // refresh the first row without depending on the (large) filtered list.
+  const firstItemPathRef = useRef<string>('')
 
   // Build process groups from connections
   const processGroups = useMemo(() => {
@@ -324,7 +373,7 @@ const Connections: React.FC = () => {
 
     const trashIds = closedConnections.map((conn) => conn.id)
     setDeletedIds((prev) => {
-      const next = new Set([...prev, ...trashIds])
+      const next = trimSet(new Set([...prev, ...trashIds]), MAX_DELETED_IDS)
       deletedIdsRef.current = next
       return next
     })
@@ -339,7 +388,7 @@ const Connections: React.FC = () => {
 
   const trashClosedConnection = useCallback((id: string): void => {
     setDeletedIds((prev) => {
-      const next = new Set([...prev, id])
+      const next = trimSet(new Set([...prev, id]), MAX_DELETED_IDS)
       deletedIdsRef.current = next
       return next
     })
@@ -483,7 +532,7 @@ const Connections: React.FC = () => {
     if (appNameRequestQueue.current.size > 0) {
       processAppNameTimer.current = setTimeout(processAppNameQueue, 100)
     }
-  }, [])
+  }, [setAppNameCache])
 
   const processIconQueue = useCallback(async () => {
     if (processingIcons.current.size >= 5 || iconRequestQueue.current.size === 0) return
@@ -518,8 +567,7 @@ const Connections: React.FC = () => {
           trimRecord({ ...prev, [path]: processedDataURL }, MAX_ICON_CACHE_ENTRIES)
         )
 
-        const firstConnection = filteredConnections[0]
-        if (firstConnection?.metadata.processPath === path) {
+        if (firstItemPathRef.current === path) {
           setFirstItemRefreshTrigger((prev) => prev + 1)
         }
       } catch {
@@ -534,7 +582,7 @@ const Connections: React.FC = () => {
     if (iconRequestQueue.current.size > 0) {
       processIconTimer.current = setTimeout(processIconQueue, 50)
     }
-  }, [filteredConnections])
+  }, [setIconMap])
 
   useEffect(() => {
     if (!displayIcon || findProcessMode === 'off') return
@@ -561,12 +609,12 @@ const Connections: React.FC = () => {
     collectPaths(closedConnections)
 
     const loadIcon = (path: string, isVisible: boolean = false): void => {
-      if (iconMap[path] || processingIcons.current.has(path)) return
+      if (!path || iconMapRef.current[path] || processingIcons.current.has(path)) return
 
       const fromStorage = localStorage.getItem(path)
       if (fromStorage) {
         setIconMap((prev) => trimRecord({ ...prev, [path]: fromStorage }, MAX_ICON_CACHE_ENTRIES))
-        if (isVisible && filteredConnections[0]?.metadata.processPath === path) {
+        if (isVisible && firstItemPathRef.current === path) {
           setFirstItemRefreshTrigger((prev) => prev + 1)
         }
         return
@@ -576,7 +624,7 @@ const Connections: React.FC = () => {
     }
 
     const loadAppName = (path: string): void => {
-      if (appNameCache[path] || processingAppNames.current.has(path)) return
+      if (!path || appNameCacheRef.current[path] || processingAppNames.current.has(path)) return
       appNameRequestQueue.current.add(path)
     }
 
@@ -612,14 +660,20 @@ const Connections: React.FC = () => {
   }, [
     activeConnections,
     closedConnections,
-    iconMap,
-    appNameCache,
     displayIcon,
+    displayAppName,
+    findProcessMode,
     filteredConnections,
     processIconQueue,
     processAppNameQueue,
-    displayAppName
+    setIconMap
   ])
+
+  // Keep the first visible connection's processPath in a ref so async icon loads
+  // can refresh the first row without re-reading the full filtered list.
+  useEffect(() => {
+    firstItemPathRef.current = filteredConnections[0]?.metadata.processPath || ''
+  }, [filteredConnections])
 
   const handleTabChange = useCallback((value: string) => {
     setTab(value)
