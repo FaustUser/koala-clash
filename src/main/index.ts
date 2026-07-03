@@ -40,6 +40,7 @@ import {
   isRecoverableDevRendererFailure,
   loadRendererEntry
 } from './utils/rendererLoader'
+import { getGpuStabilityPolicy } from './utils/gpuPolicy'
 
 let quitTimeout: NodeJS.Timeout | null = null
 export let mainWindow: BrowserWindow | null = null
@@ -790,12 +791,20 @@ if (process.platform === 'linux') {
   app.relaunch = customRelaunch
 }
 
-if (syncConfig.disableGPU || (process.platform === 'win32' && !exePath().startsWith('C'))) {
+const gpuStabilityPolicy = getGpuStabilityPolicy({
+  platform: process.platform,
+  disableGPU: syncConfig.disableGPU,
+  exePath: exePath()
+})
+
+if (gpuStabilityPolicy.disableHardwareAcceleration) {
   app.disableHardwareAcceleration()
-  if (process.platform === 'win32') {
-    app.commandLine.appendSwitch('disable-gpu-compositing')
-    app.commandLine.appendSwitch('disable-direct-composition')
-  }
+}
+if (gpuStabilityPolicy.disableGpuCompositing) {
+  app.commandLine.appendSwitch('disable-gpu-compositing')
+}
+if (gpuStabilityPolicy.disableDirectComposition) {
+  app.commandLine.appendSwitch('disable-direct-composition')
 }
 
 const initPromise = init()
