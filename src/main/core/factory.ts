@@ -14,6 +14,14 @@ import { deepMerge } from '../utils/merge'
 import { existsSync } from 'fs'
 import path from 'path'
 import { alignDnsWithDirectRules } from './dnsRouting'
+import {
+  DIRECT_RULE_TARGET,
+  getProfileDefaultRuleTargetFromRules,
+  getRuleTarget,
+  normalizeProfileRuleTargets,
+  normalizeRuleTargetForVpnRouting,
+  VPN_RULE_TARGET
+} from '../../shared/utils/ruleNormalization'
 
 let runtimeConfigStr: string,
   rawProfileStr: string,
@@ -56,40 +64,12 @@ function getDefaultAppendInsertPosition(rules: string[]): number {
   return matchIndex === -1 ? rules.length : matchIndex
 }
 
-const VPN_RULE_TARGET = 'VPN'
-const LEGACY_VPN_RULE_TARGETS = new Set(['__VPN_ROUTE__', '__ACTIVE_VPN__'])
 const BUILTIN_GROUP_TARGETS = new Set(['DIRECT', 'REJECT', 'REJECT-DROP', 'PASS', 'COMPATIBLE'])
-const DIRECT_GROUP_TARGET = 'DIRECT'
 const SAFE_PROXY_GROUP_TYPES = new Set(['select', 'selector', 'fallback', 'url-test', 'urltest'])
-
-function getRuleTarget(ruleStr: string): string | undefined {
-  const parts = ruleStr.split(',').map((part) => part.trim())
-  const firstPartIsNumber = !isNaN(Number(parts[0])) && parts[0] !== '' && parts.length >= 3
-  const ruleParts = firstPartIsNumber ? parts.slice(1) : parts
-  const [type = '', payloadOrTarget = '', proxy = ''] = ruleParts
-
-  if (!type) return undefined
-  return type === 'MATCH' ? payloadOrTarget : proxy
-}
 
 function getProfileDefaultRuleTarget(profile: MihomoConfig): string {
   const rawRules = Array.isArray(profile.rules) ? (profile.rules as unknown as string[]) : []
-  const matchRule = [...rawRules].reverse().find((rule) => rule.split(',')[0]?.trim() === 'MATCH')
-
-  return getRuleTarget(matchRule || '') || 'DIRECT'
-}
-
-function normalizeRuleTarget(ruleStr: string, defaultTarget: string): string {
-  const target = getRuleTarget(ruleStr)
-  if (!target) {
-    return ruleStr
-  }
-
-  if (LEGACY_VPN_RULE_TARGETS.has(target) || target === defaultTarget) {
-    return ruleStr.replace(target, VPN_RULE_TARGET)
-  }
-
-  return ruleStr
+  return getProfileDefaultRuleTargetFromRules(rawRules)
 }
 
 interface MihomoProxyGroupRecord extends Record<string, unknown> {
@@ -167,7 +147,7 @@ function sanitizeProxyGroups(
     }
 
     if (SAFE_PROXY_GROUP_TYPES.has(type)) {
-      group.proxies = [DIRECT_GROUP_TARGET]
+      group.proxies = [DIRECT_RULE_TARGET]
     } else {
       delete group.proxies
     }
@@ -265,7 +245,7 @@ function prepareSharedRulesForProfile(
   defaultTarget: string
 ): string[] {
   return ruleStrings
-    .map((ruleStr) => normalizeRuleTarget(ruleStr, defaultTarget))
+    .map((ruleStr) => normalizeRuleTargetForVpnRouting(ruleStr, defaultTarget))
     .filter((ruleStr) => {
       const target = getRuleTarget(ruleStr)
       return !target || availableTargets.has(target)
@@ -309,9 +289,7 @@ export async function generateProfile(): Promise<void> {
   const mergedProfileProxies = await getMergedProfileProxies(current)
   const defaultRuleTarget = getProfileDefaultRuleTarget(currentProfile)
   const normalizedBaseRules = Array.isArray(currentProfile.rules)
-    ? (currentProfile.rules as unknown as string[]).map((rule) =>
-        normalizeRuleTarget(rule, defaultRuleTarget)
-      )
+    ? normalizeProfileRuleTargets(currentProfile.rules as unknown as string[], defaultRuleTarget)
     : []
   currentProfile.rules = normalizedBaseRules as unknown as []
   const existingProxyGroups = Array.isArray(currentProfile['proxy-groups'])

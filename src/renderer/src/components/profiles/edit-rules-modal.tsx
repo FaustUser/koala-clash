@@ -237,12 +237,19 @@ const getDefaultAppendInsertPosition = (rules: RuleItem[]): number => {
   return matchIndex === -1 ? rules.length : matchIndex
 }
 
-const normalizeRuleProxy = (proxy: string, defaultMatchTarget: string | null): string => {
+const normalizeRuleProxy = (
+  proxy: string,
+  defaultMatchTarget: string | null,
+  options: { isDefaultMatchRule?: boolean } = {}
+): string => {
   if (!proxy) return proxy
   if (proxy === DEFAULT_VPN_RULE_PROXY || LEGACY_VPN_RULE_PROXIES.has(proxy)) {
     return DEFAULT_VPN_RULE_PROXY
   }
   if (defaultMatchTarget && proxy === defaultMatchTarget) {
+    if (defaultMatchTarget === 'DIRECT' && !options.isDefaultMatchRule) {
+      return proxy
+    }
     return DEFAULT_VPN_RULE_PROXY
   }
   return proxy
@@ -1714,19 +1721,22 @@ const EditRulesModal: React.FC<Props> = (props) => {
     dialogCloseRef.current?.click()
   }
 
-  const serializeRule = useCallback((rule: RuleItem, options?: { includeOffset?: boolean }): string => {
-    const parts = [rule.type]
-    if (rule.payload) parts.push(rule.payload)
-    if (rule.proxy) parts.push(rule.proxy)
-    if (rule.additionalParams && rule.additionalParams.length > 0) {
-      parts.push(...rule.additionalParams)
-    }
+  const serializeRule = useCallback(
+    (rule: RuleItem, options?: { includeOffset?: boolean }): string => {
+      const parts = [rule.type]
+      if (rule.payload) parts.push(rule.payload)
+      if (rule.proxy) parts.push(rule.proxy)
+      if (rule.additionalParams && rule.additionalParams.length > 0) {
+        parts.push(...rule.additionalParams)
+      }
 
-    if (options?.includeOffset && rule.offset !== undefined && rule.offset > 0) {
-      parts.unshift(rule.offset.toString())
-    }
-    return parts.join(',')
-  }, [])
+      if (options?.includeOffset && rule.offset !== undefined && rule.offset > 0) {
+        parts.unshift(rule.offset.toString())
+      }
+      return parts.join(',')
+    },
+    []
+  )
 
   const legacyHandleSave = useCallback(async (): Promise<boolean> => {
     try {
