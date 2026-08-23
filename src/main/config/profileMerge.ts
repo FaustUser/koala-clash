@@ -17,6 +17,15 @@ function getNormalizedProxyName(proxy: MihomoNamedProxyRecord): string {
   return proxy.name?.trim() || ''
 }
 
+function cloneProxyWithNormalizedName(proxy: MihomoNamedProxyRecord): MihomoNamedProxyRecord | null {
+  const clonedProxy = cloneProxy(proxy)
+  const normalizedName = getNormalizedProxyName(clonedProxy)
+  if (!normalizedName) return null
+
+  clonedProxy.name = normalizedName
+  return clonedProxy
+}
+
 function makeUniqueProxyName(
   baseName: string,
   profileLabel: string,
@@ -48,7 +57,8 @@ export async function getMergedProfileProxies(currentId?: string): Promise<Mihom
 
   const mergedProxies = currentProxies
     .filter(isNamedProxyRecord)
-    .map((proxy) => cloneProxy(proxy))
+    .map((proxy) => cloneProxyWithNormalizedName(proxy))
+    .filter((proxy): proxy is MihomoNamedProxyRecord => proxy !== null)
   const usedNames = new Set(mergedProxies.map(getNormalizedProxyName).filter(Boolean))
 
   for (const item of items) {
@@ -61,9 +71,10 @@ export async function getMergedProfileProxies(currentId?: string): Promise<Mihom
     for (const proxy of profileProxies) {
       if (!isNamedProxyRecord(proxy)) continue
 
-      const clonedProxy = cloneProxy(proxy)
+      const clonedProxy = cloneProxyWithNormalizedName(proxy)
+      if (!clonedProxy) continue
+
       const baseName = getNormalizedProxyName(clonedProxy)
-      if (!baseName) continue
 
       const uniqueName = makeUniqueProxyName(baseName, profileLabel, usedNames)
       if (uniqueName !== baseName) {

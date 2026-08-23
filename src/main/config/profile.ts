@@ -358,7 +358,7 @@ export async function getProfileParseStr(id: string | undefined): Promise<string
 
 export async function setProfileStr(id: string, content: string): Promise<void> {
   const { current } = await getProfileConfig()
-  await writeFile(profilePath(id), content, 'utf-8')
+  await writeFile(profilePath(id), sanitizeImportedProfileProxyGroups(content), 'utf-8')
   if (current === id) await restartCore()
 }
 
@@ -390,7 +390,153 @@ function parseSubinfo(str: string): SubscriptionUserInfo {
 }
 
 function normalizeImportedProfile(content: string, fallbackName: string): string {
-  return convertUriSubscriptionToMihomoConfig(content, fallbackName) || content
+  return sanitizeImportedProfileProxyGroups(
+    convertUriSubscriptionToMihomoConfig(content, fallbackName) || content
+  )
+}
+
+const BUILTIN_PROXY_GROUP_TARGETS = new Set([
+  'DIRECT',
+  'REJECT',
+  'REJECT-DROP',
+  'PASS',
+  'COMPATIBLE'
+])
+const SAFE_IMPORTED_PROXY_GROUP_TYPES = new Set([
+  'select',
+  'selector',
+  'fallback',
+  'url-test',
+  'urltest'
+])
+
+interface ImportedProxyGroupRecord extends Record<string, unknown> {
+  name?: string
+  type?: string
+  proxies?: string[]
+  use?: string[]
+}
+
+function isImportedProxyGroupRecord(group: unknown): group is ImportedProxyGroupRecord {
+  return !!group && typeof group === 'object'
+}
+
+function getUniqueImportedStrings(values: unknown): string[] {
+  if (!Array.isArray(values)) return []
+
+  return [
+    ...new Set(
+      values
+        .filter((value): value is string => typeof value === 'string')
+        .map((value) => value.trim())
+    )
+  ].filter(Boolean)
+}
+
+function getImportedProxyNames(profile: MihomoConfig): string[] {
+  const proxies = Array.isArray(profile.proxies) ? (profile.proxies as unknown[]) : []
+
+  return [
+    ...new Set(
+      proxies
+        .map((proxy) =>
+          proxy && typeof proxy === 'object' && 'name' in proxy
+            ? (proxy as { name?: unknown }).name
+            : undefined
+        )
+        .filter((name): name is string => typeof name === 'string')
+        .map((name) => name.trim())
+        .filter(Boolean)
+    )
+  ]
+}
+
+function normalizeImportedProxyNames(profile: MihomoConfig): boolean {
+  const proxies = Array.isArray(profile.proxies) ? (profile.proxies as unknown[]) : []
+  let changed = false
+
+  proxies.forEach((proxy) => {
+    if (!proxy || typeof proxy !== 'object' || !('name' in proxy)) return
+
+    const proxyRecord = proxy as { name?: unknown }
+    if (typeof proxyRecord.name !== 'string') return
+
+    const normalizedName = proxyRecord.name.trim()
+    if (normalizedName && normalizedName !== proxyRecord.name) {
+      proxyRecord.name = normalizedName
+      changed = true
+    }
+  })
+
+  return changed
+}
+
+function sanitizeImportedProfileProxyGroups(content: string): string {
+  let profile: MihomoConfig
+  try {
+    profile = parseYaml<MihomoConfig>(content)
+  } catch {
+    return content
+  }
+
+  if (!profile || typeof profile !== 'object' || !Array.isArray(profile['proxy-groups'])) {
+    return content
+  }
+
+  let changed = normalizeImportedProxyNames(profile)
+  const proxyNames = getImportedProxyNames(profile)
+  const validProxyNames = new Set(proxyNames)
+  const groups = (profile['proxy-groups'] as unknown[]).filter(isImportedProxyGroupRecord)
+  const validGroupNames = new Set(
+    groups
+      .map((group) => (typeof group.name === 'string' ? group.name.trim() : ''))
+      .filter(Boolean)
+  )
+  const validProviderNames = new Set(Object.keys(profile['proxy-providers'] || {}))
+
+  const sanitizedGroups = groups.map((group) => {
+    const nextGroup = { ...group }
+    const groupName = typeof nextGroup.name === 'string' ? nextGroup.name.trim() : ''
+    const type = typeof nextGroup.type === 'string' ? nextGroup.type.toLowerCase() : ''
+    const providers = getUniqueImportedStrings(nextGroup.use).filter(
+      (provider) => validProviderNames.size === 0 || validProviderNames.has(provider)
+    )
+    const proxies = getUniqueImportedStrings(nextGroup.proxies).filter((proxyName) => {
+      if (proxyName === groupName) return false
+      return (
+        BUILTIN_PROXY_GROUP_TARGETS.has(proxyName) ||
+        validProxyNames.has(proxyName) ||
+        validGroupNames.has(proxyName)
+      )
+    })
+
+    if (providers.length > 0) {
+      nextGroup.use = providers
+      if (proxies.length > 0) {
+        nextGroup.proxies = proxies
+      } else {
+        delete nextGroup.proxies
+      }
+    } else {
+      delete nextGroup.use
+      if (proxies.length > 0) {
+        nextGroup.proxies = proxies
+      } else if (SAFE_IMPORTED_PROXY_GROUP_TYPES.has(type)) {
+        nextGroup.proxies = proxyNames.length > 0 ? proxyNames : ['DIRECT']
+      } else {
+        delete nextGroup.proxies
+      }
+    }
+
+    if (JSON.stringify(nextGroup.proxies) !== JSON.stringify(group.proxies)) changed = true
+    if (JSON.stringify(nextGroup.use) !== JSON.stringify(group.use)) changed = true
+    return nextGroup
+  })
+
+  if (!changed) return content
+
+  profile['proxy-groups'] = sanitizedGroups as unknown as []
+  return stringifyYaml(profile)
 }
 
 function convertUriSubscriptionToMihomoConfig(

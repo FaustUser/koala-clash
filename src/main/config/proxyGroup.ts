@@ -113,10 +113,11 @@ function getVpnRoutingGroupProxies(
     return proxyNames
   }
 
-  return sanitizeProxySelections(
-    vpnRoutingGroup?.proxies?.length ? vpnRoutingGroup.proxies : proxyNames,
-    candidates
-  )
+  const configuredProxies = vpnRoutingGroup?.proxies?.length
+    ? sanitizeProxySelections(vpnRoutingGroup.proxies, candidates)
+    : []
+
+  return configuredProxies.length > 0 ? configuredProxies : proxyNames
 }
 
 async function getEditableRuntimeProxyGroups(): Promise<EditableProxyGroupConfig[]> {

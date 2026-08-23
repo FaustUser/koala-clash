@@ -4,11 +4,11 @@ import { mainWindow } from '..'
 import WebSocket from 'ws'
 import { tray } from '../resolve/tray'
 import { calcTraffic } from '../utils/calc'
-import { getRuntimeConfig } from './factory'
+import { generateProfile, getRuntimeConfig } from './factory'
 import { floatingWindow } from '../resolve/floatingWindow'
 import { mihomoIpcPath } from '../utils/dirs'
 import type { BrowserWindow } from 'electron'
-import { getRuntimeProfileProxies } from './proxyList'
+import { getRuntimeProfileProxies, getRuntimeProfileProxyFallbacks } from './proxyList'
 
 let axiosIns: AxiosInstance = null!
 let mihomoTrafficWs: WebSocket | null = null
@@ -151,20 +151,150 @@ export const mihomoProxies = async (): Promise<ControllerProxies> => {
   return await instance.get('/proxies')
 }
 
+async function getAvailableRuntimeConfig(): Promise<MihomoConfig | undefined> {
+  let runtime = await getRuntimeConfig()
+  if (!runtime) {
+    try {
+      await generateProfile()
+    } catch {
+      return undefined
+    }
+    runtime = await getRuntimeConfig()
+  }
+
+  return runtime
+}
+
 export const mihomoProfileProxies = async (): Promise<ControllerProxiesDetail[]> => {
-  const proxies = await mihomoProxies()
-  const runtime = await getRuntimeConfig()
-  return getRuntimeProfileProxies(
-    proxies,
-    runtime?.proxies as { name?: unknown; serverDescription?: unknown }[] | undefined
+  const runtime = await getAvailableRuntimeConfig()
+  const runtimeProxies =
+    runtime?.proxies as
+      | { name?: unknown; type?: unknown; serverDescription?: unknown }[]
+      | undefined
+
+  try {
+    const proxies = await mihomoProxies()
+    return getRuntimeProfileProxies(proxies, runtimeProxies)
+  } catch {
+    return getRuntimeProfileProxyFallbacks(runtimeProxies)
+  }
+}
+
+function normalizeRuntimeGroupType(type: unknown): MihomoProxyType {
+  if (typeof type !== 'string') return 'Selector'
+
+  switch (type.toLowerCase()) {
+    case 'select':
+    case 'selector':
+      return 'Selector'
+    case 'fallback':
+      return 'Fallback'
+    case 'url-test':
+    case 'urltest':
+      return 'URLTest'
+    case 'load-balance':
+    case 'loadbalance':
+      return 'LoadBalance'
+    case 'relay':
+      return 'Relay'
+    default:
+      return 'Selector'
+  }
+}
+
+function makeFallbackProxyDetail(
+  name: string,
+  type: MihomoProxyType = 'Compatible'
+): ControllerProxiesDetail {
+  return {
+    alive: true,
+    extra: {},
+    history: [],
+    id: name,
+    name,
+    tfo: false,
+    type,
+    udp: false,
+    xudp: false,
+    'dialer-proxy': '',
+    interface: '',
+    mptcp: false,
+    'routing-mark': 0,
+    smux: false,
+    uot: false
+  }
+}
+
+function getRuntimeProxyFallbackMap(
+  runtime: MihomoConfig | undefined
+): Map<string, ControllerProxiesDetail> {
+  const proxies = getRuntimeProfileProxyFallbacks(
+    runtime?.proxies as
+      | { name?: unknown; type?: unknown; serverDescription?: unknown }[]
+      | undefined
   )
+
+  return new Map(proxies.map((proxy) => [proxy.name, proxy]))
+}
+
+function getStringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) return []
+
+  return value.filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
+}
+
+function buildRuntimeGroupFallbacks(runtime: MihomoConfig | undefined): ControllerMixedGroup[] {
+  const groups = Array.isArray(runtime?.['proxy-groups'])
+    ? (runtime?.['proxy-groups'] as unknown[])
+    : []
+  const proxyMap = getRuntimeProxyFallbackMap(runtime)
+
+  return groups
+    .filter((group): group is Record<string, unknown> => !!group && typeof group === 'object')
+    .map((group) => {
+      const name = typeof group.name === 'string' ? group.name.trim() : ''
+      const proxyNames = getStringArray(group.proxies)
+      const type = normalizeRuntimeGroupType(group.type)
+      const all = proxyNames.map(
+        (proxyName) => proxyMap.get(proxyName) || makeFallbackProxyDetail(proxyName)
+      )
+
+      return {
+        alive: true,
+        all,
+        extra: {},
+        hidden: false,
+        history: [],
+        icon: typeof group.icon === 'string' ? group.icon : '',
+        interface: '',
+        mptcp: false,
+        name,
+        now: proxyNames[0] || name,
+        smux: false,
+        testUrl: typeof group.url === 'string' ? group.url : undefined,
+        tfo: false,
+        type,
+        udp: true,
+        uot: false,
+        xudp: false,
+        expectedStatus:
+          typeof group['expected-status'] === 'string' ? group['expected-status'] : undefined
+      }
+    })
+    .filter((group) => group.name && !group.hidden)
 }
 
 export const mihomoGroups = async (): Promise<ControllerMixedGroup[]> => {
   const { mode = 'rule' } = await getControledMihomoConfig()
   if (mode === 'direct') return []
-  const proxies = await mihomoProxies()
-  const runtime = await getRuntimeConfig()
+  const runtime = await getAvailableRuntimeConfig()
+  let proxies: ControllerProxies
+
+  try {
+    proxies = await mihomoProxies()
+  } catch {
+    return buildRuntimeGroupFallbacks(runtime)
+  }
 
   const serverDescriptionMap = new Map<string, string>()
   if (runtime?.proxies) {

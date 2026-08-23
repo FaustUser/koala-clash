@@ -102,15 +102,33 @@ function getUniqueTrimmedStrings(values: unknown): string[] {
   ].filter(Boolean)
 }
 
+function getUniqueProxyNames(proxies: Array<{ name?: unknown }>): string[] {
+  return [
+    ...new Set(
+      proxies
+        .map((proxy) => (typeof proxy?.name === 'string' ? proxy.name.trim() : ''))
+        .filter(Boolean)
+    )
+  ]
+}
+
+function getUniqueProxyGroupNames(groups: unknown[]): string[] {
+  return [
+    ...new Set(
+      groups
+        .filter(isProxyGroupRecord)
+        .map((group) => (typeof group.name === 'string' ? group.name.trim() : ''))
+        .filter(Boolean)
+    )
+  ]
+}
+
 function sanitizeProxyGroups(
   groups: unknown[],
   mergedProxies: Array<{ name?: unknown }>
 ): MihomoProxyGroupRecord[] {
-  const validProxyNames = new Set(
-    mergedProxies
-      .map((proxy) => (typeof proxy?.name === 'string' ? proxy.name.trim() : ''))
-      .filter(Boolean)
-  )
+  const proxyNames = getUniqueProxyNames(mergedProxies)
+  const validProxyNames = new Set(proxyNames)
   const sanitizedGroups = groups.filter(isProxyGroupRecord).map((group) => ({ ...group }))
   const validGroupNames = new Set(
     sanitizedGroups
@@ -147,7 +165,7 @@ function sanitizeProxyGroups(
     }
 
     if (SAFE_PROXY_GROUP_TYPES.has(type)) {
-      group.proxies = [DIRECT_RULE_TARGET]
+      group.proxies = proxyNames.length > 0 ? proxyNames : [DIRECT_RULE_TARGET]
     } else {
       delete group.proxies
     }
@@ -158,19 +176,15 @@ function sanitizeProxyGroups(
 
 function buildVpnRouteGroup(
   mergedProxies: Array<{ name?: unknown }>,
-  vpnRoutingGroup?: GlobalVpnRoutingGroupConfig
+  vpnRoutingGroup?: GlobalVpnRoutingGroupConfig,
+  candidateGroupNames: string[] = []
 ): MihomoProxyGroupRecord | null {
-  const proxyNames = [
-    ...new Set(
-      mergedProxies
-        .map((proxy) => (typeof proxy?.name === 'string' ? proxy.name.trim() : ''))
-        .filter(Boolean)
-    )
-  ]
-
-  if (proxyNames.length === 0) {
-    return null
-  }
+  const proxyNames = getUniqueProxyNames(mergedProxies)
+  const availableTargets = new Set([
+    ...proxyNames,
+    ...candidateGroupNames,
+    ...BUILTIN_GROUP_TARGETS
+  ])
 
   const groupType =
     vpnRoutingGroup?.type === 'URLTest'
@@ -178,13 +192,20 @@ function buildVpnRouteGroup(
       : vpnRoutingGroup?.type === 'Selector'
         ? 'select'
         : 'fallback'
-  const configuredProxies = getUniqueTrimmedStrings(vpnRoutingGroup?.proxies)
+  const configuredProxies = getUniqueTrimmedStrings(vpnRoutingGroup?.proxies).filter(
+    (proxyName) => proxyName !== VPN_RULE_TARGET && availableTargets.has(proxyName)
+  )
+  const groupProxies =
+    groupType === 'select' || configuredProxies.length === 0 ? proxyNames : configuredProxies
+
+  if (groupProxies.length === 0) {
+    return null
+  }
 
   const vpnGroup: MihomoProxyGroupRecord = {
     name: VPN_RULE_TARGET,
     type: groupType,
-    proxies:
-      groupType === 'select' || configuredProxies.length === 0 ? proxyNames : configuredProxies
+    proxies: groupProxies
   }
 
   if (['fallback', 'url-test'].includes(groupType)) {
@@ -302,9 +323,11 @@ export async function generateProfile(): Promise<void> {
           )
       )
     : []
+  const existingProxyGroupNames = getUniqueProxyGroupNames(existingProxyGroups)
   const vpnRouteGroup = buildVpnRouteGroup(
     mergedProfileProxies as Array<{ name?: unknown }>,
-    vpnRoutingGroup
+    vpnRoutingGroup,
+    existingProxyGroupNames
   )
   if (vpnRouteGroup) {
     currentProfile['proxy-groups'] = [...existingProxyGroups, vpnRouteGroup] as unknown as []
@@ -387,6 +410,15 @@ export async function generateProfile(): Promise<void> {
   currentProfile.proxies = mergedProfileProxies as unknown as []
 
   const profile = deepMerge(JSON.parse(JSON.stringify(currentProfile)), configToMerge)
+  if (Array.isArray(profile['proxy-groups'])) {
+    const runtimeProxies = Array.isArray(profile.proxies)
+      ? (profile.proxies as Array<{ name?: unknown }>)
+      : (mergedProfileProxies as Array<{ name?: unknown }>)
+    profile['proxy-groups'] = sanitizeProxyGroups(
+      profile['proxy-groups'] as unknown[],
+      runtimeProxies
+    ) as unknown as []
+  }
 
   alignDnsWithDirectRules(profile)
   await cleanProfile(profile, controlDns, controlSniff, controlTun)
